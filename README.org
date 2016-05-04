@@ -5,10 +5,14 @@
 To make it compliant with the FileIOCalculator in ase, and hopefully simplify it.
 
 * Goals
-1. Provide an interface that allows all vasp keywords without further modification.
+1. Provide an interface that allows all vasp INCAR tags without
+   further modification, i.e. they are just kwargs to the calculator.
+2. Eliminate need for long lists of supported keywords.
 2. But also an interface that can be extended to allow validation, and
    user-defined special keywords.
-3. Smart restarts. We don't want to run unnecessary calculations if
+3. Better treatment of the xc keyword to make it easier to use
+   different functionals.
+4. Smart restarts. We don't want to run unnecessary calculations if
    they are already done. We want one script that runs calculations
    and does analysis.
 
