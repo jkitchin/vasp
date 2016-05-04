@@ -6,11 +6,21 @@ from ase.calculators.calculator import Calculator,\
 
 
 class Vasp(FileIOCalculator):
-    """Class for doing VASP calculations."""
+    """Class for doing VASP calculations.
+    
+    set $ASE_VASP_COMMAND to the command used to run vasp.
+
+    POTCARs are found in:
+    $VASP_PP_PATH/potpaw_LDA
+    $VASP_PP_PATH/potpaw_PBE
+    $VASP_PP_PATH/potpaw_GGA
+
+    """
+    name = 'VASP'
+    command = None
 
     implemented_properties = ['energy', 'forces', 'stress', 'magmom']
-    command = '/home-research/zhongnanxu/opt/vasp-5.3.5/bin/vasp-vtst-beef-serial'
-
+    
     default_parameters = dict(
         xc='PBE',
         ismear=1,
