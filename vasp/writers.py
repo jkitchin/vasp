@@ -8,8 +8,11 @@ monkey-patched onto the Vasp class as if it were defined in vasp.py.
 """
 
 import os
+import numpy as np
 import vasp
 from monkeypatch import monkeypatch_class
+from ase.calculators.calculator import Calculator,\
+    FileIOCalculator
 
 @monkeypatch_class(vasp.Vasp)
 def write_input(self, atoms, properties=None, system_changes=None):
@@ -28,7 +31,7 @@ def write_poscar(self, fname=None):
         fname = os.path.join(self.directory, 'POSCAR')
 
     from ase.io.vasp import write_vasp
-    write_vasp('POSCAR',
+    write_vasp(fname,
                self.atoms_sorted,
                symbol_count=self.symbol_count)
 
