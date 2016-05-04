@@ -1,5 +1,5 @@
 import os
-import numpy as np
+import subprocess
 
 from ase.calculators.calculator import Calculator,\
     FileIOCalculator
@@ -9,7 +9,7 @@ class Vasp(FileIOCalculator):
     """Class for doing VASP calculations."""
 
     implemented_properties = ['energy', 'forces', 'stress', 'magmom']
-    command = 'vasp'
+    command = '/home-research/zhongnanxu/opt/vasp-5.3.5/bin/vasp-vtst-beef-serial'
 
     default_parameters = dict(
         xc='PBE',
@@ -227,10 +227,20 @@ class Vasp(FileIOCalculator):
 
     def read_results(self):
         """Read energy, forces, ... from output file(s)."""
-        pass
+        from ase.io.vasp import read_vasp_xml
+
+        atoms = read_vasp_xml(os.path.join(self.directory, 'vasprun.xml')).next()
+
+        self.results['energy'] = atoms.get_potential_energy()
+        self.results['forces'] = atoms.get_forces()
 
     def calculate(self, atoms=None, properties=['energy'],
                   system_changes=None):
+        """Runs a calculation.
+
+        No checking is currently done to see if one is necessary.
+
+        """
         Calculator.calculate(self, atoms, properties, system_changes)
 
         self.write_input(self.atoms, properties, system_changes)
@@ -242,7 +252,7 @@ class Vasp(FileIOCalculator):
         olddir = os.getcwd()
         try:
             os.chdir(self.directory)
-            errorcode = subprocess.call(command, shell=True)
+            errorcode = subprocess.call(self.command, shell=True)
         finally:
             os.chdir(olddir)
 
