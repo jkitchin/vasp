@@ -1,0 +1,351 @@
+
+
+#+BEGIN_SRC python
+from vasp import *
+
+calc = Vasp('simple-co',
+            encut=400,
+            xc='beef-vdw',
+            setups={'H': '_sv'},
+            ldaul=(-1, 2),
+            ldauu=[0, 0.2],
+            ldauj=[0, 0.00],  kpts=(10, 10, 10))
+
+# print dir(calc)
+print calc.parameters
+#print calc.special_kwargs
+#print list(set(calc.parameters) - set(calc.special_kwargs))
+#print {key: calc.parameters[key] for key in list(set(calc.parameters) - set(calc.special_kwargs))}
+#calc.write_input(None)
+
+#print open('simple-co/INCAR').read()
+
+#print open('simple-co/KPOINTS').read()
+#+END_SRC
+
+#+RESULTS:
+: {'kpts': (10, 10, 10), 'lcharge': False, 'xc': 'beef-vdw', 'ldaul': (-1, 2), 'ldauj': [0, 0.0], 'encut': 400, 'ldauu': [0, 0.2], 'gga': 'BF', 'zab_vdw': -1.8867, 'setups': {'H': '_sv'}, 'lwave': False, 'sigma': 0.1, 'luse_vdw': True}
+
+#+BEGIN_SRC python
+from vasp import *
+from ase import Atom, Atoms
+
+atoms = Atoms([Atom('O', [4, 4.5, 5], magmom=2),
+               Atom('O', [4, 4.5, 5], magmom=2),
+               Atom('H', [4, 4.5, 15], magmom=2),
+               Atom('O', [4, 4.5, 25], magmom=2)],
+              cell=(8, 9, 10))
+
+calc = Vasp('molecules/O-sp-triplet-lowsym-sv',
+          xc='pbe',
+          ismear=0,
+          ispin=2,
+          sigma=0.01,
+          setups={0: 'O_pv', 'O':'_sv'},
+          atoms=atoms)
+
+
+#+END_SRC
+
+#+RESULTS:
+
+I should get this.
+: ['potpawPBE/O_pv/POTCAR', 'potpawPBE/O_sv/POTCAR', 'potpawPBE/H/POTCAR']
+
+
+
+** Handling setups.
+In VASP we have to create the POTCAR file by concatenating existing POTCAR files for each atom into a single file. There are several options for how to do this.
+
+1. Each atom can have its own POTCAR.
+2. Common atoms can be grouped to share a POTCAR
+
+
+
+
+#+BEGIN_SRC python
+from vasp import *
+from ase import Atom, Atoms
+
+atoms = Atoms([Atom('O', [4, 4.5, 5], magmom=2),
+               Atom('O', [4, 4.5, 5], magmom=2),
+               Atom('H', [4, 4.5, 15], magmom=2),
+               Atom('O', [4, 4.5, 25], magmom=2)],
+              cell=(8, 9, 10))
+
+setups = [[3, '_pv'], ['O', '_sv']]
+
+pp = 'PBE'
+
+# goal:
+# pp = [(3 ,'potpawPBE/O_pv/POTCAR', 1)
+#       ('O', 'potpawPBE/O_sv/POTCAR', 2),
+#       ('H', 'potpawPBE/H/POTCAR', 1)]
+# sort_indices = [3, 0, 1, 2]
+ppp = []
+sort_indices = []
+
+# First the numeric setups
+for setup in [x for x in setups if isinstance(x[0], int)]:
+    ppp += [[setup[0],
+             'potpaw_{}/{}{}/POTCAR'.format(pp, atoms[setup[0]].symbol, setup[1]),
+             1]]
+    sort_indices += [setup[0]]
+
+# now the rest of the setups. These are atom symbols
+for setup in [x for x in setups if not isinstance(x[0], int)]:
+    symbol = setup[0]
+    count = 0
+    for i, atom in enumerate(atoms):
+        if atom.symbol == symbol and i not in sort_indices:
+            count += 1
+            sort_indices += [i]
+    ppp += [[atom.symbol,
+             'potpaw_{}/{}{}/POTCAR'.format(pp, symbol, setup[1]),
+             count]]
+
+# now the remaining atoms use default potentials
+symbols = []
+for atom in atoms:
+    if atom.symbol not in symbols and atom.symbol not in [x[0] for x in pp]:
+        symbols += [atom.symbol]
+
+for symbol in symbols:
+    count = 0
+    for i, atom in enumerate(atoms):
+        if atom.symbol == symbol and i not in sort_indices:
+            sort_indices += [i]
+            count += 1
+    ppp += [[symbol,
+             'potpaw_{}/{}/POTCAR'.format(pp, symbol),
+             count]]
+
+
+print symbols
+print ppp
+print sort_indices
+
+
+#+END_SRC
+
+#+RESULTS:
+: ['O', 'H']
+: [[3, 'potpaw_PBE/O_pv/POTCAR', 1], ['O', 'potpaw_PBE/O_sv/POTCAR', 2], ['O', 'potpaw_PBE/O/POTCAR', 0], ['H', 'potpaw_PBE/H/POTCAR', 1]]
+: [3, 0, 1, 2]
+
+
+#+BEGIN_SRC python
+from vasp import Vasp
+from ase import Atom, Atoms
+
+atoms = Atoms([Atom('O', [4, 4.5, 0], magmom=2),
+               Atom('O', [4, 4.5, 1], magmom=2),
+               Atom('H', [4, 4.5, 2], magmom=2),
+               Atom('O', [4, 4.5, 3], magmom=2)],
+              cell=(8, 9, 10))
+
+calc = Vasp('molecules/O-sp-triplet-lowsym-sv',
+          xc='pbe',
+          ismear=0,
+          ispin=2,
+          sigma=0.01,
+          setups=[[1, '_h'], ['O', '_sv']],
+          atoms=atoms)
+
+print calc.sort_indices
+print calc.ppp_list
+#print calc.atoms_sorted
+#print calc.symbol_count
+
+calc.write_poscar('POSCAR')
+calc.write_potcar('POTCAR')
+#+END_SRC
+
+#+RESULTS:
+: [1, 0, 3, 2]
+: [[1, 'potpaw_PBE/O_h/POTCAR', 1], ['O', 'potpaw_PBE/O_sv/POTCAR', 2], ['H', 'potpaw_PBE/H/POTCAR', 1]]
+
+#+BEGIN_SRC sh
+grep TITEL POTCAR
+#+END_SRC
+
+#+RESULTS:
+:    TITEL  = PAW_PBE O_h 06Feb2004
+:    TITEL  = PAW_PBE O_sv 05Jul2007
+:    TITEL  = PAW_PBE H 15Jun2001
+
+#+BEGIN_SRC python
+import vasp
+print vasp.__file__
+print dir(vasp)
+print vasp.Vasp
+#+END_SRC
+
+#+RESULTS:
+: ['Calculator', 'FileIOCalculator', 'Vasp', '__builtins__', '__doc__', '__file__', '__name__', '__package__', 'np', 'os']
+: vasp/__init__.pyc
+: ['Vasp', '__builtins__', '__doc__', '__file__', '__name__', '__package__', '__path__', 'monkeypatch', 'vasp', 'writers']
+: vasp.vasp.Vasp
+
+** spin pol
+
+#+BEGIN_SRC python
+from vasp import Vasp
+from ase import Atom, Atoms
+
+atoms = Atoms([Atom('O', [5, 5, 5], magmom=2), Atom('H', [0, 0 ,0])],
+              cell=(10, 10, 10))
+
+calc = Vasp('molecules/O-sp-triplet',
+            xc='PBE',
+            encut=400,
+            ismear=0,
+            ispin=2,  # turn spin-polarization on
+            atoms=atoms)
+
+calc.write_incar('INCAR')
+print open('INCAR').read()
+
+#+END_SRC
+
+#+RESULTS:
+: INCAR created by Atomic Simulation Environment
+:  MAGMOMS = 2.0 0.0
+:  LCHARGE = .FALSE.
+:  ENCUT = 400
+:  ISPIN = 2
+:  ISMEAR = 0
+:  LWAVE = .FALSE.
+:  SIGMA = 0.1
+:
+
+#+BEGIN_SRC python
+from vasp import Vasp
+from ase import Atom, Atoms
+
+atoms = Atoms([Atom('O', [5, 5, 5], magmom=2), Atom('H', [0, 0 ,0])],
+              cell=(10, 10, 10))
+
+calc = Vasp('molecules/O-sp-triplet',
+            xc='PBE',
+            encut=400,
+            ismear=0,
+            magmoms=[2, -2],
+            ispin=2,  # turn spin-polarization on
+            atoms=atoms)
+
+calc.write_incar('INCAR')
+print open('INCAR').read()
+
+#+END_SRC
+
+#+RESULTS:
+: INCAR created by Atomic Simulation Environment
+:  MAGMOMS = 2 -2
+:  LCHARGE = .FALSE.
+:  ENCUT = 400
+:  ISPIN = 2
+:  ISMEAR = 0
+:  LWAVE = .FALSE.
+:  SIGMA = 0.1
+:
+
+** DFT+u
+#+BEGIN_SRC python
+from vasp import Vasp
+from ase import Atom, Atoms
+
+a = 4.27
+
+atoms = Atoms([Atom('Cu',[0,0,0]),
+               Atom('Cu',[0.5, 0.5, 0.0]),
+               Atom('Cu',[0.5, 0.0, 0.5]),
+               Atom('Cu',[0.0, 0.5, 0.5]),
+               Atom('O',[0.25, 0.25, 0.25]),
+               Atom('O',[0.75, 0.75, 0.75])])
+
+atoms.set_cell((a,a,a), scale_atoms=True)
+
+calc =Vasp('Cu2O-U=4.0',
+             ldau=True,   # turn DFT+U on
+             ldautype=2,  # select simplified rotationally invariant option
+             ldau_luj={'Cu':{'L':2,  'U':4.0, 'J':0.0},
+                        'O':{'L':-1, 'U':0.0, 'J':0.0}},
+             ldauprint=1,
+             ibrion=-1,  #do not rerelax
+             nsw=0, atoms=atoms)
+
+calc.write_incar('INCAR')
+calc.write_poscar('POSCAR')
+
+print calc.ppp_list
+print open('INCAR').read()
+print open('POSCAR').read()
+
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+[['Cu', 'potpaw_PBE/Cu/POTCAR', 4], ['O', 'potpaw_PBE/O/POTCAR', 2]]
+INCAR created by Atomic Simulation Environment
+ LCHARGE = .FALSE.
+ LDAUL = 2 -1
+ LDAUU = 4.0 0.0
+ LDAUTYPE = 2
+ LDAUJ = 0.0 0.0
+ LDAU = .TRUE.
+ IBRION = -1
+ ISMEAR = 1
+ LWAVE = .FALSE.
+ SIGMA = 0.1
+ LDAUPRINT = 1
+ NSW = 0
+
+Cu  O
+ 1.0000000000000000
+     4.2699999999999996    0.0000000000000000    0.0000000000000000
+     0.0000000000000000    4.2699999999999996    0.0000000000000000
+     0.0000000000000000    0.0000000000000000    4.2699999999999996
+   4   2
+Cartesian
+  0.0000000000000000  0.0000000000000000  0.0000000000000000
+  2.1349999999999998  2.1349999999999998  0.0000000000000000
+  2.1349999999999998  0.0000000000000000  2.1349999999999998
+  0.0000000000000000  2.1349999999999998  2.1349999999999998
+  1.0674999999999999  1.0674999999999999  1.0674999999999999
+  3.2024999999999997  3.2024999999999997  3.2024999999999997
+
+#+end_example
+
+ LDAUL = -1 2
+ LDAUU = 0.000 4.000
+ LDAUJ = 0.000 0.000
+
+
+** Idea for validation
+
+#+BEGIN_SRC python
+class Float(object):
+    def __init__(self, val):
+        self.val = val
+        assert isinstance(val, float), '{} is not a float'.format(val)
+
+    def __str__(self):
+        return '{} = {}'.format(self.__class__.__name__.upper(), self.val)
+
+class INCAR:
+    file = 'INCAR'
+
+class sigma(Float, INCAR):
+    """SIGMA determines the width of the smearing in eV."""
+    pass
+
+print sigma(0.4)  # this is what would get written
+print sigma.file  # this is where it would get written
+print sigma.__doc__
+#+END_SRC
+
+#+RESULTS:
+: SIGMA = 0.4
+: INCAR
+: SIGMA determines the width of the smearing in eV.
