@@ -1,0 +1,16 @@
+#+TITLE: A new ASE interface to Vasp
+#+date: May 4, 2016
+
+* Why?
+To make it compliant with the FileIOCalculator in ase, and hopefully simplify it.
+
+* Goals
+1. Provide an interface that allows all vasp keywords without further modification.
+2. But also an interface that can be extended to allow validation, and
+   user-defined special keywords.
+3. Smart restarts. We don't want to run unnecessary calculations if
+   they are already done. We want one script that runs calculations
+   and does analysis.
+
+* Roadmap
+

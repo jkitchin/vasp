@@ -7,7 +7,7 @@ from ase.calculators.calculator import Calculator,\
 
 class Vasp(FileIOCalculator):
     """Class for doing VASP calculations.
-    
+
     set $ASE_VASP_COMMAND to the command used to run vasp.
 
     POTCARs are found in:
@@ -20,7 +20,7 @@ class Vasp(FileIOCalculator):
     command = None
 
     implemented_properties = ['energy', 'forces', 'stress', 'magmom']
-    
+
     default_parameters = dict(
         xc='PBE',
         ismear=1,
@@ -183,8 +183,8 @@ class Vasp(FileIOCalculator):
 
         # Spin-polarization. there are two ways to get magmoms in.
         # 1. if you use magmoms as a keyword, they are used.
-        # 2. if you set magmom on each atom in an Atoms object and do not use magmoms
-        #    then we use the atoms magmoms, if we have ispin=2 set.
+        # 2. if you set magmom on each atom in an Atoms object and do not use
+        # magmoms then we use the atoms magmoms, if we have ispin=2 set.
         if self.parameters.get('ispin', None)==2 and not 'magmoms' in self.parameters:
             self.parameters['magmoms'] = [atom.magmom for atom in self.atoms_sorted]
 
@@ -195,8 +195,9 @@ class Vasp(FileIOCalculator):
             if 'setups' in self.parameters:
                 raise Exception('setups and ldau_luj is not supported.')
 
-            atom_types = [x[0] if isinstance(x[0], str) else self.atoms[x[0]].symbol
-                              for x in self.ppp_list]
+            atom_types = [x[0] if isinstance(x[0], str)
+                          else self.atoms[x[0]].symbol
+                          for x in self.ppp_list]
 
             d = self.parameters['ldau_luj']
             self.parameters['ldaul'] = [d[sym]['L'] for sym in atom_types]
@@ -221,6 +222,7 @@ class Vasp(FileIOCalculator):
         # Ignore boundary conditions:
         if 'pbc' in system_changes:
             system_changes.remove('pbc')
+
         return system_changes
 
     def set(self, **kwargs):
@@ -239,7 +241,8 @@ class Vasp(FileIOCalculator):
         """Read energy, forces, ... from output file(s)."""
         from ase.io.vasp import read_vasp_xml
 
-        atoms = read_vasp_xml(os.path.join(self.directory, 'vasprun.xml')).next()
+        atoms = read_vasp_xml(os.path.join(self.directory,
+                                           'vasprun.xml')).next()
 
         self.results['energy'] = atoms.get_potential_energy()
         self.results['forces'] = atoms.get_forces()
@@ -251,6 +254,8 @@ class Vasp(FileIOCalculator):
         No checking is currently done to see if one is necessary.
 
         """
+
+        # This must setup some things.
         Calculator.calculate(self, atoms, properties, system_changes)
 
         self.write_input(self.atoms, properties, system_changes)
