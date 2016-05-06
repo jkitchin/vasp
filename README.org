@@ -17,4 +17,7 @@ To make it compliant with the FileIOCalculator in ase, and hopefully simplify it
    and does analysis.
 
 * Roadmap
-
+  1. vaspsum
+  2. NEB
+  3. [[./vasp/readers.py]]
+    - read_incar

@@ -6,7 +6,7 @@ These are separated out by design to keep vasp.py small. Each function is
 monkey-patched onto the Vasp class as if it were defined in vasp.py.
 
 """
-
+import json
 import os
 import numpy as np
 import vasp
@@ -14,8 +14,10 @@ from monkeypatch import monkeypatch_class
 from ase.calculators.calculator import Calculator,\
     FileIOCalculator
 
+
 @monkeypatch_class(vasp.Vasp)
 def write_input(self, atoms, properties=None, system_changes=None):
+    """Writes all input files required for a calculation."""
     # this creates the directory if needed
     FileIOCalculator.write_input(self, atoms, properties, system_changes)
 
@@ -23,6 +25,23 @@ def write_input(self, atoms, properties=None, system_changes=None):
     self.write_incar()
     self.write_kpoints()
     self.write_potcar()
+    self.write_metadata()
+
+
+@monkeypatch_class(vasp.Vasp)
+def write_metadata(self, fname=None):
+    """Write out the METADATA file.
+
+    We use this to store resort data, and any other convenient data.
+
+    """
+    
+    if fname is None:
+        fname = os.path.join(self.directory, 'METADATA')
+
+    with open(fname, 'w') as f:
+        f.write(json.dumps(self.metadata))
+
 
 @monkeypatch_class(vasp.Vasp)
 def write_poscar(self, fname=None):
@@ -35,9 +54,16 @@ def write_poscar(self, fname=None):
                self.atoms_sorted,
                symbol_count=self.symbol_count)
 
+    
 @monkeypatch_class(vasp.Vasp)
 def write_incar(self, incar=None):
-    """Writes out the INCAR file."""
+    """Writes out the INCAR file.
+
+    Boolean values are written as .TRUE./.FALSE.
+    integers/floats and strings are written out as is
+    lists/tuples are written out as space separated values/
+
+    """
 
     if incar is None:
         incar = os.path.join(self.directory, 'INCAR')
@@ -49,8 +75,9 @@ def write_incar(self, incar=None):
         f.write('INCAR created by Atomic Simulation Environment\n')
         for key, val in d.iteritems():
             key = ' ' + key.upper()
-            if False:
-                # placeholder for any special cases
+            if val is None:
+                # Do not write out None values
+                # It is how we delete tags
                 pass
             elif isinstance(val, bool):
                 s = '.TRUE.' if val else '.FALSE.'
@@ -60,6 +87,7 @@ def write_incar(self, incar=None):
                 f.write('{} = {}\n'.format(key, s))
             else:
                 f.write('{} = {}\n'.format(key, val))
+
 
 @monkeypatch_class(vasp.Vasp)
 def write_kpoints(self, fname=None):
@@ -91,15 +119,14 @@ def write_kpoints(self, fname=None):
 
     p = self.parameters
 
-    kpts = p.get('kpts', None) # this is a list, or None
+    kpts = p.get('kpts', None)  # this is a list, or None
 
     if kpts is None:
         NKPTS = None
     elif len(np.array(kpts).shape) == 1:
-        NKPTS = 0 # automatic
+        NKPTS = 0  # automatic
     else:
         NKPTS = len(p['kpts'])
-
 
     # figure out the mode
     if NKPTS == 0 and not p.get('gamma', None):
@@ -158,13 +185,14 @@ def write_kpoints(self, fname=None):
             else:
                 f.write('0.0 0.0 0.0\n')
 
+
 @monkeypatch_class(vasp.Vasp)
 def write_potcar(self, fname=None):
     """Writes the POTCAR file.
 
     POTCARs are expected in $VASP_PP_PATH.
+
     """
-    import tempfile
     if fname is None:
         fname = os.path.join(self.directory, 'POTCAR')
 
