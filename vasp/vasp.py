@@ -32,3 +32,38 @@ import writers
 import readers
 import setters
 import runner
+
+import sys
+
+# I want all the functions wrapped in a try block so we can use our
+# own exception handler.
+def tryit(func):
+    """Decorator to wrap function in try block with Vasp exception handler."""
+    def inner(self, *args, **kwargs):
+        try:
+            return func(self, *args, **kwargs)
+        except Exception:
+            if self.exception_handler is not None:
+                return self.exception_handler(*sys.exc_info())
+            else:
+                raise
+
+    inner.__name__ = func.__name__
+    inner.__doc__ = func.__doc__
+    return inner
+
+from ase.calculators.calculator import Calculator,\
+    FileIOCalculator
+
+
+for attr in Vasp.__dict__:
+    if callable(getattr(Vasp, attr)):
+        setattr(Vasp, attr, tryit(getattr(Vasp, attr)))
+
+for attr in Calculator.__dict__:
+    if callable(getattr(Calculator, attr)):
+        setattr(Calculator, attr, tryit(getattr(Calculator, attr)))
+
+for attr in FileIOCalculator.__dict__:
+    if callable(getattr(FileIOCalculator, attr)):
+        setattr(FileIOCalculator, attr, tryit(getattr(FileIOCalculator, attr)))

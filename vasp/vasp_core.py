@@ -13,8 +13,11 @@ from ase.calculators.calculator import Calculator,\
 
 from vasp import log
 
+def VaspExceptionHandler(exc_type, exc_value, exc_traceback):
+    """Hande EXC."""
+    print('Caught ', exc_type, exc_value, exc_traceback)
 
-class Vasp(FileIOCalculator):
+class Vasp(FileIOCalculator, object):
     """Class for doing VASP calculations.
 
     set $ASE_VASP_COMMAND to the command used to run vasp.
@@ -25,6 +28,7 @@ class Vasp(FileIOCalculator):
     $VASP_PP_PATH/potpaw_GGA
 
     """
+
     name = 'VASP'
     command = None
 
@@ -92,11 +96,17 @@ class Vasp(FileIOCalculator):
                  restart=None, ignore_bad_restart_file=False,
                  atoms=None, scratch=None,
                  debug=None,
+                 exception_handler=VaspExceptionHandler,
                  **kwargs):
         """Create a Vasp calculator.
 
         label: the directory where the calculation files will be and
         the calculation run.
+
+        debug: an integer, but usually something like logging.DEBUG
+
+        exception_handler: a function that takes single argument of an
+        exception, and handles it.
 
         **kwargs
           Any Vasp keyword can be used, e.g. encut=450.
@@ -142,6 +152,7 @@ class Vasp(FileIOCalculator):
                         'O':{'L':-1, 'U':0.0, 'J':0.0}},
 
         """
+        self.exception_handler = exception_handler
 
         FileIOCalculator.__init__(self, restart, ignore_bad_restart_file,
                                   label, atoms, **kwargs)
