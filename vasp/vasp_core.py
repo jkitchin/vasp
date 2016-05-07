@@ -371,7 +371,7 @@ class Vasp(FileIOCalculator, object):
                                            'vasprun.xml')).next()
 
         # update the atoms
-        self.atoms = atoms
+        self.atoms = atoms[self.metadata['resort']]
 
         self.results['energy'] = atoms.get_potential_energy()
         self.results['forces'] = atoms.get_forces()[self.resort]
