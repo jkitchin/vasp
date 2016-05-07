@@ -11,8 +11,7 @@ from vasp import log
 from exceptions import VaspSubmitted, VaspQueued
 from monkeypatch import monkeypatch_class
 
-from ase.calculators.calculator import Calculator,\
-    FileIOCalculator
+from ase.calculators.calculator import Calculator
 
 
 def getstatusoutput(*args, **kwargs):
