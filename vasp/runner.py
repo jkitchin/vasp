@@ -156,6 +156,7 @@ runvasp.py     # this is the vasp command
                                             VASPRC['queue.ppn']))
 
     cmdlist = ['{0}'.format(VASPRC['queue.command'])]
+    cmdlist += ['-o', VASPDIR]
     cmdlist += [option for option in VASPRC['queue.options'].split()]
     cmdlist += ['-N', '{0}'.format(jobname),
                 '-l walltime={0}'.format(VASPRC['queue.walltime']),
