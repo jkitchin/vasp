@@ -11,8 +11,7 @@ import os
 import numpy as np
 import vasp
 from monkeypatch import monkeypatch_class
-from ase.calculators.calculator import Calculator,\
-    FileIOCalculator
+from ase.calculators.calculator import FileIOCalculator
 
 
 @monkeypatch_class(vasp.Vasp)
@@ -35,7 +34,7 @@ def write_metadata(self, fname=None):
     We use this to store resort data, and any other convenient data.
 
     """
-    
+
     if fname is None:
         fname = os.path.join(self.directory, 'METADATA')
 
@@ -54,7 +53,7 @@ def write_poscar(self, fname=None):
                self.atoms_sorted,
                symbol_count=self.symbol_count)
 
-    
+
 @monkeypatch_class(vasp.Vasp)
 def write_incar(self, incar=None):
     """Writes out the INCAR file.

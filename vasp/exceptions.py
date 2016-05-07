@@ -1,7 +1,5 @@
 """Exceptions for Vasp."""
 
-import vasp
-from monkeypatch import monkeypatch_class
 
 class VaspSubmitted(Exception):
     def __init__(self, jobid):
@@ -37,7 +35,7 @@ class VaspEmptyCONTCAR(Exception):
         self.message = message
 
     def __str__(self):
-        return self.message    
+        return self.message
 
 
 class VaspNotConverged(Exception):

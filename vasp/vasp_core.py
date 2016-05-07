@@ -8,8 +8,8 @@ class methods are actually imported at the end.
 import os
 import subprocess
 
-from ase.calculators.calculator import Calculator,\
-    FileIOCalculator
+from ase.calculators.calculator import Calculator
+from ase.calculators.calculator import FileIOCalculator
 
 from vasp import log
 
@@ -188,7 +188,7 @@ class Vasp(FileIOCalculator, object):
         if 'xc' in self.parameters:
             self.parameters['xc'] = self.parameters['xc'].lower()
         self.parameters.update(self.xc_defaults[self.parameters['xc'].lower()])
-        
+
         # This is opinionated. But necessary for smart
         # reruns. Basically, if a calculation is finished we want to
         # make the atoms consistent with it.

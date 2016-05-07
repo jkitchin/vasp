@@ -102,7 +102,7 @@ def calculate(self, atoms=None, properties=['energy'],
                 return exitcode
             else:
                 # vanilla MPI run. multiprocessing does not work on more
-                # than one node, and you must specify in JASPRC to use it
+                # than one node, and you must specify in VASPRC to use it
                 if (VASPRC['queue.nodes'] > 1
                     or (VASPRC['queue.nodes'] == 1
                         and VASPRC['queue.ppn'] > 1

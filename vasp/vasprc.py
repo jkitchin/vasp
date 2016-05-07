@@ -9,10 +9,10 @@ queue.nodes = 1
 queue.ppn = 1
 queue.mem = 2GB
 queue.jobname = None
-check for $HOME/.jasprc
-then check for ./.jasprc
+check for $HOME/.vasprc
+then check for ./.vasprc
 Note that the environment variables VASP_SERIAL and VASP_PARALLEL can
-also be used to identify the vasp executables used by runjasp.py.
+also be used to identify the vasp executables used by runvasp.py.
 """
 import os
 
@@ -50,7 +50,7 @@ def read_configuration(fname='.vasprc'):
                 # take the part before the first #
                 line = line.split('#')[0]
             key, value = line.split('=')
-            JASPRC[key.strip()] = value.strip()
+            VASPRC[key.strip()] = value.strip()
 
 # these are the possible paths to config files, in order of increasing
 # priority
