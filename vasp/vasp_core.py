@@ -192,7 +192,7 @@ class Vasp(FileIOCalculator, object):
         # This is opinionated. But necessary for smart
         # reruns. Basically, if a calculation is finished we want to
         # make the atoms consistent with it.
-        if self.atoms and os.path.exists(self.outcar):
+        if os.path.exists(self.outcar):
             with open(self.outcar) as f:
                 lines = f.readlines()
                 if 'Voluntary context switches:' in lines[-1]:
