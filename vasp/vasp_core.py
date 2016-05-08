@@ -89,7 +89,7 @@ class Vasp(FileIOCalculator, object):
         ismear=1,
         sigma=0.1,
         lwave=False,
-        lcharge=False,  # This does not appear to be working
+        lcharg=False, 
         kpts=[1, 1, 1])
 
     # These need to be kept separate for writing the incar.
