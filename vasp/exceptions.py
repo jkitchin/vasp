@@ -15,7 +15,7 @@ class VaspQueued(Exception):
         self.cwd = cwd
 
     def __str__(self):
-        return '{} in {}'.format(self.msg, self.cwd)
+        return '{}'.format(self.msg)
 
 
 class VaspRunning(Exception):
