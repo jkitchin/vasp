@@ -30,6 +30,7 @@ from vasp_core import Vasp
 # These modules monkeypatch the Vasp class
 import writers
 import readers
+import getters
 import setters
 import runner
 
