@@ -11,12 +11,24 @@ import subprocess
 from ase.calculators.calculator import Calculator,\
     FileIOCalculator
 
+import exceptions
 from vasp import log
 
-def VaspExceptionHandler(exc_type, exc_value, exc_traceback):
-    """Hande EXC."""
-    print('Caught ', exc_type, exc_value, exc_traceback)
 
+def VaspExceptionHandler(exc_type, exc_value, exc_traceback):
+    """Handle exceptions."""
+    if exc_type == exceptions.VaspSubmitted:
+        print exc_value
+        return None
+    elif exc_type == exceptions.VaspQueued:
+        print exc_value
+        return None
+    elif exc_type == KeyError:
+        # This is a common error getting things from a dictionary,
+        # especially the results dictionary.
+        return None
+
+    
 class Vasp(FileIOCalculator, object):
     """Class for doing VASP calculations.
 
