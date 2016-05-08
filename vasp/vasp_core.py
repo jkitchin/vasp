@@ -27,6 +27,7 @@ def VaspExceptionHandler(exc_type, exc_value, exc_traceback):
         # This is a common error getting things from a dictionary,
         # especially the results dictionary.
         return None
+    raise
 
     
 class Vasp(FileIOCalculator, object):
