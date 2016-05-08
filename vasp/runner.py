@@ -11,8 +11,7 @@ from vasp import log
 from exceptions import VaspSubmitted, VaspQueued
 from monkeypatch import monkeypatch_class
 
-from ase.calculators.calculator import Calculator,\
-    FileIOCalculator
+from ase.calculators.calculator import Calculator
 
 
 def getstatusoutput(*args, **kwargs):
@@ -102,7 +101,7 @@ def calculate(self, atoms=None, properties=['energy'],
                 return exitcode
             else:
                 # vanilla MPI run. multiprocessing does not work on more
-                # than one node, and you must specify in JASPRC to use it
+                # than one node, and you must specify in VASPRC to use it
                 if (VASPRC['queue.nodes'] > 1
                     or (VASPRC['queue.nodes'] == 1
                         and VASPRC['queue.ppn'] > 1
@@ -156,6 +155,7 @@ runvasp.py     # this is the vasp command
                                             VASPRC['queue.ppn']))
 
     cmdlist = ['{0}'.format(VASPRC['queue.command'])]
+    cmdlist += ['-o', VASPDIR]
     cmdlist += [option for option in VASPRC['queue.options'].split()]
     cmdlist += ['-N', '{0}'.format(jobname),
                 '-l walltime={0}'.format(VASPRC['queue.walltime']),

@@ -8,8 +8,8 @@ class methods are actually imported at the end.
 import os
 import subprocess
 
-from ase.calculators.calculator import Calculator,\
-    FileIOCalculator
+from ase.calculators.calculator import Calculator
+from ase.calculators.calculator import FileIOCalculator
 
 import exceptions
 from vasp import log
@@ -89,7 +89,7 @@ class Vasp(FileIOCalculator, object):
         ismear=1,
         sigma=0.1,
         lwave=False,
-        lcharge=False,
+        lcharge=False,  # This does not appear to be working
         kpts=[1, 1, 1])
 
     # These need to be kept separate for writing the incar.
@@ -200,11 +200,11 @@ class Vasp(FileIOCalculator, object):
         if 'xc' in self.parameters:
             self.parameters['xc'] = self.parameters['xc'].lower()
         self.parameters.update(self.xc_defaults[self.parameters['xc'].lower()])
-        
+
         # This is opinionated. But necessary for smart
         # reruns. Basically, if a calculation is finished we want to
         # make the atoms consistent with it.
-        if self.atoms and os.path.exists(self.outcar):
+        if os.path.exists(self.outcar):
             with open(self.outcar) as f:
                 lines = f.readlines()
                 if 'Voluntary context switches:' in lines[-1]:
@@ -383,8 +383,7 @@ class Vasp(FileIOCalculator, object):
                                            'vasprun.xml')).next()
 
         # update the atoms
-        self.atoms.positions = atoms.positions[self.resort]
-        self.atoms.cell = atoms.cell
+        self.atoms = atoms[self.metadata['resort']]
 
         self.results['energy'] = atoms.get_potential_energy()
         self.results['forces'] = atoms.get_forces()[self.resort]

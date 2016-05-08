@@ -1,0 +1,20 @@
+ vasp.5.3.5 31Mar14 (build Aug 04 2015 12:48:45) complex                        
+  
+ POSCAR found :  2 types and       3 ions
+ LDA part: xc-table for Pade appr. of Perdew
+ POSCAR found :  2 types and       3 ions
+ POSCAR, INCAR and KPOINTS ok, starting setup
+ WARNING: small aliasing (wrap around) errors must be expected
+ FFT: planning ...
+ WAVECAR not read
+ entering main loop
+       N       E                     dE             d eps       ncg     rms          rms(c)
+DAV:   1     0.111548699131E+03    0.11155E+03   -0.45227E+03    40   0.534E+02
+DAV:   2     0.790045309480E+01   -0.10365E+03   -0.10031E+03    40   0.189E+02
+DAV:   3    -0.191260000897E+02   -0.27026E+02   -0.26879E+02    28   0.684E+01
+DAV:   4    -0.219119668040E+02   -0.27860E+01   -0.27914E+01    32   0.193E+01
+DAV:   5    -0.219316522778E+02   -0.19685E-01   -0.19611E-01    24   0.194E+00    0.132E+01
+DAV:   6    -0.186527149471E+02    0.32789E+01   -0.79536E+00    28   0.228E+01    0.649E+00
+DAV:   7    -0.181627914730E+02    0.48992E+00   -0.12820E+00    24   0.893E+00    0.298E+00
+DAV:   8    -0.181171423517E+02    0.45649E-01   -0.15468E-01    20   0.370E+00
+   1 F= -.18117142E+02 E0= -.18121008E+02  d E =0.115958E-01
