@@ -68,7 +68,8 @@ def calculate(self, atoms=None, properties=['energy'],
     """
     log.debug('In queue: {}'.format(self.in_queue()))
     if self.in_queue():
-        raise VaspQueued(self.metadata['jobid'])
+        raise VaspQueued('{} Queued: {}'.format(self.directory,
+                                                self.metadata['jobid']))
 
     # not in queue. Delete the jobid
     if 'jobid' in self.metadata:
@@ -178,4 +179,5 @@ runvasp.py     # this is the vasp command
     self.metadata['jobid'] = out.strip()
     self.write_metadata()
 
-    raise VaspSubmitted(out)
+    raise VaspSubmitted('{} submitted: {}'.format(self.directory,
+                                                  out.strip()))
