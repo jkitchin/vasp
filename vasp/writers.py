@@ -15,7 +15,7 @@ from ase.calculators.calculator import FileIOCalculator
 
 
 @monkeypatch_class(vasp.Vasp)
-def write_input(self, atoms, properties=None, system_changes=None):
+def write_input(self, atoms=None, properties=None, system_changes=None):
     """Writes all input files required for a calculation."""
     # this creates the directory if needed
     FileIOCalculator.write_input(self, atoms, properties, system_changes)

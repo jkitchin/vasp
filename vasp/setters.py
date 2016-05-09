@@ -8,6 +8,7 @@ The general strategy is to construct a dictionary of the changes that
 is passed back to the set function.
 
 """
+import numpy as np
 import vasp
 from monkeypatch import monkeypatch_class
 
@@ -80,3 +81,22 @@ def set_ldau_luj_dict(self, val):
         d['ldauu'] = None
         d['ldauj'] = None
         return d
+
+    
+@monkeypatch_class(vasp.Vasp)
+def set_nbands(self, N=None, f=1.5):
+    """Convenience function to set NBANDS to N or automatically
+    compute nbands
+    for non-spin-polarized calculations
+    nbands = int(nelectrons/2 + nions*f)
+    this formula is suggested at
+    http://cms.mpi.univie.ac.at/vasp/vasp/NBANDS_tag.html
+    for transition metals f may be as high as 2.
+    """
+    if N is not None:
+        self.set(nbands=int(N))
+        return
+    atoms = self.get_atoms()
+    nelectrons = self.get_valence_electrons()
+    nbands = int(np.ceil(nelectrons/2.) + len(atoms)*f)
+    self.set(nbands=nbands)

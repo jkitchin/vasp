@@ -249,7 +249,10 @@ class Vasp(FileIOCalculator, object):
                 if 'Voluntary context switches:' in lines[-1]:
                     # sets results and updates the atoms.
                     log.debug('Finished calculation.')
+                    atoms, params = self.read()
+                    self.parameters.update(params)
                     self.read_results()
+                    
         # Done with initialization
 
     def sort_atoms(self, atoms=None):
