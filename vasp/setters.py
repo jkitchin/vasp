@@ -21,7 +21,7 @@ def set_ispin_dict(self, val):
     # magmoms then we use the atoms magmoms, if we have ispin=2 set.
     if val is None:
         d = {}
-        for key in ['ispin', 'magmoms']:
+        for key in ['ispin', 'magmoms', 'lorbit']:
             if key in self.parameters:
                 d[key] = None
             return d
@@ -29,12 +29,18 @@ def set_ispin_dict(self, val):
         d = {'ispin': 1}
         if 'magmoms' in self.parameters:
             d['magmoms'] = None
+        if 'lorbit' in self.parameters:
+            d['lorbit'] = None
         return d
     elif val == 2:
         d = {'ispin': 2}
         if 'magmoms' not in self.parameters:
             d['magmoms'] = [atom.magmom for atom
                             in self.atoms[self.resort]]
+        # set individual magnetic moments.
+        if 'lorbit' not in self.parameters:
+            d['lorbit'] = 11
+
         return d
 
 

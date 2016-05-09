@@ -7,7 +7,7 @@ class methods are actually imported at the end.
 
 import os
 import subprocess
-
+import numpy as np
 from ase.calculators.calculator import Calculator
 from ase.calculators.calculator import FileIOCalculator
 
@@ -29,7 +29,7 @@ def VaspExceptionHandler(exc_type, exc_value, exc_traceback):
         return None
     raise
 
-    
+
 class Vasp(FileIOCalculator, object):
     """Class for doing VASP calculations.
 
@@ -44,6 +44,7 @@ class Vasp(FileIOCalculator, object):
 
     name = 'VASP'
     command = None
+    debug = None
 
     implemented_properties = ['energy', 'forces', 'stress',
                               'magmom',  # the overall magnetic moment
@@ -90,7 +91,7 @@ class Vasp(FileIOCalculator, object):
         ismear=1,
         sigma=0.1,
         lwave=False,
-        lcharg=False, 
+        lcharg=False,
         kpts=[1, 1, 1])
 
     # These need to be kept separate for writing the incar.
@@ -165,18 +166,54 @@ class Vasp(FileIOCalculator, object):
                         'O':{'L':-1, 'U':0.0, 'J':0.0}},
 
         """
+        # This makes sure directories are created. We do not pass
+        # kwargs here. Some of the special kwargs cannot be set at
+        # this point.
+        FileIOCalculator.__init__(self, restart, ignore_bad_restart_file,
+                                  label, atoms)
+
         self.exception_handler = exception_handler
 
-        FileIOCalculator.__init__(self, restart, ignore_bad_restart_file,
-                                  label, atoms, **kwargs)
+        # Ispin is especially problematic. In the set_ispin_dict
+        # function I automatically set magmoms, but this requires
+        # access to a sorted atoms, which we do not have yet. We save
+        # it here and deal with it later.
 
-        if debug is not None:
-            log.setLevel(debug)
+        if 'ispin' in kwargs:
+            ispin = kwargs['ispin']
+            del kwargs['ispin']
+        else:
+            ispin = None
+
+        self.set(**kwargs)
 
         self.read_metadata()
         log.debug('init metadata = {}'.format(self.metadata))
-        # Resort atoms and generate list of POTCARS/counts we need.
-        self.sort_atoms(atoms)
+
+        if atoms is not None:
+            # Resort atoms and generate list of POTCARS/counts we
+            # need.  This code relies on self.parameters because of pp
+            # and setups.
+            self.sort_atoms(atoms)
+
+        self.debug = debug
+        # Here we decorate all the methods with the tryit decorator
+        if debug is not None:
+            log.setLevel(debug)
+        else:
+            from vasp import tryit
+            for attr in self.__dict__:
+                if callable(getattr(self, attr)):
+                    setattr(self, attr, tryit(getattr(self, attr)))
+
+            for attr in Calculator.__dict__:
+                if callable(getattr(Calculator, attr)):
+                    setattr(Calculator, attr, tryit(getattr(Calculator, attr)))
+
+            for attr in FileIOCalculator.__dict__:
+                if callable(getattr(FileIOCalculator, attr)):
+                    setattr(FileIOCalculator, attr,
+                            tryit(getattr(FileIOCalculator, attr)))
 
         # We need to handle some special kwargs here. The idea is that
         # self.parameters is ready to be written out later. This has to be done
@@ -184,8 +221,8 @@ class Vasp(FileIOCalculator, object):
         # the right size and in the right order
 
         # Spin-polarization.
-        if 'ispin' in self.parameters:
-            d = self.set_ispin_dict(self.parameters['ispin'])
+        if ispin:
+            d = self.set_ispin_dict(ispin)
             self.parameters.update(d)
 
         # DFT + U uses a dictionary of:
@@ -200,7 +237,8 @@ class Vasp(FileIOCalculator, object):
         # potcar path.
         if 'xc' in self.parameters:
             self.parameters['xc'] = self.parameters['xc'].lower()
-        self.parameters.update(self.xc_defaults[self.parameters['xc'].lower()])
+            d = self.xc_defaults[self.parameters['xc'].lower()]
+            self.parameters.update(d)
 
         # This is opinionated. But necessary for smart
         # reruns. Basically, if a calculation is finished we want to
@@ -210,14 +248,11 @@ class Vasp(FileIOCalculator, object):
                 lines = f.readlines()
                 if 'Voluntary context switches:' in lines[-1]:
                     # sets results and updates the atoms.
+                    log.debug('Finished calculation.')
                     self.read_results()
-
-        if atoms:
-            atoms.set_calculator(self)
-
         # Done with initialization
 
-    def sort_atoms(self, atoms):
+    def sort_atoms(self, atoms=None):
         """Generate resort list, and make list of POTCARs to use.
 
         Returns None.
@@ -228,8 +263,10 @@ class Vasp(FileIOCalculator, object):
         self.symbol_count = None
 
         if atoms is None:
+            log.debug('Atoms was none.')
             return
         self.atoms = atoms
+
         # Now we sort the atoms and generate the list of POTCARS
         # We end up with ppp = [(index_or_symbol, potcar_file, count)]
         # and resort_indices
@@ -292,6 +329,7 @@ class Vasp(FileIOCalculator, object):
                               x[2]) for x in ppp]
 
         self.metadata['resort'] = self.resort
+        return atoms[self.resort]
 
     def __str__(self):
         """Pretty representation of a calculation.
@@ -383,11 +421,37 @@ class Vasp(FileIOCalculator, object):
         atoms = read_vasp_xml(os.path.join(self.directory,
                                            'vasprun.xml')).next()
 
-        # update the atoms
-        self.atoms = atoms[self.metadata['resort']]
+        energy = atoms.get_potential_energy()
+        forces = atoms.get_forces()  # needs to be resorted
+        stress = atoms.get_stress()
 
-        self.results['energy'] = atoms.get_potential_energy()
-        self.results['forces'] = atoms.get_forces()[self.resort]
+        if self.atoms is None:
+            atoms = atoms[self.metadata['resort']]
+            self.sort_atoms(atoms)
+            self.atoms.set_calculator(self)
+        else:
+            # update the atoms
+            self.atoms.positions = atoms.positions[self.metadata['resort']]
+            self.atoms.cell = atoms.cell
+
+        self.results['energy'] = energy
+        self.results['forces'] = forces[self.resort]
+        self.results['stress'] = stress
+
+        magnetic_moment = 0
+        magnetic_moments = np.zeros(len(atoms))
+        if self.parameters.get('ispin', 0) == 2:
+            lines = open(os.path.join(self.directory, 'OUTCAR'), 'r').readlines()
+            for n, line in enumerate(lines):
+                if line.rfind('number of electron  ') > -1:
+                    magnetic_moment = float(line.split()[-1])
+
+                if line.rfind('magnetization (x)') > -1:
+                    for m in range(len(atoms)):
+                        magnetic_moments[m] = float(lines[n + m + 4].split()[4])
+
+            self.results['magmom'] = magnetic_moment
+            self.results['magmoms'] = np.array(magnetic_moments)[self.resort]
 
     def calculation_required(self, atoms, properties):
         """Returns if a calculation is needed."""
@@ -442,3 +506,8 @@ class Vasp(FileIOCalculator, object):
 
         # This sets self.results, and updates the atoms
         self.read_results()
+
+    def abort(self):
+        """Abort and exit the program the calculator is running in."""
+        import sys
+        sys.exit()

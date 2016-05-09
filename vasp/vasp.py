@@ -41,13 +41,20 @@ import sys
 def tryit(func):
     """Decorator to wrap function in try block with Vasp exception handler."""
     def inner(self, *args, **kwargs):
-        try:
+        # we have to check for this attr because sometimes the
+        # calculator is a singlepoint calculator which doesn't have
+        # it. and also for when we write to the ase-db
+        if (hasattr(self, 'debug') and self.debug is not None
+            or (not hasattr(self, 'exception_handler'))):
             return func(self, *args, **kwargs)
-        except Exception:
-            if self.exception_handler is not None:
-                return self.exception_handler(*sys.exc_info())
-            else:
-                raise
+        else:
+            try:
+                return func(self, *args, **kwargs)
+            except Exception:
+                if self.exception_handler is not None:
+                    return self.exception_handler(*sys.exc_info())
+                else:
+                    raise
 
     inner.__name__ = func.__name__
     inner.__doc__ = func.__doc__
@@ -56,15 +63,14 @@ def tryit(func):
 from ase.calculators.calculator import Calculator,\
     FileIOCalculator
 
+# for attr in Vasp.__dict__:
+#     if callable(getattr(Vasp, attr)):
+#         setattr(Vasp, attr, tryit(getattr(Vasp, attr)))
 
-for attr in Vasp.__dict__:
-    if callable(getattr(Vasp, attr)):
-        setattr(Vasp, attr, tryit(getattr(Vasp, attr)))
+# for attr in Calculator.__dict__:
+#     if callable(getattr(Calculator, attr)):
+#         setattr(Calculator, attr, tryit(getattr(Calculator, attr)))
 
-for attr in Calculator.__dict__:
-    if callable(getattr(Calculator, attr)):
-        setattr(Calculator, attr, tryit(getattr(Calculator, attr)))
-
-for attr in FileIOCalculator.__dict__:
-    if callable(getattr(FileIOCalculator, attr)):
-        setattr(FileIOCalculator, attr, tryit(getattr(FileIOCalculator, attr)))
+# for attr in FileIOCalculator.__dict__:
+#     if callable(getattr(FileIOCalculator, attr)):
+#         setattr(FileIOCalculator, attr, tryit(getattr(FileIOCalculator, attr)))

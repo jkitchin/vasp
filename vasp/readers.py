@@ -271,3 +271,7 @@ def read(self):
     else:
         atoms = ase.io.read(poscar)[self.metadata['resort']]
     return (atoms, params)
+
+
+
+
