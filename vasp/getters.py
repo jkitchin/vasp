@@ -7,6 +7,7 @@ import vasp
 from vasp import log
 from monkeypatch import monkeypatch_class
 
+
 @monkeypatch_class(vasp.Vasp)
 def get_ibz_k_points(self):
     lines = open(os.path.join(self.directory, 'OUTCAR'), 'r').readlines()

@@ -80,6 +80,11 @@ def calculate(self, atoms=None, properties=['energy'],
         self.read_results()
         return
 
+    if not self.calculation_required(atoms, ['energy']) and not self.check_state():
+        print 'No calculation_required.', 
+        self.read_results()
+        return
+
     # The subclass implementation should first call this
     # implementation to set the atoms attribute.
     Calculator.calculate(self, atoms, properties, system_changes)

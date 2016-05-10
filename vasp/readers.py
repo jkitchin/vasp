@@ -234,16 +234,19 @@ def read_metadata(self, fname=None):
 
 @monkeypatch_class(vasp.Vasp)
 def read(self):
-    """Read the files in a calculation.
+    """Read the files in a calculation if they exist.
 
     Returns the atoms and a Parameters dictionary.
     """
 
     params = Parameters()
 
-    params.update(self.read_incar())
-    params.update(self.read_potcar())
-    params.update(self.read_kpoints())
+    if os.path.exists(self.incar):
+        params.update(self.read_incar())
+    if os.path.exists(self.potcar):
+        params.update(self.read_potcar())
+    if os.path.exists(self.kpoints):
+        params.update(self.read_kpoints())
 
     self.read_metadata()
 
@@ -262,16 +265,43 @@ def read(self):
             params['xc'] = ex
             break
 
+    # reconstruct ldau_luj. special setups might break this.
+    if 'ldauu' in params:
+        ldaul = params['ldaul']
+        ldauj = params['ldauj']
+        ldauu = params['ldauu']
+
+        with open(self.potcar) as f:
+            lines = f.readlines()
+
+        # symbols are in the first line of each potcar
+        symbols = [lines[0].split()[1]]
+        for i, line in enumerate(lines):
+            if 'End of Dataset' in line and i != len(lines) - 1:
+                symbols += [lines[i + 1].split()[1]]
+
+        ldau_luj = {}
+        for sym, l, j, u in zip(symbols, ldaul, ldauj, ldauu):
+            ldau_luj[sym] = {'L': l, 'U': u, 'J': j}
+
+        params['ldau_luj'] = ldau_luj
+
     import ase.io
     contcar = os.path.join(self.directory, 'CONTCAR')
+    empty_contcar = False
+    if os.path.exists(contcar):
+        # make sure the contcar is not empty
+        with open(contcar) as f:
+            if f.read() == '':
+                empty_contcar = True
+
     poscar = os.path.join(self.directory, 'POSCAR')
 
-    if os.path.exists(contcar):
+    if os.path.exists(contcar) and not empty_contcar:
         atoms = ase.io.read(contcar)[self.metadata['resort']]
-    else:
+    elif os.path.exists(poscar):
         atoms = ase.io.read(poscar)[self.metadata['resort']]
+    else:
+        atoms = None
+
     return (atoms, params)
-
-
-
-

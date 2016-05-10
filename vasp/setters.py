@@ -16,27 +16,27 @@ from monkeypatch import monkeypatch_class
 @monkeypatch_class(vasp.Vasp)
 def set_ispin_dict(self, val):
     """Returns dictionary of changes for ispin change."""
-    # there are two ways to get magmoms in.
-    # 1. if you use magmoms as a keyword, they are used.
+    # there are two ways to get magmom in.
+    # 1. if you use magmom as a keyword, they are used.
     # 2. if you set magmom on each atom in an Atoms object and do not use
-    # magmoms then we use the atoms magmoms, if we have ispin=2 set.
+    # magmom then we use the atoms magmom, if we have ispin=2 set.
     if val is None:
         d = {}
-        for key in ['ispin', 'magmoms', 'lorbit']:
+        for key in ['ispin', 'magmom', 'lorbit']:
             if key in self.parameters:
                 d[key] = None
-            return d
+        return d
     elif val == 1:
         d = {'ispin': 1}
-        if 'magmoms' in self.parameters:
-            d['magmoms'] = None
+        if 'magmom' in self.parameters:
+            d['magmom'] = None
         if 'lorbit' in self.parameters:
             d['lorbit'] = None
         return d
     elif val == 2:
         d = {'ispin': 2}
-        if 'magmoms' not in self.parameters:
-            d['magmoms'] = [atom.magmom for atom
+        if 'magmom' not in self.parameters:
+            d['magmom'] = [atom.magmom for atom
                             in self.atoms[self.resort]]
         # set individual magnetic moments.
         if 'lorbit' not in self.parameters:
@@ -64,6 +64,10 @@ def set_ldau_luj_dict(self, val):
     if 'setups' in self.parameters:
         raise Exception('setups and ldau_luj is not supported.')
 
+    if not hasattr(self, 'ppp_list'):
+        atoms = self.get_atoms()
+        self.sort_atoms(atoms)
+        
     if val is not None:
         atom_types = [x[0] if isinstance(x[0], str)
                       else self.atoms[x[0]].symbol
@@ -82,7 +86,7 @@ def set_ldau_luj_dict(self, val):
         d['ldauj'] = None
         return d
 
-    
+
 @monkeypatch_class(vasp.Vasp)
 def set_nbands(self, N=None, f=1.5):
     """Convenience function to set NBANDS to N or automatically

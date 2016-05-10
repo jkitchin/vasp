@@ -77,8 +77,11 @@ class Vasp(FileIOCalculator, object):
                    'beef-vdw': {'pp': 'LDA', 'gga': 'BF', 'luse_vdw': True,
                                 'zab_vdw': -1.8867},
                    # hybrids
+                   'pbe0': {'pp': 'LDA', 'gga': 'PE', 'lhfcalc': True},
                    'hse03': {'pp': 'LDA', 'gga': 'PE', 'lhfcalc': True,
                              'hfscreen': 0.3},
+                   'hse06': {'pp': 'LDA', 'gga': 'PE', 'lhfcalc': True,
+                             'hfscreen': 0.2},
                    'b3lyp': {'pp': 'LDA', 'gga': 'B3', 'lhfcalc': True,
                              'aexx': 0.2, 'aggax': 0.72,
                              'aggac': 0.81, 'aldac': 0.19},
@@ -106,6 +109,16 @@ class Vasp(FileIOCalculator, object):
                       # DFT + U dictionary
                       'ldau_luj']
 
+    # enumerated states
+    EMPTY = 0
+    NEW = 1
+    QUEUED = 2
+    FINISHED = 3
+    NOTFINISHED = 4
+    EMPTYCONTCAR = 5
+    NEB = 10
+    UNKNOWN = 100
+
     def __init__(self, label,
                  restart=None, ignore_bad_restart_file=False,
                  atoms=None, scratch=None,
@@ -119,8 +132,10 @@ class Vasp(FileIOCalculator, object):
 
         debug: an integer, but usually something like logging.DEBUG
 
-        exception_handler: a function that takes single argument of an
-        exception, and handles it.
+        exception_handler: A function for
+        handling exceptions. The function should take the arguments
+        returned by sys.exc_info(), which is the exception type, value
+        and traceback. The default is VaspExceptionHandler.
 
         **kwargs
           Any Vasp keyword can be used, e.g. encut=450.
@@ -162,10 +177,30 @@ class Vasp(FileIOCalculator, object):
         example, to put U=4 on the d-orbitals (L=2) of Cu, and nothing
         on the oxygen atoms in a calculation use:
 
-              ldau_luj={'Cu':{'L':2,  'U':4.0, 'J':0.0},
-                        'O':{'L':-1, 'U':0.0, 'J':0.0}},
+            ldau_luj={'Cu':{'L':2,  'U':4.0, 'J':0.0},
+                      'O':{'L':-1, 'U':0.0, 'J':0.0}},
 
         """
+        self.debug = debug
+        # Here we decorate all the methods with the tryit decorator
+        # unless we are debugging.
+        if debug is not None:
+            log.setLevel(debug)
+        else:
+            from vasp import tryit
+            for attr in self.__dict__:
+                if callable(getattr(self, attr)):
+                    setattr(self, attr, tryit(getattr(self, attr)))
+
+            for attr in Calculator.__dict__:
+                if callable(getattr(Calculator, attr)):
+                    setattr(Calculator, attr, tryit(getattr(Calculator, attr)))
+
+            for attr in FileIOCalculator.__dict__:
+                if callable(getattr(FileIOCalculator, attr)):
+                    setattr(FileIOCalculator, attr,
+                            tryit(getattr(FileIOCalculator, attr)))
+
         # This makes sure directories are created. We do not pass
         # kwargs here. Some of the special kwargs cannot be set at
         # this point.
@@ -185,9 +220,15 @@ class Vasp(FileIOCalculator, object):
         else:
             ispin = None
 
+        if 'ldau_luj' in kwargs:
+            ldau_luj = kwargs['ldau_luj']
+            del kwargs['ldau_luj']
+        else:
+            ldau_luj = None
+
         self.set(**kwargs)
 
-        self.read_metadata()
+        self.read_metadata()  # this is ok if METADATA does not exist.
         log.debug('init metadata = {}'.format(self.metadata))
 
         if atoms is not None:
@@ -195,34 +236,35 @@ class Vasp(FileIOCalculator, object):
             # need.  This code relies on self.parameters because of pp
             # and setups.
             self.sort_atoms(atoms)
-
-        self.debug = debug
-        # Here we decorate all the methods with the tryit decorator
-        if debug is not None:
-            log.setLevel(debug)
         else:
-            from vasp import tryit
-            for attr in self.__dict__:
-                if callable(getattr(self, attr)):
-                    setattr(self, attr, tryit(getattr(self, attr)))
+            import ase.io
+            contcar = os.path.join(self.directory, 'CONTCAR')
+            empty_contcar = False
+            if os.path.exists(contcar):
+                # make sure the contcar is not empty
+                with open(contcar) as f:
+                    if f.read() == '':
+                        empty_contcar = True
 
-            for attr in Calculator.__dict__:
-                if callable(getattr(Calculator, attr)):
-                    setattr(Calculator, attr, tryit(getattr(Calculator, attr)))
+            poscar = os.path.join(self.directory, 'POSCAR')
 
-            for attr in FileIOCalculator.__dict__:
-                if callable(getattr(FileIOCalculator, attr)):
-                    setattr(FileIOCalculator, attr,
-                            tryit(getattr(FileIOCalculator, attr)))
+            if os.path.exists(contcar) and not empty_contcar:
+                atoms = ase.io.read(contcar)[self.metadata['resort']]
+            elif os.path.exists(poscar):
+                atoms = ase.io.read(poscar)[self.metadata['resort']]
+            self.sort_atoms(atoms)
 
         # We need to handle some special kwargs here. The idea is that
-        # self.parameters is ready to be written out later. This has to be done
-        # after the sorting is known so that arrays of properties can be made
-        # the right size and in the right order
+        # self.parameters is ready to be written out later. This has
+        # to be done after the sorting is known so that arrays of
+        # properties can be made the right size and in the right order
 
         # Spin-polarization.
         if ispin:
             d = self.set_ispin_dict(ispin)
+            self.parameters.update(d)
+        if ldau_luj:
+            d = self.set_ldau_luj_dict(ldau_luj)
             self.parameters.update(d)
 
         # DFT + U uses a dictionary of:
@@ -240,20 +282,27 @@ class Vasp(FileIOCalculator, object):
             d = self.xc_defaults[self.parameters['xc'].lower()]
             self.parameters.update(d)
 
-        # This is opinionated. But necessary for smart
-        # reruns. Basically, if a calculation is finished we want to
-        # make the atoms consistent with it.
-        if os.path.exists(self.outcar):
-            with open(self.outcar) as f:
-                lines = f.readlines()
-                if 'Voluntary context switches:' in lines[-1]:
-                    # sets results and updates the atoms.
-                    log.debug('Finished calculation.')
-                    atoms, params = self.read()
-                    self.parameters.update(params)
-                    self.read_results()
-                    
-        # Done with initialization
+        # Done with initialization from kwargs. Now we need to figure
+        # out what do about existing calculations that may exist.
+        state = self.get_state()
+
+        if state in [Vasp.NEW, Vasp.EMPTY]:
+            log.debug('Calculation is empty or new')
+            pass
+
+        elif state == Vasp.QUEUED:
+            log.debug('Calculation is queued')
+            atoms, params = self.read()
+            if self.atoms is None:
+                self.atoms = atoms
+            self.parameters.update(params)
+            # no need to read results here. They don't exist yet.
+
+        elif state == Vasp.FINISHED:
+            log.debug('Finished calculation.')
+            atoms, params = self.read()
+            self.parameters.update(params)
+            self.read_results()
 
     def sort_atoms(self, atoms=None):
         """Generate resort list, and make list of POTCARs to use.
@@ -375,12 +424,66 @@ class Vasp(FileIOCalculator, object):
             fname = os.path.join(self.directory, f)
             setattr(self, f.lower(), fname)
 
-    def check_state(self, atoms):
-        """TODO: what should this do?"""
+    def check_state(self, atoms=None):
+        """Check if any changes exist that require new calculations."""
+        if atoms is None:
+            atoms = self.get_atoms()
+
         system_changes = FileIOCalculator.check_state(self, atoms)
         # Ignore boundary conditions:
         if 'pbc' in system_changes:
             system_changes.remove('pbc')
+
+        # if dir is empty, there is nothing to read here.
+        if self.get_state() == Vasp.EMPTY:
+            return system_changes
+
+        # Check if the parameters have changed
+        file_params = {}
+        file_params.update(self.read_incar())
+        file_params.update(self.read_potcar())
+        file_params.update(self.read_kpoints())
+
+        xc_keys = sorted(Vasp.xc_defaults,
+                         key=lambda k: len(Vasp.xc_defaults[k]),
+                         reverse=True)
+
+        for ex in xc_keys:
+            pd = {k: file_params.get(k, None)
+                  for k in Vasp.xc_defaults[ex]}
+            if pd == Vasp.xc_defaults[ex]:
+                file_params['xc'] = ex
+                break
+
+        # reconstruct ldau_luj if necessary
+        if 'ldauu' in file_params:
+            ldaul = file_params['ldaul']
+            ldauj = file_params['ldauj']
+            ldauu = file_params['ldauu']
+
+            with open(self.potcar) as f:
+                lines = f.readlines()
+
+            # symbols are in the first line of each potcar
+            symbols = [lines[0].split()[1]]
+            for i, line in enumerate(lines):
+                if 'End of Dataset' in line and i != len(lines) - 1:
+                    symbols += [lines[i + 1].split()[1]]
+
+            ldau_luj = {}
+            for sym, l, j, u in zip(symbols, ldaul, ldauj, ldauu):
+                ldau_luj[sym] = {'L': l, 'U': u, 'J': j}
+
+            file_params['ldau_luj'] = ldau_luj
+
+        if not self.parameters == file_params:
+            new_keys = set(self.parameters.keys()) - set(file_params.keys())
+            missing_keys = (set(file_params.keys()) -
+                            set(self.parameters.keys()))
+
+            log.debug('New keys: {}'.format(new_keys))
+            log.debug('Missing keys: {}'.format(missing_keys))
+            system_changes += ['params_on_file']
 
         return system_changes
 
@@ -514,3 +617,94 @@ class Vasp(FileIOCalculator, object):
         """Abort and exit the program the calculator is running in."""
         import sys
         sys.exit()
+
+    def stop_if(self, condition=None):
+        """Stop program if condition is truthy."""
+        if condition:
+            import sys
+            sys.exit()
+
+    def clone(self, newdir):
+        """Copy the calculation directory to newdir and set label to
+        newdir.
+
+        """
+        state = self.get_state()
+
+        import shutil
+        if not os.path.isdir(newdir):
+            shutil.copytree(self.directory, newdir)
+
+            # need some cleanup here. do not copy jobids, etc...
+            md = os.path.join(newdir, 'METADATA')
+            if os.path.exists(md):
+                import json
+                with open(md) as f:
+                    j = json.loads(f.read())
+                    if 'jobid' in j:
+                        del j['jobid']
+                with open(md, 'wb') as f:
+                    f.write(json.dumps(j))
+
+            # What survives depends on the state
+            # delete these files if not finished.
+            if state in [Vasp.QUEUED, Vasp.NOTFINISHED]:
+                os.unlink(os.path.join(newdir, 'OUTCAR'))
+                os.unlink(os.path.join(newdir, 'vasprun.xml'))
+
+            if state in [Vasp.EMPTYCONTCAR]:
+                os.unlink(os.path.join(newdir, 'OUTCAR'))
+                os.unlink(os.path.join(newdir, 'vasprun.xml'))
+                os.unlink(os.path.join(newdir, 'CONTCAR'))
+
+        self.__init__(newdir)
+
+    def get_state(self):
+        """Determine calculation state based on directory contents.
+
+        Returns an integer for the state.
+
+        """
+
+        base_input = [os.path.exists(os.path.join(self.directory, f))
+                     for f in ['INCAR', 'POSCAR', 'POTCAR', 'KPOINTS']]
+        
+        # Some input does not exist
+        if False in base_input:
+            # some input file is missing
+            return Vasp.EMPTY
+
+        # Input files exist, but no jobid, and no output
+        if (np.array(base_input).all()
+            and 'jobid' not in self.metadata
+            and not os.path.exists(os.path.join(self.directory, 'OUTCAR'))):
+            return Vasp.NEW
+
+        # INPUT files exist, a jobid in the queue
+        if self.in_queue():
+            return Vasp.QUEUED
+
+        # Not in queue, and finished
+        if not self.in_queue():
+            if os.path.exists(self.outcar):
+                with open(self.outcar) as f:
+                    lines = f.readlines()
+                    if 'Voluntary context switches:' in lines[-1]:
+                        return Vasp.FINISHED
+
+        # Not in queue, and not finished
+        if not self.in_queue():
+            if os.path.exists(self.outcar):
+                with open(self.outcar) as f:
+                    lines = f.readlines()
+                    if 'Voluntary context switches:' not in lines[-1]:
+                        return Vasp.NOTFINISHED
+
+        # Not in queue, and not finished, with empty contcar
+        if not self.in_queue():
+            if os.path.exists(self.contcar):
+                with open(self.contcar) as f:
+                    if f.read() == '':
+                        return Vasp.EMPTYCONTCAR
+        
+        return Vasp.UNKNOWN
