@@ -16,7 +16,7 @@ from vasp import log
 from vasprc import VASPRC
 from ase.io.vasp import read_vasp_xml
 
-def VaspExceptionHandler(exc_type, exc_value, exc_traceback):
+def VaspExceptionHandler(calc, exc_type, exc_value, exc_traceback):
     """Handle exceptions."""
     if exc_type == exceptions.VaspSubmitted:
         print exc_value
@@ -24,17 +24,24 @@ def VaspExceptionHandler(exc_type, exc_value, exc_traceback):
     elif exc_type == exceptions.VaspQueued:
         print exc_value
         return None
-    elif exc_type == KeyError:
-        # This is a common error getting things from a dictionary,
-        # especially the results dictionary.
+    elif exc_type == KeyError and exc_value.message == 'energy':
         return None
+    elif exc_type == KeyError and exc_value.message == 'forces':
+        return np.array([[None, None, None] for atom in calc.get_atoms()])
+    elif exc_type == KeyError and exc_value.message == 'stress':
+        return np.array([None, None, None, None, None, None])
+
+
+    print exc_type
+    print exc_value
+    print exc_traceback
     raise
 
 
 class Vasp(FileIOCalculator, object):
     """Class for doing VASP calculations.
 
-    set $ASE_VASP_COMMAND to the command used to run vasp.
+    Configurations are in vasp.vasprc
 
     POTCARs are found in:
     $VASP_PP_PATH/potpaw_LDA
@@ -185,6 +192,7 @@ class Vasp(FileIOCalculator, object):
         self.debug = debug
         self.atoms = None
         self.set_label(label)
+        self.results = {}  # start empty
 
         self.read_metadata()  # this is ok if METADATA does not exist.
         log.debug('init metadata = {}'.format(self.metadata))
@@ -291,14 +299,6 @@ class Vasp(FileIOCalculator, object):
         # Done with initialization from kwargs. Now we need to figure
         # out what do about existing calculations that may exist.
         state = self.get_state()
-
-        try:
-            atoms, params = self.read()
-            print params
-            self.parameters.update(params)
-        except:
-            print'failed'
-            pass
 
         if state in [Vasp.NEW, Vasp.EMPTY]:
             log.debug('Calculation is empty or new')
@@ -546,9 +546,11 @@ class Vasp(FileIOCalculator, object):
             return self.get_neb()
 
         if self.calculation_required(atoms, ['energy']):
-            self.calculate(atoms)
+            return self.calculate(atoms)
         else:
             self.read_results()
+
+        return True
 
     def read_results(self):
         """Read energy, forces, stress, magmom and magmoms from output file.

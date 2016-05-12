@@ -9,6 +9,33 @@ from vasp import log
 from monkeypatch import monkeypatch_class
 
 
+# @monkeypatch_class(vasp.Vasp)
+# def get_potential_energy(self, atoms=None):
+#     """Returns potential energy."""
+#     if self.update():
+#         return self.results['energy']
+#     else:
+#         return None
+
+
+# @monkeypatch_class(vasp.Vasp)
+# def get_forces(self, atoms=None, apply_constraint=False):
+#     """Returns forces."""
+#     if self.update():
+#         return self.results['forces']
+#     else:
+#         return None
+
+
+# @monkeypatch_class(vasp.Vasp)
+# def get_stress(self, atoms=None):
+#     """Returns stress."""
+#     if self.update():
+#         return self.results['stress']
+#     else:
+#         return None
+
+
 @monkeypatch_class(vasp.Vasp)
 def get_beefens(self, n=-1):
     """Get the BEEFens 2000 ensemble energies from the OUTCAR.

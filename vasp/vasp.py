@@ -35,8 +35,8 @@ import setters
 import vib
 import neb
 import runner
+import bader
 
-import sys
 
 
 def tryit(func):
@@ -53,7 +53,7 @@ def tryit(func):
                 return func(self, *args, **kwargs)
             except Exception:
                 if self.exception_handler is not None:
-                    return self.exception_handler(*sys.exc_info())
+                    return self.exception_handler(self, *sys.exc_info())
                 else:
                     raise
 

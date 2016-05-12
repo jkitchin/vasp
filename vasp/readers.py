@@ -241,6 +241,8 @@ def read(self):
 
     params = Parameters()
 
+    self.read_metadata()
+
     if os.path.exists(self.incar):
         params.update(self.read_incar())
     if os.path.exists(self.potcar):
@@ -248,7 +250,7 @@ def read(self):
     if os.path.exists(self.kpoints):
         params.update(self.read_kpoints())
 
-    self.read_metadata()
+
 
     # We have to figure out the xc that was used based on the
     # Parameter keys.  We sort the possible xc dictionaries so the
