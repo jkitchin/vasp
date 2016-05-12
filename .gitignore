@@ -26,3 +26,4 @@ jobid
 
 # calculation directories
 molecules
+/.doit.db
