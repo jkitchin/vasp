@@ -33,12 +33,12 @@ import readers
 import getters
 import setters
 import vib
+import neb
 import runner
 
 import sys
 
-# I want all the functions wrapped in a try block so we can use our
-# own exception handler.
+
 def tryit(func):
     """Decorator to wrap function in try block with Vasp exception handler."""
     def inner(self, *args, **kwargs):
@@ -58,20 +58,31 @@ def tryit(func):
                     raise
 
     inner.__name__ = func.__name__
-    inner.__doc__ = func.__doc__
+    template = '''
+
+    Wrapped in vasp.tryit.
+
+    Defined at [[{0}::{1}]].'''.format(func.im_func.func_code.co_filename,
+                                       func.im_func.func_code.co_firstlineno)
+
+    if func.__doc__ is not None:
+        inner.__doc__ = func.__doc__ + template
+    else:
+        inner.__doc__ = 'Wrapped in vasp.tryit.'
     return inner
 
 from ase.calculators.calculator import Calculator,\
     FileIOCalculator
 
-# for attr in Vasp.__dict__:
-#     if callable(getattr(Vasp, attr)):
-#         setattr(Vasp, attr, tryit(getattr(Vasp, attr)))
+for attr in Vasp.__dict__:
+    if callable(getattr(Vasp, attr)):
+        setattr(Vasp, attr, tryit(getattr(Vasp, attr)))
 
-# for attr in Calculator.__dict__:
-#     if callable(getattr(Calculator, attr)):
-#         setattr(Calculator, attr, tryit(getattr(Calculator, attr)))
+for attr in Calculator.__dict__:
+    if callable(getattr(Calculator, attr)):
+        setattr(Calculator, attr, tryit(getattr(Calculator, attr)))
 
-# for attr in FileIOCalculator.__dict__:
-#     if callable(getattr(FileIOCalculator, attr)):
-#         setattr(FileIOCalculator, attr, tryit(getattr(FileIOCalculator, attr)))
+for attr in FileIOCalculator.__dict__:
+    if callable(getattr(FileIOCalculator, attr)):
+        setattr(FileIOCalculator, attr,
+                tryit(getattr(FileIOCalculator, attr)))

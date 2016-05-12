@@ -20,7 +20,8 @@ def write_input(self, atoms=None, properties=None, system_changes=None):
     # this creates the directory if needed
     FileIOCalculator.write_input(self, atoms, properties, system_changes)
 
-    self.write_poscar()
+    if 'spring' not in self.parameters:  # do not write if NEB
+        self.write_poscar()
     self.write_incar()
     self.write_kpoints()
     self.write_potcar()

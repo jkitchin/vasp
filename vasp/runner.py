@@ -80,8 +80,9 @@ def calculate(self, atoms=None, properties=['energy'],
         self.read_results()
         return
 
-    if not self.calculation_required(atoms, ['energy']) and not self.check_state():
-        print 'No calculation_required.', 
+    if (not self.calculation_required(atoms, ['energy'])
+        and not self.check_state()):
+        print('No calculation_required.')
         self.read_results()
         return
 
@@ -90,6 +91,10 @@ def calculate(self, atoms=None, properties=['energy'],
     Calculator.calculate(self, atoms, properties, system_changes)
 
     self.write_input(atoms, properties, system_changes)
+    if self.parameters.get('luse_vdw', False):
+        kernel = os.path.join(self.directory, 'vdw_kernel.bindat')
+        if not os.path.exists(kernel):
+            os.symlink(VASPRC['vdw_kernel.bindat'], kernel)
 
     # if we are in the queue and vasp is called or if we want to use
     # mode='run' , we should just run the job. First, we consider how.

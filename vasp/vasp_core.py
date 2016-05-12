@@ -13,7 +13,8 @@ from ase.calculators.calculator import FileIOCalculator
 
 import exceptions
 from vasp import log
-
+from vasprc import VASPRC
+from ase.io.vasp import read_vasp_xml
 
 def VaspExceptionHandler(exc_type, exc_value, exc_traceback):
     """Handle exceptions."""
@@ -74,8 +75,8 @@ class Vasp(FileIOCalculator, object):
                                    'param2': 1.0},
                    'vdw-df2': {'pp': 'LDA', 'gga': 'ML', 'luse_vdw': True,
                                'aggac': 0.0, 'zab_vdw': -1.8867},
-                   'beef-vdw': {'pp': 'LDA', 'gga': 'BF', 'luse_vdw': True,
-                                'zab_vdw': -1.8867},
+                   'beef-vdw': {'pp': 'PBE', 'gga': 'BF', 'luse_vdw': True,
+                                'zab_vdw': -1.8867, 'lbeefens': True},
                    # hybrids
                    'pbe0': {'pp': 'LDA', 'gga': 'PE', 'lhfcalc': True},
                    'hse03': {'pp': 'LDA', 'gga': 'PE', 'lhfcalc': True,
@@ -182,24 +183,32 @@ class Vasp(FileIOCalculator, object):
 
         """
         self.debug = debug
-        # Here we decorate all the methods with the tryit decorator
-        # unless we are debugging.
-        if debug is not None:
-            log.setLevel(debug)
-        else:
-            from vasp import tryit
-            for attr in self.__dict__:
-                if callable(getattr(self, attr)):
-                    setattr(self, attr, tryit(getattr(self, attr)))
+        self.atoms = None
+        self.set_label(label)
 
-            for attr in Calculator.__dict__:
-                if callable(getattr(Calculator, attr)):
-                    setattr(Calculator, attr, tryit(getattr(Calculator, attr)))
+        self.read_metadata()  # this is ok if METADATA does not exist.
+        log.debug('init metadata = {}'.format(self.metadata))
 
-            for attr in FileIOCalculator.__dict__:
-                if callable(getattr(FileIOCalculator, attr)):
-                    setattr(FileIOCalculator, attr,
-                            tryit(getattr(FileIOCalculator, attr)))
+        # NEB is such a special case we handle it
+        self.neb = False
+        if (self.get_state() == Vasp.NEB
+            or 'spring' in kwargs):
+            # Add number of images
+            if atoms is None:
+                atoms = []
+                import ase
+                import glob
+                atoms += [ase.io.read('{}/00/POSCAR'.format(self.directory))]
+                for p in glob.glob('{}/0[0-9]/CONTCAR'.format(self.directory)):
+                    atoms += [ase.io.read(p)]
+                # Final image
+                atoms += [ase.io.read('{}/0{}/POSCAR'.format(self.directory,
+                                                             len(atoms)))]
+
+            self.neb = atoms  # The list of atoms
+            kwargs['images'] = len(atoms) - 2
+            # Set atoms to None so we don't write them anywhere.
+            atoms = atoms[0].copy()  # use first image for sorting, etc...
 
         # This makes sure directories are created. We do not pass
         # kwargs here. Some of the special kwargs cannot be set at
@@ -227,9 +236,6 @@ class Vasp(FileIOCalculator, object):
             ldau_luj = None
 
         self.set(**kwargs)
-
-        self.read_metadata()  # this is ok if METADATA does not exist.
-        log.debug('init metadata = {}'.format(self.metadata))
 
         if atoms is not None:
             # Resort atoms and generate list of POTCARS/counts we
@@ -285,6 +291,14 @@ class Vasp(FileIOCalculator, object):
         # Done with initialization from kwargs. Now we need to figure
         # out what do about existing calculations that may exist.
         state = self.get_state()
+
+        try:
+            atoms, params = self.read()
+            print params
+            self.parameters.update(params)
+        except:
+            print'failed'
+            pass
 
         if state in [Vasp.NEW, Vasp.EMPTY]:
             log.debug('Calculation is empty or new')
@@ -346,6 +360,7 @@ class Vasp(FileIOCalculator, object):
                 if atom.symbol == symbol and i not in resort_indices:
                     count += 1
                     resort_indices += [i]
+
             ppp += [[atom.symbol,
                      'potpaw_{}/{}{}/POTCAR'.format(pp, symbol, setup[1]),
                      count]]
@@ -413,10 +428,12 @@ class Vasp(FileIOCalculator, object):
         """
 
         if label is None:
-            self.directory = "."
+            self.directory = os.path.abspath(".")
             self.prefix = None
         else:
-            self.directory, self.prefix = label, None
+            if not os.path.isdir(label):
+                os.makedirs(label)
+            self.directory, self.prefix = os.path.abspath(label), None
 
         # Convenient attributes for file names
         for f in ['INCAR', 'POSCAR', 'CONTCAR', 'POTCAR',
@@ -516,13 +533,33 @@ class Vasp(FileIOCalculator, object):
         """overwrite to avoid killing self.atoms."""
         self.results = {}
 
+    def update(self, atoms=None):
+        """Updates calculator.
+
+        If a calculation is required,  run it, otherwise updates results.
+
+        """
+        if atoms is None:
+            atoms = self.get_atoms()
+
+        if self.neb:
+            return self.get_neb()
+
+        if self.calculation_required(atoms, ['energy']):
+            self.calculate(atoms)
+        else:
+            self.read_results()
+
     def read_results(self):
-        """Read energy, forces from output file.
+        """Read energy, forces, stress, magmom and magmoms from output file.
 
         Other quantities will be read by other functions.
 
         """
         from ase.io.vasp import read_vasp_xml
+        if not os.path.exists(os.path.join(self.directory,
+                                           'vasprun.xml')):
+            raise exceptions.VaspNotFinished('No vasprun.xml in {}'.format(self.directory))
 
         atoms = read_vasp_xml(os.path.join(self.directory,
                                            'vasprun.xml')).next()
@@ -547,7 +584,8 @@ class Vasp(FileIOCalculator, object):
         magnetic_moment = 0
         magnetic_moments = np.zeros(len(atoms))
         if self.parameters.get('ispin', 0) == 2:
-            lines = open(os.path.join(self.directory, 'OUTCAR'), 'r').readlines()
+            lines = open(os.path.join(self.directory, 'OUTCAR'),
+                         'r').readlines()
             for n, line in enumerate(lines):
                 if line.rfind('number of electron  ') > -1:
                     magnetic_moment = float(line.split()[-1])
@@ -562,23 +600,21 @@ class Vasp(FileIOCalculator, object):
     def calculation_required(self, atoms, properties):
         """Returns if a calculation is needed."""
 
-        # if the calculation is finished we do not need to run.
-        if os.path.exists(self.outcar):
-            with open(self.outcar) as f:
-                lines = f.readlines()
-                if 'Voluntary context switches:' in lines[-1]:
-                    return False
-
         system_changes = self.check_state(atoms)
         if system_changes:
             return True
 
         for name in properties:
             if name not in self.results:
+                log.debug('{} not in {}. Calc required.'.format(name, self.results))
                 return True
 
-        # default to not required.
-        return False
+        # if the calculation is finished we do not need to run.
+        if os.path.exists(self.outcar):
+            with open(self.outcar) as f:
+                lines = f.readlines()
+                if 'Voluntary context switches:' in lines[-1]:
+                    return False
 
     def calculate(self, atoms=None, properties=['energy'],
                   system_changes=None):
@@ -667,8 +703,15 @@ class Vasp(FileIOCalculator, object):
         """
 
         base_input = [os.path.exists(os.path.join(self.directory, f))
-                     for f in ['INCAR', 'POSCAR', 'POTCAR', 'KPOINTS']]
-        
+                      for f in ['INCAR', 'POSCAR', 'POTCAR', 'KPOINTS']]
+
+        # Check for NEB first.
+        if (np.array([os.path.exists(os.path.join(self.directory, f))
+                      for f in ['INCAR', 'POTCAR', 'KPOINTS']]).all()
+            and not os.path.exists(os.path.join(self.directory, 'POSCAR'))
+            and os.path.isdir(os.path.join(self.directory, '00'))):
+            return Vasp.NEB
+
         # Some input does not exist
         if False in base_input:
             # some input file is missing
@@ -699,6 +742,8 @@ class Vasp(FileIOCalculator, object):
                     lines = f.readlines()
                     if 'Voluntary context switches:' not in lines[-1]:
                         return Vasp.NOTFINISHED
+            else:
+                return Vasp.NOTFINISHED
 
         # Not in queue, and not finished, with empty contcar
         if not self.in_queue():
@@ -706,5 +751,63 @@ class Vasp(FileIOCalculator, object):
                 with open(self.contcar) as f:
                     if f.read() == '':
                         return Vasp.EMPTYCONTCAR
-        
+
         return Vasp.UNKNOWN
+
+    @property
+    def potential_energy(self):
+        """Property to return potential_energy."""
+        self.update()
+        atoms = self.get_atoms()
+        return atoms.get_potential_energy()
+
+    @property
+    def forces(self):
+        """Property to return forces."""
+        self.update()
+        atoms = self.get_atoms()
+        return atoms.get_forces()
+
+    @property
+    def stress(self):
+        """Property to return stress."""
+        self.update()
+        atoms = self.get_atoms()
+        return atoms.get_stress()
+
+    @property
+    def traj(self):
+        """Get a trajectory.
+
+        Technically, this is just a list of atoms with
+        SinglePointCalculator attached to them.
+
+        This is usually only relevant if you have done a
+        relaxation. If the calculation is an NEB, the images are
+        returned.
+
+        """
+        self.update()
+
+        if self.neb:
+            return self.neb
+        else:
+            LOA = []
+            i = 0
+            while True:
+                try:
+                    atoms = read_vasp_xml(os.path.join(self.directory,
+                                                       'vasprun.xml'),
+                                          index=i).next()
+                    LOA += [atoms]
+                    i += 1
+                except IndexError:
+                    break
+            return LOA
+
+    def view(self):
+        """Visualize the calculation.
+
+        """
+        from ase.visualize import view
+        view(self.traj)
