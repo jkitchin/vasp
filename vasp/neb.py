@@ -94,14 +94,20 @@ def get_neb(self, npi=1):
                 write_vasp('{0}/POSCAR'.format(image_dir),
                            atoms[self.resort],
                            symbol_count=self.symbol_count)
-        with open(os.path.join(self.directory,
-                               '00/energy'), 'w') as f:
-            f.write(str(self.neb[0].get_potential_energy()))
 
-        with open(os.path.join(self.directory,
-                               '0{}/energy'.format(len(atoms) - 1)),
-                  'w') as f:
-            f.write(str(self.neb[-1].get_potential_energy()))
+        # The first and last images need to have real calculators on
+        # them so we can write out a DB entry. We need this so we can
+        # get the energies on the end-points. Otherwise, there doesn't
+        # seem to be a way to do that short of cloning the whole
+        # calculation into the end-point directories.
+
+        self.write_db(self.neb[0],
+                      os.path.join(self.directory,
+                                   '00/DB'))
+
+        self.write_db(self.neb[-1],
+                      os.path.join(self.directory,
+                                   '0{}/energy'.format(len(atoms) - 1)))
 
         VASPRC['queue.ppn'] = npi * (len(self.neb) - 2)
         log.debug('Running on %i cores', VASPRC['queue.ppn'])

@@ -13,8 +13,8 @@ from ase.calculators.calculator import FileIOCalculator
 
 import exceptions
 from vasp import log
-from vasprc import VASPRC
 from ase.io.vasp import read_vasp_xml
+
 
 def VaspExceptionHandler(calc, exc_type, exc_value, exc_traceback):
     """Handle exceptions."""
@@ -31,10 +31,11 @@ def VaspExceptionHandler(calc, exc_type, exc_value, exc_traceback):
     elif exc_type == KeyError and exc_value.message == 'stress':
         return np.array([None, None, None, None, None, None])
 
-
-    print exc_type
-    print exc_value
-    print exc_traceback
+    print('Unhandled exception in Vasp')
+    import traceback
+    import sys
+    traceback.print_exception(exc_type, exc_value, exc_traceback,
+                              file=sys.stdout)
     raise
 
 
@@ -55,6 +56,7 @@ class Vasp(FileIOCalculator, object):
     debug = None
 
     implemented_properties = ['energy', 'forces', 'stress',
+                              'charges', 'dipole',
                               'magmom',  # the overall magnetic moment
                               'magmoms']  # the individual magnetic moments
 
@@ -128,7 +130,7 @@ class Vasp(FileIOCalculator, object):
     UNKNOWN = 100
 
     def __init__(self, label,
-                 restart=None, ignore_bad_restart_file=False,
+                 restart=True, ignore_bad_restart_file=False,
                  atoms=None, scratch=None,
                  debug=None,
                  exception_handler=VaspExceptionHandler,
@@ -189,134 +191,43 @@ class Vasp(FileIOCalculator, object):
                       'O':{'L':-1, 'U':0.0, 'J':0.0}},
 
         """
+        self.set_label(label)  # set first so self.directory is right
         self.debug = debug
-        self.atoms = None
-        self.set_label(label)
-        self.results = {}  # start empty
-
-        self.read_metadata()  # this is ok if METADATA does not exist.
-        log.debug('init metadata = {}'.format(self.metadata))
-
-        # NEB is such a special case we handle it
-        self.neb = False
-        if (self.get_state() == Vasp.NEB
-            or 'spring' in kwargs):
-            # Add number of images
-            if atoms is None:
-                atoms = []
-                import ase
-                import glob
-                atoms += [ase.io.read('{}/00/POSCAR'.format(self.directory))]
-                for p in glob.glob('{}/0[0-9]/CONTCAR'.format(self.directory)):
-                    atoms += [ase.io.read(p)]
-                # Final image
-                atoms += [ase.io.read('{}/0{}/POSCAR'.format(self.directory,
-                                                             len(atoms)))]
-
-            self.neb = atoms  # The list of atoms
-            kwargs['images'] = len(atoms) - 2
-            # Set atoms to None so we don't write them anywhere.
-            atoms = atoms[0].copy()  # use first image for sorting, etc...
-
-        # This makes sure directories are created. We do not pass
-        # kwargs here. Some of the special kwargs cannot be set at
-        # this point.
+        self.exception_handler = exception_handler
+        if atoms is not None:
+            atoms.pbc = [True, True, True]
+        # We do not pass kwargs here. Some of the special kwargs
+        # cannot be set at this point since they need to know about
+        # the atoms and parameters. This reads params and results from
+        # existing files if they are there. It calls self.read(). It
+        # should update the atoms from what is on file.
         FileIOCalculator.__init__(self, restart, ignore_bad_restart_file,
                                   label, atoms)
 
-        self.exception_handler = exception_handler
-
-        # Ispin is especially problematic. In the set_ispin_dict
-        # function I automatically set magmoms, but this requires
-        # access to a sorted atoms, which we do not have yet. We save
-        # it here and deal with it later.
+        # The calculator should be up to date with the file
+        # system. Now we check for consistency with the kwargs passed
+        # in.  First we update kwargs with the special kwarg
+        # dictionaries.
+        kwargs.update(Vasp.default_parameters)
 
         if 'ispin' in kwargs:
-            ispin = kwargs['ispin']
-            del kwargs['ispin']
-        else:
-            ispin = None
+            kwargs.update(self.set_ispin_dict(kwargs['ispin']))
 
         if 'ldau_luj' in kwargs:
-            ldau_luj = kwargs['ldau_luj']
-            del kwargs['ldau_luj']
-        else:
-            ldau_luj = None
+            kwargs.update(self.set_ldau_luj_dict(kwargs['ldau_luj']))
 
+        if 'xc' in kwargs:
+            kwargs.update(self.set_xc_dict(kwargs['xc']))
+
+        # Now update the parameters. If there are any new kwargs here,
+        # it will reset the calculator and cause a calculation to be
+        # run if needed.
         self.set(**kwargs)
 
-        if atoms is not None:
-            # Resort atoms and generate list of POTCARS/counts we
-            # need.  This code relies on self.parameters because of pp
-            # and setups.
+        # In case no atoms was on file, and one is passed in, we set
+        # it here.
+        if self.atoms is None and atoms is not None:
             self.sort_atoms(atoms)
-        else:
-            import ase.io
-            contcar = os.path.join(self.directory, 'CONTCAR')
-            empty_contcar = False
-            if os.path.exists(contcar):
-                # make sure the contcar is not empty
-                with open(contcar) as f:
-                    if f.read() == '':
-                        empty_contcar = True
-
-            poscar = os.path.join(self.directory, 'POSCAR')
-
-            if os.path.exists(contcar) and not empty_contcar:
-                atoms = ase.io.read(contcar)[self.metadata['resort']]
-            elif os.path.exists(poscar):
-                atoms = ase.io.read(poscar)[self.metadata['resort']]
-            self.sort_atoms(atoms)
-
-        # We need to handle some special kwargs here. The idea is that
-        # self.parameters is ready to be written out later. This has
-        # to be done after the sorting is known so that arrays of
-        # properties can be made the right size and in the right order
-
-        # Spin-polarization.
-        if ispin:
-            d = self.set_ispin_dict(ispin)
-            self.parameters.update(d)
-        if ldau_luj:
-            d = self.set_ldau_luj_dict(ldau_luj)
-            self.parameters.update(d)
-
-        # DFT + U uses a dictionary of:
-        # {symbol: {'L': int, 'U':float 'J':float}}
-        # It is incompatible with setups because the dictionary doesn't allow
-        # differentiating between symbols
-        if 'ldau_luj' in self.parameters:
-            d = self.set_ldau_luj_dict(self.parameters['ldau_luj'])
-            self.parameters.update(d)
-
-        # set the exchange-correlation function tags. This sets pp for the
-        # potcar path.
-        if 'xc' in self.parameters:
-            self.parameters['xc'] = self.parameters['xc'].lower()
-            d = self.xc_defaults[self.parameters['xc'].lower()]
-            self.parameters.update(d)
-
-        # Done with initialization from kwargs. Now we need to figure
-        # out what do about existing calculations that may exist.
-        state = self.get_state()
-
-        if state in [Vasp.NEW, Vasp.EMPTY]:
-            log.debug('Calculation is empty or new')
-            pass
-
-        elif state == Vasp.QUEUED:
-            log.debug('Calculation is queued')
-            atoms, params = self.read()
-            if self.atoms is None:
-                self.atoms = atoms
-            self.parameters.update(params)
-            # no need to read results here. They don't exist yet.
-
-        elif state == Vasp.FINISHED:
-            log.debug('Finished calculation.')
-            atoms, params = self.read()
-            self.parameters.update(params)
-            self.read_results()
 
     def sort_atoms(self, atoms=None):
         """Generate resort list, and make list of POTCARs to use.
@@ -395,7 +306,6 @@ class Vasp(FileIOCalculator, object):
                               else atoms[x[0]].symbol,
                               x[2]) for x in ppp]
 
-        self.metadata['resort'] = self.resort
         return atoms[self.resort]
 
     def __str__(self):
@@ -431,9 +341,12 @@ class Vasp(FileIOCalculator, object):
             self.directory = os.path.abspath(".")
             self.prefix = None
         else:
-            if not os.path.isdir(label):
-                os.makedirs(label)
-            self.directory, self.prefix = os.path.abspath(label), None
+            d = os.path.expanduser(label)
+            d = os.path.abspath(d)
+            self.directory, self.prefix = d, None
+            if not os.path.isdir(self.directory):
+                os.makedirs(self.directory)
+
 
         # Convenient attributes for file names
         for f in ['INCAR', 'POSCAR', 'CONTCAR', 'POTCAR',
@@ -552,63 +465,21 @@ class Vasp(FileIOCalculator, object):
 
         return True
 
-    def read_results(self):
-        """Read energy, forces, stress, magmom and magmoms from output file.
-
-        Other quantities will be read by other functions.
-
-        """
-        from ase.io.vasp import read_vasp_xml
-        if not os.path.exists(os.path.join(self.directory,
-                                           'vasprun.xml')):
-            raise exceptions.VaspNotFinished('No vasprun.xml in {}'.format(self.directory))
-
-        atoms = read_vasp_xml(os.path.join(self.directory,
-                                           'vasprun.xml')).next()
-
-        energy = atoms.get_potential_energy()
-        forces = atoms.get_forces()  # needs to be resorted
-        stress = atoms.get_stress()
-
-        if self.atoms is None:
-            atoms = atoms[self.metadata['resort']]
-            self.sort_atoms(atoms)
-            self.atoms.set_calculator(self)
-        else:
-            # update the atoms
-            self.atoms.positions = atoms.positions[self.metadata['resort']]
-            self.atoms.cell = atoms.cell
-
-        self.results['energy'] = energy
-        self.results['forces'] = forces[self.resort]
-        self.results['stress'] = stress
-
-        magnetic_moment = 0
-        magnetic_moments = np.zeros(len(atoms))
-        if self.parameters.get('ispin', 0) == 2:
-            lines = open(os.path.join(self.directory, 'OUTCAR'),
-                         'r').readlines()
-            for n, line in enumerate(lines):
-                if line.rfind('number of electron  ') > -1:
-                    magnetic_moment = float(line.split()[-1])
-
-                if line.rfind('magnetization (x)') > -1:
-                    for m in range(len(atoms)):
-                        magnetic_moments[m] = float(lines[n + m + 4].split()[4])
-
-            self.results['magmom'] = magnetic_moment
-            self.results['magmoms'] = np.array(magnetic_moments)[self.resort]
-
-    def calculation_required(self, atoms, properties):
+    def calculation_required(self, atoms=None, properties=['energy']):
         """Returns if a calculation is needed."""
+
+        if atoms is None:
+            atoms = self.get_atoms()
 
         system_changes = self.check_state(atoms)
         if system_changes:
+            log.debug('Calculation needed for {}'.format(system_changes))
             return True
 
         for name in properties:
             if name not in self.results:
-                log.debug('{} not in {}. Calc required.'.format(name, self.results))
+                log.debug('{} not in {}. Calc required.'.format(name,
+                                                                self.results))
                 return True
 
         # if the calculation is finished we do not need to run.
@@ -674,16 +545,7 @@ class Vasp(FileIOCalculator, object):
             shutil.copytree(self.directory, newdir)
 
             # need some cleanup here. do not copy jobids, etc...
-            md = os.path.join(newdir, 'METADATA')
-            if os.path.exists(md):
-                import json
-                with open(md) as f:
-                    j = json.loads(f.read())
-                    if 'jobid' in j:
-                        del j['jobid']
-                with open(md, 'wb') as f:
-                    f.write(json.dumps(j))
-
+            # TODO
             # What survives depends on the state
             # delete these files if not finished.
             if state in [Vasp.QUEUED, Vasp.NOTFINISHED]:
@@ -721,7 +583,7 @@ class Vasp(FileIOCalculator, object):
 
         # Input files exist, but no jobid, and no output
         if (np.array(base_input).all()
-            and 'jobid' not in self.metadata
+            and self.get_db('jobid') is not None
             and not os.path.exists(os.path.join(self.directory, 'OUTCAR'))):
             return Vasp.NEW
 
@@ -764,11 +626,11 @@ class Vasp(FileIOCalculator, object):
         return atoms.get_potential_energy()
 
     @property
-    def forces(self):
+    def forces(self, apply_constraints=False):
         """Property to return forces."""
         self.update()
         atoms = self.get_atoms()
-        return atoms.get_forces()
+        return atoms.get_forces(apply_constraints)
 
     @property
     def stress(self):
@@ -778,8 +640,11 @@ class Vasp(FileIOCalculator, object):
         return atoms.get_stress()
 
     @property
-    def traj(self):
+    def traj(self, index=None):
         """Get a trajectory.
+
+        This reads Atoms objects from vasprun.xml. By default returns
+        all images.  If index is an integer, return that image.
 
         Technically, this is just a list of atoms with
         SinglePointCalculator attached to them.
@@ -793,6 +658,11 @@ class Vasp(FileIOCalculator, object):
 
         if self.neb:
             return self.neb
+
+        if index is not None:
+            atoms = read_vasp_xml(os.path.join(self.directory,
+                                               'vasprun.xml'),
+                                  index=index).next()
         else:
             LOA = []
             i = 0
@@ -807,9 +677,9 @@ class Vasp(FileIOCalculator, object):
                     break
             return LOA
 
-    def view(self):
+    def view(self, index=None):
         """Visualize the calculation.
 
         """
         from ase.visualize import view
-        view(self.traj)
+        return view(self.traj(index=index))

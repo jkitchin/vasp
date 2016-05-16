@@ -343,6 +343,326 @@ print calc.parameters == calc.read()[1]
 
 
 
+
+* Test reads
+#+BEGIN_SRC python
+from vasp import Vasp
+
+calc = Vasp('~/dft-book-new-vasp/molecules/simple-co')
+
+
+#print(calc.potential_energy)
+#+END_SRC
+
+#+RESULTS:
+: {'magmom': 0, 'magmoms': array([ 0.,  0.]), 'energy': -14.69111507, 'stress': array([ 0.04145558,  0.0109497 ,  0.0109497 , -0.        , -0.        , -0.        ]), 'forces': array([[ 5.09138064,  0.        ,  0.        ],
+:        [-5.09138064,  0.        ,  0.        ]])}
+
+#+BEGIN_SRC python
+from vasp import Vasp
+
+calc = Vasp('~/dft-book-new-vasp/molecules/nh3-neb')
+print calc.results
+print calc.neb
+#+END_SRC
+
+#+RESULTS:
+: Reading neb
+: {'energy': None}
+: [Atoms(symbols='NH3', positions=..., cell=[10.0, 10.0, 10.0], pbc=[True, True, True], constraint=FixAtoms(indices=[0])), Atoms(symbols='NH3', positions=..., cell=[10.0, 10.0, 10.0], pbc=[True, True, True], constraint=FixAtoms(indices=[0])), Atoms(symbols='NH3', positions=..., cell=[10.0, 10.0, 10.0], pbc=[True, True, True], constraint=FixAtoms(indices=[0])), Atoms(symbols='NH3', positions=..., cell=[10.0, 10.0, 10.0], pbc=[True, True, True], constraint=FixAtoms(indices=[0])), Atoms(symbols='NH3', positions=..., cell=[10.0, 10.0, 10.0], pbc=[True, True, True], constraint=FixAtoms(indices=[0]))]
+
+* ase-db test
+
+#+BEGIN_SRC python
+from vasp import Vasp
+import shutil
+import os
+
+calc = Vasp('~/dft-book-new-vasp/molecules/simple-co')
+atoms = calc.get_atoms()
+from ase.db import connect
+
+try:
+    shutil.copyfile('ase.db', 'ase.db.bk')
+    os.unlink('ase.db')
+    con = connect('ase.db')
+    con.write(atoms, running=True, data={'resort': calc.resort})
+except:
+    print 'caught exc'
+    os.unlink('ase.db')
+    shutil.copyfile('ase.db.bk', 'ase.db')
+finally:
+    os.unlink('ase.db.bk')
+
+for x in con.select(): print x
+
+c = con.get(id=1)
+print c.data
+print 'c', con.update(1, delete_keys=['running'])
+
+print con.get_atoms(id=1, add_additional_information=True).info
+
+#+END_SRC
+
+#+RESULTS:
+: <ase.db.row.AtomsRow instance at 0xf964cb0>
+: {u'resort': array([0, 1])}
+: c (0, 1)
+: {'data': {u'resort': array([0, 1])}, 'key_value_pairs': {u'running': True}, 'unique_id': u'a68628ddb95f3b52fd232abda8a86c1d'}
+
+#+BEGIN_SRC sh
+ase-db ase.db
+#+END_SRC
+
+#+RESULTS:
+: id|age|user    |formula|calculator| energy| fmax|pbc| volume|charge|  mass| smax|magmom
+:  1| 7s|jkitchin|CO     |vasp      |-14.691|5.091|TTT|216.000| 0.000|28.010|0.041| 0.000
+: Rows: 1
+: Keys: running
+
+** try deleting a key
+#+BEGIN_SRC python
+from vasp import Vasp
+import shutil
+import os
+
+calc = Vasp('~/dft-book-new-vasp/molecules/simple-co')
+atoms = calc.get_atoms()
+from ase.db import connect
+
+con = connect('ase.db')
+con.write(atoms, running=True, data={'resort': calc.resort})
+print con.get_atoms(id=1, add_additional_information=True).info
+print 'c', con.update(1, delete_keys=['running'])
+
+#with connect('ase.db') as con:
+#    print con.get_atoms(id=1, add_additional_information=True).info
+
+#+END_SRC
+
+#+RESULTS:
+: {'data': {u'resort': array([0, 1])}, 'key_value_pairs': {u'running': True}, 'unique_id': u'2e247d1223ccc111f254ab73f41672a1'}
+: c (0, 1)
+
+** write atoms with info does not work  like I expect
+I had hoped to get an atoms with info and just write it back, but it does not seem possible. Here is the way to do this. Note that append=False creates a new database each time.
+
+#+BEGIN_SRC python
+from vasp import Vasp
+import shutil
+import os
+
+calc = Vasp('~/dft-book-new-vasp/molecules/simple-co')
+atoms = calc.get_atoms()
+
+from ase.db import connect
+
+with connect('abc.db', append=False) as con:
+    print con.write(atoms, relaxed=True, data={'resort': calc.resort, 'running': True})
+
+atoms2 = con.get_atoms(id=1, add_additional_information=True)
+atoms2.info['data']['running']=False
+print atoms2.info
+con.write(atoms2, data=atoms2.info['data'], **atoms2.info['key_value_pairs'])
+#+END_SRC
+
+#+RESULTS:
+: 1
+: {'data': {u'resort': array([0, 1]), u'running': False}, 'key_value_pairs': {u'relaxed': True}, 'unique_id': u'e032fa3de495b66e0e1d891a5e257fc9'}
+
+#+BEGIN_SRC sh
+ase-db abc.db
+#+END_SRC
+
+#+RESULTS:
+: id|age|user    |formula|calculator| energy| fmax|pbc| volume|charge|  mass| smax|magmom
+:  1| 8s|jkitchin|CO     |vasp      |-14.691|5.091|TTT|216.000| 0.000|28.010|0.041| 0.000
+:  2| 8s|jkitchin|CO     |vasp      |-14.691|5.091|TTT|216.000| 0.000|28.010|0.041| 0.000
+: Rows: 2
+: Keys: relaxed
+
+
+#+BEGIN_SRC python
+from ase.db import connect
+con = connect('abc.db')
+
+print con.get_atoms(id=2, add_additional_information=True).info
+#+END_SRC
+
+#+RESULTS:
+: {'data': {u'resort': array([0, 1]), u'running': False}, 'key_value_pairs': {u'relaxed': True}, 'unique_id': u'9394e16ea478ec5c87de4a724da43f08'}
+
+* An approach to update row 1 in an ase-db
+
+First we create an entry.
+#+BEGIN_SRC python
+from vasp import Vasp
+import shutil
+import os
+
+calc = Vasp('~/dft-book-new-vasp/molecules/simple-co')
+atoms = calc.get_atoms()
+
+from ase.db import connect
+
+with connect('abc.db', append=False) as con:
+    print con.write(atoms, relaxed=True, data={'resort': calc.resort, 'running': True})
+#+END_SRC
+
+#+RESULTS:
+: 1
+
+#+BEGIN_SRC sh
+ase-db abc.db
+#+END_SRC
+
+#+RESULTS:
+: id|age|user    |formula|calculator| energy| fmax|pbc| volume|charge|  mass| smax|magmom
+:  1| 3s|jkitchin|CO     |vasp      |-14.691|5.091|TTT|216.000| 0.000|28.010|0.041| 0.000
+: Rows: 1
+: Keys: relaxed
+
+To get the atoms we do this. We cannot use append=False here because it seems to delete the db right away. We modify some key-value pairs, update the data, and the positions.
+
+#+BEGIN_SRC python
+from ase.db import connect
+
+with connect('abc.db') as con:
+    atoms = con.get_atoms(id=1, add_additional_information=True)
+
+atoms.positions = [[0, 0, 0], [1.5, 0, 0]]
+atoms.cell = (9, 9, 9)
+
+data = atoms.info['data']
+kv = atoms.info['key_value_pairs']
+
+del kv['relaxed']
+kv['status'] = 'finished'
+
+data['running'] = False
+
+with connect('abc.db', append=False) as con:
+    print con.write(atoms, data=data, **kv)
+#+END_SRC
+
+#+RESULTS:
+: 1
+
+#+BEGIN_SRC python
+from ase.db import connect
+
+with connect('abc.db') as con:
+    atoms = con.get_atoms(id=1, add_additional_information=True)
+
+print atoms.info
+#+END_SRC
+
+#+RESULTS:
+: {'data': {u'resort': array([0, 1]), u'running': False}, 'key_value_pairs': {u'status': u'finished'}, 'unique_id': u'b07e2f4f43ca475537fd4846c3d48019'}
+
+#+BEGIN_SRC sh
+ase-db abc.db id=1 -l
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+name      |unit  |value
+id        |      |1
+age       |      |10.658 seconds
+formula   |      |CO
+user      |      |jkitchin
+calculator|      |vasp
+charge    ||e|   |0.0
+mass      |au    |28.0104
+unique id |      |b07e2f4f43ca475537fd4846c3d48019
+volume    |Ang^3 |729.0
+
+Unit cell in Ang:
+axis|periodic|          x|          y|          z
+   1|     yes|      9.000|      0.000|      0.000
+   2|     yes|      0.000|      9.000|      0.000
+   3|     yes|      0.000|      0.000|      9.000
+
+Key-value pairs:
+status|finished
+
+Data: resort, running
+#+end_example
+
+It looks like things have been updated.
+
+
+
+* Using Vasp.write_db
+
+#+BEGIN_SRC python
+from vasp import Vasp
+
+calc = Vasp('~/dft-book-new-vasp/molecules/simple-co')
+atoms = calc.get_atoms()
+
+calc.write_db(data={'resort': calc.resort},
+              jobid='123.gilgameshe.cheme.cmu.edu')
+#+END_SRC
+
+#+RESULTS:
+
+# Now
+#+BEGIN_SRC python
+import os
+from vasp import Vasp
+
+calc = Vasp('~/dft-book-new-vasp/molecules/simple-co')
+
+from ase.db import connect
+with connect(os.path.join(calc.directory, 'DB.db')) as con:
+    at = con.get(id=1)
+
+    print at.key_value_pairs.get('jobid', None)
+
+
+print calc.get_db_kv('jobid')
+print calc.get_db_data('resort')
+print calc.get_db('jobid')
+print calc.get_db('resort')
+
+jobid, resort = calc.get_db('jobid', 'resort')
+print jobid, resort
+#+END_SRC
+
+#+RESULTS:
+: 123.gilgameshe.cheme.cmu.edu
+: 123.gilgameshe.cheme.cmu.edu
+: [0 1]
+: 123.gilgameshe.cheme.cmu.edu
+: [0 1]
+: 123.gilgameshe.cheme.cmu.edu [0 1]
+
+Now we can delete a key like this, by setting jobid to None
+#+BEGIN_SRC python
+import os
+from vasp import Vasp
+
+calc = Vasp('~/dft-book-new-vasp/molecules/simple-co')
+
+calc.write_db(jobid=None)
+
+from ase.db import connect
+with connect(os.path.join(calc.directory, 'DB.db')) as con:
+    at = con.get(id=1)
+
+    print at.key_value_pairs.get('jobid', None)
+    print at.data
+
+
+
+#+END_SRC
+
+#+RESULTS:
+: None
+: {u'resort': array([0, 1])}
+
+
 * archive
 ** stuff
 

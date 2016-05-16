@@ -30,12 +30,12 @@ def getstatusoutput(*args, **kwargs):
 @monkeypatch_class(vasp.Vasp)
 def in_queue(self):
     """Return True or False if the directory has a job in the queue."""
-    if 'jobid' not in self.metadata:
-        log.debug('jobid not found in {}', self.metadata)
+    if self.get_db('jobid') is None:
+        log.debug('jobid not found for calculation.')
         return False
     else:
         # get the jobid
-        jobid = self.metadata['jobid']
+        jobid = self.get_db('jobid')
         # see if jobid is in queue
         _, jobids_in_queue, _ = getstatusoutput('qselect',
                                                 stdout=subprocess.PIPE,
@@ -69,12 +69,11 @@ def calculate(self, atoms=None, properties=['energy'],
     log.debug('In queue: {}'.format(self.in_queue()))
     if self.in_queue():
         raise VaspQueued('{} Queued: {}'.format(self.directory,
-                                                self.metadata['jobid']))
+                                                self.get_db('jobid')))
 
     # not in queue. Delete the jobid
-    if 'jobid' in self.metadata:
-        del self.metadata['jobid']
-        self.write_metadata()
+    if self.get_db('jobid') is not None:
+        self.write_db(jobid=None)
 
         # we should check for errors here.
         self.read_results()
@@ -186,8 +185,7 @@ runvasp.py     # this is the vasp command
     if out == '' or err != '':
         raise Exception('something went wrong in qsub:\n\n{0}'.format(err))
 
-    self.metadata['jobid'] = out.strip()
-    self.write_metadata()
+    self.write_db(jobid=out.strip())
 
     raise VaspSubmitted('{} submitted: {}'.format(self.directory,
                                                   out.strip()))

@@ -33,32 +33,33 @@ def get_bandstructure(self,
     ef = self.get_fermi_level()
 
     # run in non-selfconsistent directory
-    cwd = os.getcwd()
-    base, end = os.path.split(cwd)
-    wd = cwd + '/bandstructure'
+
+    wd = os.path.join(self.directory, 'bandstructure')
     self.clone(wd)
 
-    calc = vasp.Vasp(wd,
-                     kpts=kpts,
-                     kpts_nintersections=kpts_nintersections,
-                     reciprocal=True,
-                     nsw=0,  # no ionic updates required
-                     isif=None,
-                     ibrion=None,
-                     icharg=11)
+    calc = vasp.Vasp(wd)
+    calc.set(kpts=kpts,
+             kpts_nintersections=kpts_nintersections,
+             reciprocal=True,
+             nsw=0,  # no ionic updates required
+             isif=None,
+             ibrion=None,
+             icharg=11)
+    calc.update()
 
     calc.stop_if(calc.get_potential_energy() is None)
 
     fig = plt.figure()
-    with open(os.path.join(self.directory, 'EIGENVAL')) as f:
-        line1 = f.readline()
-        line2 = f.readline()
-        line3 = f.readline()
-        line4 = f.readline()
-        comment = f.readline()
+    with open(os.path.join(wd, 'EIGENVAL')) as f:
+        # skip 5 lines
+        f.readline()
+        f.readline()
+        f.readline()
+        f.readline()
+        f.readline()
         unknown, npoints, nbands = [int(x) for x in f.readline().split()]
 
-        blankline = f.readline()
+        f.readline()  # skip line
 
         band_energies = [[] for i in range(nbands)]
 
@@ -69,7 +70,7 @@ def get_bandstructure(self,
                 fields = f.readline().split()
                 id, energy = int(fields[0]), float(fields[1])
                 band_energies[id-1].append(energy)
-            blankline = f.readline()
+            f.readline()  # skip line
 
     ax1 = plt.subplot(121)
     for i in range(nbands):

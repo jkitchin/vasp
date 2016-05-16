@@ -36,6 +36,72 @@ from monkeypatch import monkeypatch_class
 #         return None
 
 
+# @monkeypatch_class(vasp.Vasp)
+# def get_db_kv(self, *keys):
+#     """Retrieve values for each key in *keys from the local DB.
+
+#     Returns a list of values, unless only one key is present then it
+#     returns a single value.
+
+#     """
+#     from ase.db import connect
+#     dbfile = os.path.join(self.directory, 'DB.db')
+#     if not os.path.exists(dbfile):
+#         return [None for key in keys] if len(keys) > 0 else None
+
+#     with connect(dbfile) as con:
+#         at = con.get(id=1)
+#         vals = [at.key_value_pairs.get(key, None) for key in keys]
+
+#         return vals if len(vals) > 1 else vals[0]
+
+
+# @monkeypatch_class(vasp.Vasp)
+# def get_db_data(self, *keys):
+#     """Retrieve values for each key in *keys from the data in the local DB.
+
+#     Returns a list of values, unless only one key is present then it
+#     returns a single value.
+
+#     """
+#     from ase.db import connect
+#     dbfile = os.path.join(self.directory, 'DB.db')
+#     if not os.path.exists(dbfile):
+#         return [None for key in keys] if len(keys) > 0 else None
+
+#     with connect(dbfile) as con:
+#         at = con.get(id=1)
+#         vals = [at.data.get(key, None) for key in keys]
+
+#         return vals if len(vals) > 1 else vals[0]
+
+
+@monkeypatch_class(vasp.Vasp)
+def get_db(self, *keys):
+    """Retrieve values for each key in keys.
+
+    First look for key/value, then in data.
+
+    """
+    vals = [None for key in keys]
+    from ase.db import connect
+    dbfile = os.path.join(self.directory, 'DB.db')
+
+    if not os.path.exists(dbfile):
+        return [None for key in keys] if len(keys) > 1 else None
+
+    with connect(dbfile) as con:
+        try:
+            at = con.get(id=1)
+            for i, key in enumerate(keys):
+                vals[i] = (at.key_value_pairs.get(key, None)
+                           or at.data.get(key, None))
+        except KeyError, e:
+            if e.message == 'no match':
+                pass
+    return vals if len(vals) > 1 else vals[0]
+
+
 @monkeypatch_class(vasp.Vasp)
 def get_beefens(self, n=-1):
     """Get the BEEFens 2000 ensemble energies from the OUTCAR.

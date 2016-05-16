@@ -6,7 +6,7 @@ import numpy as np
 import vasp
 from vasp import log
 from ase.calculators.calculator import Parameters
-
+import exceptions
 from monkeypatch import monkeypatch_class
 
 
@@ -233,24 +233,32 @@ def read_metadata(self, fname=None):
 
 
 @monkeypatch_class(vasp.Vasp)
-def read(self):
+def read(self, restart=None):
     """Read the files in a calculation if they exist.
 
-    Returns the atoms and a Parameters dictionary.
+    restart is ignored, but part of the signature for ase. I am not
+    sure what we could use it for.
+
+    sets self.parameters and atoms.
+
     """
 
-    params = Parameters()
+    self.neb = None
+    # NEB is special and handled separately
+    if self.get_state() == vasp.Vasp.NEB:
+        self.read_neb()
+        return
 
-    self.read_metadata()
+    # Else read a regular calculation. we start with reading stuff
+    # that is independent of the calculation state.
+    self.parameters = Parameters()
 
     if os.path.exists(self.incar):
-        params.update(self.read_incar())
+        self.parameters.update(self.read_incar())
     if os.path.exists(self.potcar):
-        params.update(self.read_potcar())
+        self.parameters.update(self.read_potcar())
     if os.path.exists(self.kpoints):
-        params.update(self.read_kpoints())
-
-
+        self.parameters.update(self.read_kpoints())
 
     # We have to figure out the xc that was used based on the
     # Parameter keys.  We sort the possible xc dictionaries so the
@@ -262,16 +270,17 @@ def read(self):
                      reverse=True)
 
     for ex in xc_keys:
-        pd = {k: params.get(k, None) for k in vasp.Vasp.xc_defaults[ex]}
+        pd = {k: self.parameters.get(k, None)
+              for k in vasp.Vasp.xc_defaults[ex]}
         if pd == vasp.Vasp.xc_defaults[ex]:
-            params['xc'] = ex
+            self.parameters['xc'] = ex
             break
 
     # reconstruct ldau_luj. special setups might break this.
-    if 'ldauu' in params:
-        ldaul = params['ldaul']
-        ldauj = params['ldauj']
-        ldauu = params['ldauu']
+    if 'ldauu' in self.parameters:
+        ldaul = self.parameters['ldaul']
+        ldauj = self.parameters['ldauj']
+        ldauu = self.parameters['ldauu']
 
         with open(self.potcar) as f:
             lines = f.readlines()
@@ -286,7 +295,10 @@ def read(self):
         for sym, l, j, u in zip(symbols, ldaul, ldauj, ldauu):
             ldau_luj[sym] = {'L': l, 'U': u, 'J': j}
 
-        params['ldau_luj'] = ldau_luj
+        self.parameters['ldau_luj'] = ldau_luj
+
+    # Now for the atoms. This does depend on the state.
+    self.resort = self.get_db('resort')
 
     import ase.io
     contcar = os.path.join(self.directory, 'CONTCAR')
@@ -300,10 +312,119 @@ def read(self):
     poscar = os.path.join(self.directory, 'POSCAR')
 
     if os.path.exists(contcar) and not empty_contcar:
-        atoms = ase.io.read(contcar)[self.metadata['resort']]
+        atoms = ase.io.read(contcar)
     elif os.path.exists(poscar):
-        atoms = ase.io.read(poscar)[self.metadata['resort']]
+        atoms = ase.io.read(poscar)
     else:
         atoms = None
 
-    return (atoms, params)
+    if atoms is not None and self.resort is not None:
+        atoms = atoms[self.resort]
+        self.sort_atoms(atoms)
+
+    self.read_results()
+
+
+@monkeypatch_class(vasp.Vasp)
+def read_results(self):
+    """Read energy, forces, stress, magmom and magmoms from output file.
+
+    Other quantities will be read by other functions. This depends on
+    state.
+
+    """
+    state = self.get_state()
+    if state == vasp.Vasp.NEB:
+        # This is handled in self.read()
+        return
+
+    if state != vasp.Vasp.FINISHED:
+        self.results = {}
+    else:
+        # regular calculation that is finished
+        from ase.io.vasp import read_vasp_xml
+        if not os.path.exists(os.path.join(self.directory,
+                                           'vasprun.xml')):
+            exc = 'No vasprun.xml in {}'.format(self.directory)
+            raise exceptions.VaspNotFinished(exc)
+
+        atoms = read_vasp_xml(os.path.join(self.directory,
+                                           'vasprun.xml')).next()
+
+        energy = atoms.get_potential_energy()
+        forces = atoms.get_forces()  # needs to be resorted
+        stress = atoms.get_stress()
+
+        if self.atoms is None:
+            atoms = atoms[self.metadata['resort']]
+            self.sort_atoms(atoms)
+            self.atoms.set_calculator(self)
+        else:
+            # update the atoms
+            self.atoms.positions = atoms.positions[self.metadata['resort']]
+            self.atoms.cell = atoms.cell
+
+        self.results['energy'] = energy
+        self.results['forces'] = forces[self.resort]
+        self.results['stress'] = stress
+        self.results['dipole'] = None
+        self.results['charges'] = np.array([None for atom in self.atoms])
+
+        magnetic_moment = 0
+        magnetic_moments = np.zeros(len(atoms))
+        if self.parameters.get('ispin', 0) == 2:
+            lines = open(os.path.join(self.directory, 'OUTCAR'),
+                         'r').readlines()
+            for n, line in enumerate(lines):
+                if line.rfind('number of electron  ') > -1:
+                    magnetic_moment = float(line.split()[-1])
+
+                if line.rfind('magnetization (x)') > -1:
+                    for m in range(len(atoms)):
+                        magnetic_moments[m] = float(lines[n + m + 4].split()[4])
+
+        self.results['magmom'] = magnetic_moment
+        self.results['magmoms'] = np.array(magnetic_moments)[self.resort]
+
+
+@monkeypatch_class(vasp.Vasp)
+def read_neb(self):
+    """Read an NEB calculator."""
+    print('Reading neb')
+    import ase
+    import glob
+    atoms = []
+    atoms += [ase.io.read('{}/00/POSCAR'.format(self.directory))]
+    for p in glob.glob('{}/0[0-9]/CONTCAR'.format(self.directory)):
+        atoms += [ase.io.read(p)]
+    atoms += [ase.io.read('{}/0{}/POSCAR'.format(self.directory,
+                                                 len(atoms)))]
+    self.neb = atoms
+    self.parameters = {}
+    self.set(images=(len(atoms) - 2))
+    self.atoms = atoms[0].copy()
+
+    if os.path.exists(self.incar):
+        self.parameters.update(self.read_incar())
+    if os.path.exists(self.potcar):
+        self.parameters.update(self.read_potcar())
+    if os.path.exists(self.kpoints):
+        self.parameters.update(self.read_kpoints())
+
+    self.read_metadata()
+
+    # Update the xc functional
+    xc_keys = sorted(vasp.Vasp.xc_defaults,
+                     key=lambda k: len(vasp.Vasp.xc_defaults[k]),
+                     reverse=True)
+
+    for ex in xc_keys:
+        pd = {k: self.parameters.get(k, None)
+              for k in vasp.Vasp.xc_defaults[ex]}
+        if pd == vasp.Vasp.xc_defaults[ex]:
+            self.parameters['xc'] = ex
+            break
+
+    energies = []
+
+    self.results = {'energy': None}

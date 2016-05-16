@@ -25,7 +25,73 @@ def write_input(self, atoms=None, properties=None, system_changes=None):
     self.write_incar()
     self.write_kpoints()
     self.write_potcar()
-    self.write_metadata()
+    self.write_db()
+
+
+@monkeypatch_class(vasp.Vasp)
+def write_db(self, atoms=None, fname=None, data=None, **kwargs):
+    """Write the DB file.
+
+    atoms can be any atoms object, defaults to self.get_atoms().
+    fname can be anything, defaults to self.directory/DB.db
+
+    data is a dictionary of data to store.
+
+    kwargs is key=value pairs to store with the atoms.
+
+    Existing data and kwargs are preserved. You can delete kwargs by
+    setting them to None. You can delete data by setting the key to
+    None in the data dictionary.
+
+    Only row 1 should be in this database.
+
+    """
+    from ase.db import connect
+
+    if fname is None:
+        fname = os.path.join(self.directory, 'DB.db')
+
+    fdata = {'resort': self.resort}
+    fkv = {'path': self.directory}
+
+    # get current data and keywords
+    if os.path.exists(fname):
+
+        with connect(fname) as con:
+            try:
+                temp_atoms = con.get_atoms(id=1,
+                                           add_additional_information=True)
+                fdata.update(temp_atoms.info['data'])
+                fkv.update(temp_atoms.info['key_value_pairs'])
+            except KeyError:
+                pass
+
+    # Update fdata from input args. None removes keywords and data
+    # elements
+    if data is not None:
+        for key, val in data.iteritems():
+            if val is None and key in fdata:
+                del fdata[key]
+            else:
+                fdata.update({key: val})
+
+    # update key-value pairs from input args
+    for key, val in kwargs.iteritems():
+        # we use None to delete keys
+        if val is None and key in fkv:
+            del fkv[key]
+        elif val is not None:
+            fkv.update({key: val})
+
+    if atoms is None:
+        atoms = self.get_atoms()
+
+    # TODO: NEB? should contain images?
+    # write out in non-append mode.
+    with connect(fname, append=False) as con:
+        con.write(atoms,
+                  data=fdata,
+                  **fkv)
 
 
 @monkeypatch_class(vasp.Vasp)
