@@ -673,6 +673,50 @@ with connect(os.path.join(calc.directory, 'DB.db')) as con:
 : {u'resort': array([0, 1])}
 
 
+
+#+BEGIN_SRC python
+from ase.db import connect
+
+with connect('ase.db') as con2:
+    print 'c', con2.update(1, delete_keys=['running'])
+#+END_SRC
+
+#+RESULTS:
+
+#+BEGIN_SRC python
+from ase.db import connect
+
+with connect('ase.db') as con:
+    print con.get_atoms(id=1, add_additional_information=True).info
+#+END_SRC
+
+#+RESULTS:
+: {'data': {u'resort': array([0, 1])}, 'key_value_pairs': {u'running': True}, 'unique_id': u'4fd1a4085307494d4c2d0a52e3c6270c'}
+
+
+
+#+BEGIN_SRC sh
+ase-db ase.db
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+id| age|user    |formula|calculator| energy| fmax|pbc| volume|charge|  mass| smax|magmom
+ 1| 20h|jkitchin|CO     |vasp      |-14.687|5.091|TTT|216.000| 0.000|28.010|0.041| 0.000
+ 2|264s|jkitchin|CO     |vasp      |-14.687|5.091|TTT|216.000| 0.000|28.010|0.041| 0.000
+ 3|256s|jkitchin|CO     |vasp      |-14.687|5.091|TTT|216.000| 0.000|28.010|0.041| 0.000
+ 4|252s|jkitchin|CO     |vasp      |-14.687|5.091|TTT|216.000| 0.000|28.010|0.041| 0.000
+ 5|247s|jkitchin|CO     |vasp      |-14.687|5.091|TTT|216.000| 0.000|28.010|0.041| 0.000
+ 6|243s|jkitchin|CO     |vasp      |-14.687|5.091|TTT|216.000| 0.000|28.010|0.041| 0.000
+ 7|222s|jkitchin|CO     |vasp      |-14.687|5.091|TTT|216.000| 0.000|28.010|0.041| 0.000
+ 8|203s|jkitchin|CO     |vasp      |-14.687|5.091|TTT|216.000| 0.000|28.010|0.041| 0.000
+ 9|194s|jkitchin|CO     |vasp      |-14.687|5.091|TTT|216.000| 0.000|28.010|0.041| 0.000
+10|157s|jkitchin|CO     |vasp      |-14.687|5.091|TTT|216.000| 0.000|28.010|0.041| 0.000
+11|153s|jkitchin|CO     |vasp      |-14.687|5.091|TTT|216.000| 0.000|28.010|0.041| 0.000
+Rows: 11
+Keys: running
+#+end_example
+
 * archive
 ** stuff
 

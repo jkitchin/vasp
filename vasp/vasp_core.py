@@ -210,6 +210,7 @@ class Vasp(FileIOCalculator, object):
         # the atoms and parameters. This reads params and results from
         # existing files if they are there. It calls self.read(). It
         # should update the atoms from what is on file.
+
         if self.neb is not None:
             FileIOCalculator.__init__(self, restart, ignore_bad_restart_file,
                                       label)
@@ -219,16 +220,20 @@ class Vasp(FileIOCalculator, object):
                                       label, atoms)
 
         # The calculator should be up to date with the file
-        # system. Now we check for consistency with the kwargs passed
-        # in.  First we update kwargs with the special kwarg
+        # system here.
+
+        # Add default parameters if they aren't set otherwise.
+        for key, val in Vasp.default_parameters.iteritems():
+            if key not in kwargs:
+                kwargs[key] = val
+
+        # Next we update kwargs with the special kwarg
         # dictionaries.
         if 'ispin' in kwargs:
             ispin = kwargs['ispin']
             del kwargs['ispin']
         else:
             ispin = None
-
-        kwargs.update(Vasp.default_parameters)
 
         if 'ldau_luj' in kwargs:
             kwargs.update(self.set_ldau_luj_dict(kwargs['ldau_luj']))

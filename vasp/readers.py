@@ -276,8 +276,11 @@ def read(self, restart=None):
 
         self.parameters['ldau_luj'] = ldau_luj
 
-    # Now for the atoms. This does depend on the state.
+    # Now for the atoms. This does depend on the state. self.resort
+    # needs to be a list for shuffling constraints if they exist.
     self.resort = self.get_db('resort')
+    if self.resort is not None:
+        self.resort = list(self.resort)
 
     import ase.io
     contcar = os.path.join(self.directory, 'CONTCAR')
@@ -298,10 +301,6 @@ def read(self, restart=None):
         atoms = None
 
     if atoms is not None:
-        if atoms.constraints is not None:
-            cons = atoms.constraints
-            #print dir(cons[0])
-            #self.abort()
         atoms = atoms[self.resort]
         self.sort_atoms(atoms)
 
