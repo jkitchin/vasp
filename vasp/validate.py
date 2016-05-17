@@ -110,7 +110,8 @@ def lorbit(calc, val):
     Determines whether the PROCAR or PROOUT files are written.
     http://cms.mpi.univie.ac.at/wiki/index.php/LORBIT
     """
-    assert 'rwigs' in calc.parameters
+    if val < 10:
+        assert 'rwigs' in calc.parameters
     assert isinstance(val, int)
 
 
