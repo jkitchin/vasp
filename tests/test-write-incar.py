@@ -46,5 +46,33 @@ def test0():
     assert 'magmom' not in incar
 
 
-if __name__ == '__main__':
-    test0()
+@with_setup(setup_func, teardown_func)
+def test1():
+    atoms = Atoms([Atom('O', [4, 5, 5], magmom=1),
+                   Atom('C', [5, 5, 5], magmom=2),
+                   Atom('O', [6, 5, 5], magmom=3)],
+                   cell=(10, 10, 10))
+
+    calc = Vasp('vasp',
+                ispin=2,
+                nsw=1,
+                atoms=atoms)
+
+    calc.write_incar('INCAR')
+
+    incar = calc.read_incar('INCAR')
+
+    assert incar['lwave'] is True
+    assert incar['nsw'] == 1
+
+    calc.set(nsw=0)
+    calc.write_incar('INCAR')
+    incar = calc.read_incar('INCAR')
+    assert incar['lwave'] is False
+    assert incar['nsw'] == 0
+
+    calc.set(nsw=None)
+    calc.write_incar('INCAR')
+    incar = calc.read_incar('INCAR')
+    assert incar['lwave'] is False
+    assert 'nsw' not in incar
