@@ -254,8 +254,8 @@ class Vasp(FileIOCalculator, object):
             self.sort_atoms(self.neb[0])
 
         # This one depends on having atoms already.
-        if 'ispin' in kwargs:
-            kwargs.update(self.set_ispin_dict(ispin))
+        if ispin is not None:
+            self.set(**self.set_ispin_dict(ispin))
 
     def sort_atoms(self, atoms=None):
         """Generate resort list, and make list of POTCARs to use.
@@ -374,7 +374,6 @@ class Vasp(FileIOCalculator, object):
             self.directory, self.prefix = d, None
             if not os.path.isdir(self.directory):
                 os.makedirs(self.directory)
-
 
         # Convenient attributes for file names
         for f in ['INCAR', 'POSCAR', 'CONTCAR', 'POTCAR',
@@ -565,6 +564,10 @@ class Vasp(FileIOCalculator, object):
         """Stop program if not ready."""
         self.stop_if(self.potential_energy is None)
 
+    def run(self):
+        """Convenience function to run calculation."""
+        return self.potential_energy
+
     def clone(self, newdir):
         """Copy the calculation directory to newdir and set label to
         newdir.
@@ -577,7 +580,6 @@ class Vasp(FileIOCalculator, object):
             shutil.copytree(self.directory, newdir)
 
             # need some cleanup here. do not copy jobids, etc...
-            # TODO
             # What survives depends on the state
             # delete these files if not finished.
             if state in [Vasp.QUEUED, Vasp.NOTFINISHED]:
@@ -590,6 +592,7 @@ class Vasp(FileIOCalculator, object):
                 os.unlink(os.path.join(newdir, 'CONTCAR'))
 
         self.__init__(newdir)
+        self.write_db(jobid=None, path=newdir)
 
     def get_state(self):
         """Determine calculation state based on directory contents.

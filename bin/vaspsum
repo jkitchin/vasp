@@ -1,0 +1,50 @@
+#!/usr/bin/env python
+import os
+from vasp import Vasp
+from vasp.vasprc import VASPRC
+import argparse
+
+
+# this should not start calculations
+VASPRC['mode'] = None
+
+parser = argparse.ArgumentParser(description='summarize vasp calculations')
+
+parser.add_argument('-d', '--debug', action='store_true',
+                    help = 'turn debug on')
+
+parser.add_argument('--vasp', action='store_true',
+                    help = 'prints vasp representation')
+
+parser.add_argument('-j', '--json', action='store_true',
+                    help = 'prints json representation')
+
+parser.add_argument('--jsonpp', action='store_true',
+                    help = 'pretty-prints json representation')
+
+parser.add_argument('dirs', nargs='*',
+                    default = ['.'],
+                    help='directories to summarize')
+
+args = parser.parse_args()
+
+if args.debug:
+    debug = logging.DEBUG
+else:
+    debug = None
+
+
+for d in args.dirs:
+    if not os.path.isdir(d):
+        raise Exception('{0} does not exist!'.format(d))
+
+    calc = Vasp(d, debug=debug)
+
+    if args.vasp:
+        print(calc.vasp)
+    elif args.json:
+        print(calc.json)
+    elif args.jsonpp:
+        print(calc.jsonpp)
+    else:
+        print(calc)

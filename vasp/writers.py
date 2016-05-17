@@ -51,7 +51,9 @@ def write_db(self, atoms=None, fname=None, data=None, **kwargs):
     if fname is None:
         fname = os.path.join(self.directory, 'DB.db')
 
-    fdata = {'resort': self.resort}
+    fdata = {'resort': self.resort,
+             'parameters': self.parameters,
+             'ppp_list': self.ppp_list}
     fkv = {'path': self.directory}
 
     # get current data and keywords

@@ -34,6 +34,7 @@ import getters
 import setters
 import vib
 import neb
+import serialize
 import runner
 import bader
 

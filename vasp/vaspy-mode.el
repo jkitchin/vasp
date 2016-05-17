@@ -12,7 +12,7 @@
     "python -c \"from vasp.validate import keywords; print keywords()\"")))
 
 (defvar *vasp-keywords-regex*
-  (regexp-opt (vasp-keywords))
+  (regexp-opt (vasp-keywords) 'symbols)
   "Regexp for vasp keywords.")
 
 (defun vasp-tooltip-1 (_ _ position)
