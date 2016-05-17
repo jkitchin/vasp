@@ -7,14 +7,18 @@ class methods are actually imported at the end.
 
 import os
 import subprocess
+import warnings
 import numpy as np
 import ase
 from ase.calculators.calculator import Calculator
 from ase.calculators.calculator import FileIOCalculator
+from ase.io.vasp import read_vasp_xml
 
+# internal modules
 import exceptions
 from vasp import log
-from ase.io.vasp import read_vasp_xml
+import validate
+from vasprc import VASPRC
 
 
 def VaspExceptionHandler(calc, exc_type, exc_value, exc_traceback):
@@ -238,14 +242,14 @@ class Vasp(FileIOCalculator, object):
         else:
             ispin = None
 
-        if 'ldau_luj' in kwargs:
-            kwargs.update(self.set_ldau_luj_dict(kwargs['ldau_luj']))
+        # if 'ldau_luj' in kwargs:
+        #     kwargs.update(self.set_ldau_luj_dict(kwargs['ldau_luj']))
 
-        if 'xc' in kwargs:
-            kwargs.update(self.set_xc_dict(kwargs['xc'].lower()))
+        # if 'xc' in kwargs:
+        #     kwargs.update(self.set_xc_dict(kwargs['xc'].lower()))
 
-        if 'nsw' in kwargs:
-            kwargs.update(self.set_nsw_dict(kwargs['nsw']))
+        # if 'nsw' in kwargs:
+        #     kwargs.update(self.set_nsw_dict(kwargs['nsw']))
 
         # Now update the parameters. If there are any new kwargs here,
         # it will reset the calculator and cause a calculation to be
@@ -262,6 +266,14 @@ class Vasp(FileIOCalculator, object):
         # This one depends on having atoms already.
         if ispin is not None:
             self.set(**self.set_ispin_dict(ispin))
+
+        if VASPRC['validate']:
+            for key, val in self.parameters.iteritems():
+                if key in validate.__dict__:
+                    f = validate.__dict__[key]
+                    f(self, val)
+                else:
+                    warnings.warn('No validation for {}'.format(key))
 
     def sort_atoms(self, atoms=None):
         """Generate resort list, and make list of POTCARs to use.
@@ -702,3 +714,17 @@ class Vasp(FileIOCalculator, object):
             return view(self.traj[index])
         else:
             return view(self.traj)
+
+
+    def describe(self, long=False):
+        """Describe each parameters used from the docstrings in vasp.validate."""
+        for key in sorted(self.parameters.keys()):
+            if key in validate.__dict__:
+                f = validate.__dict__[key]
+                d = f.__doc__ or 'No docstring found.'
+                print('{} = {}:'.format(key, self.parameters[key]))
+                if long:
+                    print('  ' + d)
+                else:
+                    print('  ' + d.split('\n')[0])
+                print('')

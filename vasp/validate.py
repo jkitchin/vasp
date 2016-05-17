@@ -6,34 +6,43 @@ docstring. The first line will be used as a tooltip in Emacs. A command will
 give access to the full docstring. It is encouraged to put URLs to full
 documentation, as they will be clickable in Emacs.
 
+http://cms.mpi.univie.ac.at/wiki/index.php/Category:INCAR
+
 """
 import types
-from vasp import Vasp
 
 
 def ediffg(calc, val):
-    """EDIFFG defines the break condition for the ionic relaxation loop.
+    """EDIFFG defines the break condition for the ionic relaxation loop. (float)
 
     If EDIFFG < 0, it defines a force criteria.
+
+    http://cms.mpi.univie.ac.at/wiki/index.php/EDIFFG
     """
     assert isinstance(val, float) or val == 0
 
 
 def encut(calc, val):
-    """Planewave cutoff in eV."""
+    """Planewave cutoff in eV. (float)
+
+    http://cms.mpi.univie.ac.at/wiki/index.php/ENCUT
+    """
     assert val > 0, 'encut must be greater than zero.'
     assert isinstance(val, int) or isinstance(val, float),\
         'encut should be an int or float'
 
 
 def ibrion(calc, val):
-    """IBRION determines how the ions are updated and moved."""
+    """IBRION determines the algorithm to update geometry during relaxtion. (int)
+
+    http://cms.mpi.univie.ac.at/wiki/index.php/IBRION
+
+    """
     assert val in [-1, 0, 1, 2, 3, 5, 6, 7, 8, 44]
 
 
 def isif(calc, val):
-    """ISIF determines which DOF (ions, cell volume, cell shape) are allowed to
-    change.
+    """ISIF determines what is changed during relaxations. (int)
 
     | ISIF | calculate | calculate        | relax | change     | change      |
     |      | force     | stress tensor    | ions  | cell shape | cell volume |
@@ -52,18 +61,19 @@ def isif(calc, val):
 
 
 def ismear(calc, val):
-    """ISMEAR determines how the partial occupancies $ f_{n{\bf k}}$ are set for
-    each orbital.
+    """ISMEAR determines how the partial occupancies are set (int).
 
     """
     assert val in [-5, -4, -3, -2, 0, 1, 2]
 
 
 def ispin(calc, val):
-    """Control spin-polarization.
+    """Control spin-polarization. (int)
 
     1 - default, no spin polarization
     2 - spin-polarization.
+
+    http://cms.mpi.univie.ac.at/wiki/index.php/ISPIN
 
     """
     assert val in [1, 2], "ispin should be 1 or 2"
@@ -73,26 +83,115 @@ def ispin(calc, val):
                    "len(magmom) != len(atoms)"
 
 
-def nsw(calc, val):
-    """NSW sets the maximum number of ionic steps."""
+def kpts(calc, val):
+    """Sets k-points. Not a Vasp keyword. (list or tuple)"""
+    assert isinstance(val, list) or isinstance(val, tuple)
+
+
+def kpts_nintersections(calc, val):
+    """Triggers line mode in KPOINTS for bandstructure calculations. (int)
+
+    http://cms.mpi.univie.ac.at/vasp/vasp/Strings_k_points_bandstructure_calculations.html
+    """
     assert isinstance(val, int)
 
 
+def lcharg(calc, val):
+    """LCHARG determines whether CHGCAR and CHG are written. (boolean)
+
+    http://cms.mpi.univie.ac.at/wiki/index.php/LCHARG
+
+    """
+    assert val in [True, False]
+
+
+def lorbit(calc, val):
+    """
+    Determines whether the PROCAR or PROOUT files are written.
+    http://cms.mpi.univie.ac.at/wiki/index.php/LORBIT
+    """
+    assert 'rwigs' in calc.parameters
+    assert isinstance(val, int)
+
+
+def lwave(calc, val):
+    """LWAVE determines whether the WAVECAR is written. (Boolean)
+
+    http://cms.mpi.univie.ac.at/wiki/index.php/LWAVE
+    """
+    assert val in [True, False]
+
+
+def magmom(calc, val):
+    """MAGMOM Specifies the initial magnetic moment for each atom. (list)
+
+    http://cms.mpi.univie.ac.at/wiki/index.php/MAGMOM
+    """
+    assert isinstance(val, list)
+    assert len(val) == len(calc.atoms)
+
+
+def nbands(calc, val):
+    """NBANDS determines the actual number of bands in the calculation. (int)
+
+    http://cms.mpi.univie.ac.at/wiki/index.php/NBANDS
+
+    """
+    assert isinstance(val, int)
+    assert val > calc.get_valence_electrons() / 2
+
+
+def nsw(calc, val):
+    """NSW sets the maximum number of ionic steps. (int)
+
+    http://cms.mpi.univie.ac.at/wiki/index.php/NSW
+
+    """
+    assert isinstance(val, int)
+
+
+def pp(calc, val):
+    """Determines where POTCARS are retrieved from. (string)"""
+    assert val in ['PBE', 'LDA', 'GGA']
+
+
 def prec(calc, val):
-    """Precision."""
+    """Specifies the Precision-mode. (string)
+
+    http://cms.mpi.univie.ac.at/wiki/index.php/PREC
+    """
     assert val in ['Low', 'Medium', 'High', 'Normal', 'Accurate', 'Single']
 
 
+def reciprocal(calc, val):
+    """Specifies reciprocal coordinates in KPOINTS. (boolean)
+
+    Not a Vasp keyword."""
+    assert val in [True, False]
+
+
+def rwigs(calc, val):
+    """RWIGS specifies the Wigner-Seitz radius for each atom type.
+
+    http://cms.mpi.univie.ac.at/wiki/index.php/RWIGS
+    """
+    assert isinstance(val, list)
+    assert calc.parameters.get('lorbit', 0) < 10, \
+        'lorbit >= 10, rwigs is ignored.'
+
+
+
 def sigma(calc, val):
-    """SIGMA determines the width of the smearing in eV."""
+    """SIGMA determines the width of the smearing in eV. (float)"""
     assert isinstance(val, float)
     assert val > 0
 
 
 def xc(calc, val):
-    """Set exchange-correlation functional."""
-    assert val in Vasp.xc_defaults.keys(), \
-        "xc not in {}.".format(Vasp.xc_defaults.keys())
+    """Set exchange-correlation functional. (string)"""
+    import vasp
+    assert val.lower() in vasp.Vasp.xc_defaults.keys(), \
+        "xc ({}) not in {}.".format(val, vasp.Vasp.xc_defaults.keys())
 
 
 def keywords():

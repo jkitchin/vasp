@@ -51,6 +51,7 @@ def set_ispin_dict(self, val):
     # 1. if you use magmom as a keyword, they are used.
     # 2. if you set magmom on each atom in an Atoms object and do not use
     # magmom then we use the atoms magmom, if we have ispin=2 set.
+    # we set lorbit to 11 if ispin=2 so we can get the individual moments.
     if val is None:
         d = {}
         for key in ['ispin', 'magmom', 'lorbit']:

@@ -76,3 +76,43 @@ def test1():
     incar = calc.read_incar('INCAR')
     assert incar['lwave'] is False
     assert 'nsw' not in incar
+
+
+# default settings
+@with_setup(setup_func, teardown_func)
+def test2():
+    "check default sigma"
+
+    atoms = Atoms([Atom('O', [4, 5, 5], magmom=1),
+                   Atom('C', [5, 5, 5], magmom=2),
+                   Atom('O', [6, 5, 5], magmom=3)],
+                   cell=(10, 10, 10))
+
+    calc = Vasp('vasp',
+                atoms=atoms)
+
+    calc.write_incar('INCAR')
+
+    incar = calc.read_incar('INCAR')
+
+    assert incar['sigma'] == 0.1
+
+
+@with_setup(setup_func, teardown_func)
+def test2():
+    "check default sigma"
+
+    atoms = Atoms([Atom('O', [4, 5, 5], magmom=1),
+                   Atom('C', [5, 5, 5], magmom=2),
+                   Atom('O', [6, 5, 5], magmom=3)],
+                   cell=(10, 10, 10))
+
+    calc = Vasp('vasp',
+                sigma=0.01,
+                atoms=atoms)
+
+    calc.write_incar('INCAR')
+
+    incar = calc.read_incar('INCAR')
+
+    assert incar['sigma'] == 0.01

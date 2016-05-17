@@ -31,7 +31,8 @@ VASPRC = {'vasp.executable.serial':
           'queue.jobname': 'None',
           'multiprocessing.cores_per_process': 'None',
           'vdw_kernel.bindat': '/opt/kitchingroup/vasp-5.3.5/vdw_kernel.bindat',
-          'restart_unconverged': True
+          'restart_unconverged': True,
+          'validate': True
           }
 
 
