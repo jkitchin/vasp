@@ -11,6 +11,37 @@ is passed back to the set function.
 import numpy as np
 import vasp
 from monkeypatch import monkeypatch_class
+from ase.calculators.calculator import FileIOCalculator
+
+
+@monkeypatch_class(vasp.Vasp)
+def set(self, **kwargs):
+    """Set parameters with keyword=value pairs.
+
+    calc.set(xc='PBE')
+
+    A few special kwargs are handled separately to expand them
+    prior to setting the parameters. This is done to enable one
+    set to track changes.
+
+    """
+
+    if 'xc' in kwargs:
+        kwargs.update(self.set_xc_dict(kwargs['xc']))
+
+    if 'ispin' in kwargs:
+        kwargs.update(self.set_ispin_dict(kwargs['ispin']))
+
+    if 'ldau_luj' in kwargs:
+        kwargs.update(self.set_ldau_luj_dict(kwargs['ldau_luj']))
+
+    if 'nsw' in kwargs:
+        kwargs.update(self.set_nsw_dict(kwargs['nsw']))
+
+    changed_parameters = FileIOCalculator.set(self, **kwargs)
+    if changed_parameters:
+        self.reset()
+    return changed_parameters
 
 
 @monkeypatch_class(vasp.Vasp)

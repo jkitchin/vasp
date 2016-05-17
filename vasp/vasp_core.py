@@ -450,31 +450,6 @@ class Vasp(FileIOCalculator, object):
 
         return system_changes
 
-    def set(self, **kwargs):
-        """Set parameters with keyword=value pairs.
-
-        calc.set(xc='PBE')
-
-        A few special kwargs are handled separately to expand them
-        prior to setting the parameters. This is done to enable one
-        set to track changes.
-
-        """
-
-        if 'xc' in kwargs:
-            kwargs.update(self.set_xc_dict(kwargs['xc']))
-
-        if 'ispin' in kwargs:
-            kwargs.update(self.set_ispin_dict(kwargs['ispin']))
-
-        if 'ldau_luj' in kwargs:
-            kwargs.update(self.set_ldau_luj_dict(kwargs['ldau_luj']))
-
-        changed_parameters = FileIOCalculator.set(self, **kwargs)
-        if changed_parameters:
-            self.reset()
-        return changed_parameters
-
     def reset(self):
         """overwrite to avoid killing self.atoms."""
         self.results = {}
