@@ -197,7 +197,10 @@ class Vasp(FileIOCalculator, object):
         self.exception_handler = exception_handler
 
         self.neb = None
-        # We have to check this because an NEB uses a list of atoms objecs.
+        # We have to check for the type here this because an NEB uses
+        # a list of atoms objects. We set pbc to be True because that
+        # is what is read in from files, and if we don't the atoms
+        # look incompatible.
         if atoms is not None and isinstance(atoms, ase.atoms.Atoms):
             atoms.pbc = [True, True, True]
         elif atoms is not None:
@@ -240,6 +243,9 @@ class Vasp(FileIOCalculator, object):
 
         if 'xc' in kwargs:
             kwargs.update(self.set_xc_dict(kwargs['xc'].lower()))
+
+        if 'nsw' in kwargs:
+            kwargs.update(self.set_nsw_dict(kwargs['nsw']))
 
         # Now update the parameters. If there are any new kwargs here,
         # it will reset the calculator and cause a calculation to be
