@@ -8,6 +8,7 @@ class methods are actually imported at the end.
 import os
 import subprocess
 import numpy as np
+import ase
 from ase.calculators.calculator import Calculator
 from ase.calculators.calculator import FileIOCalculator
 
@@ -194,30 +195,46 @@ class Vasp(FileIOCalculator, object):
         self.set_label(label)  # set first so self.directory is right
         self.debug = debug
         self.exception_handler = exception_handler
-        if atoms is not None:
+
+        self.neb = None
+        # We have to check this because an NEB uses a list of atoms objecs.
+        if atoms is not None and isinstance(atoms, ase.atoms.Atoms):
             atoms.pbc = [True, True, True]
+        elif atoms is not None:
+            for a in atoms:
+                a.pbs = [True, True, True]
+            self.neb = True
+
         # We do not pass kwargs here. Some of the special kwargs
         # cannot be set at this point since they need to know about
         # the atoms and parameters. This reads params and results from
         # existing files if they are there. It calls self.read(). It
         # should update the atoms from what is on file.
-        FileIOCalculator.__init__(self, restart, ignore_bad_restart_file,
-                                  label, atoms)
+        if self.neb is not None:
+            FileIOCalculator.__init__(self, restart, ignore_bad_restart_file,
+                                      label)
+            self.neb = atoms
+        else:
+            FileIOCalculator.__init__(self, restart, ignore_bad_restart_file,
+                                      label, atoms)
 
         # The calculator should be up to date with the file
         # system. Now we check for consistency with the kwargs passed
         # in.  First we update kwargs with the special kwarg
         # dictionaries.
-        kwargs.update(Vasp.default_parameters)
-
         if 'ispin' in kwargs:
-            kwargs.update(self.set_ispin_dict(kwargs['ispin']))
+            ispin = kwargs['ispin']
+            del kwargs['ispin']
+        else:
+            ispin = None
+
+        kwargs.update(Vasp.default_parameters)
 
         if 'ldau_luj' in kwargs:
             kwargs.update(self.set_ldau_luj_dict(kwargs['ldau_luj']))
 
         if 'xc' in kwargs:
-            kwargs.update(self.set_xc_dict(kwargs['xc']))
+            kwargs.update(self.set_xc_dict(kwargs['xc'].lower()))
 
         # Now update the parameters. If there are any new kwargs here,
         # it will reset the calculator and cause a calculation to be
@@ -226,8 +243,14 @@ class Vasp(FileIOCalculator, object):
 
         # In case no atoms was on file, and one is passed in, we set
         # it here.
-        if self.atoms is None and atoms is not None:
+        if self.atoms is None and atoms is not None and self.neb is None:
             self.sort_atoms(atoms)
+        elif self.neb is not None:
+            self.sort_atoms(self.neb[0])
+
+        # This one depends on having atoms already.
+        if 'ispin' in kwargs:
+            kwargs.update(self.set_ispin_dict(ispin))
 
     def sort_atoms(self, atoms=None):
         """Generate resort list, and make list of POTCARs to use.
@@ -272,7 +295,7 @@ class Vasp(FileIOCalculator, object):
                     count += 1
                     resort_indices += [i]
 
-            ppp += [[atom.symbol,
+            ppp += [[symbol,
                      'potpaw_{}/{}{}/POTCAR'.format(pp, symbol, setup[1]),
                      count]]
         # now the remaining atoms use default potentials
@@ -533,6 +556,10 @@ class Vasp(FileIOCalculator, object):
             import sys
             sys.exit()
 
+    def wait(self):
+        """Stop program if not ready."""
+        self.stop_if(self.potential_energy is None)
+
     def clone(self, newdir):
         """Copy the calculation directory to newdir and set label to
         newdir.
@@ -640,7 +667,7 @@ class Vasp(FileIOCalculator, object):
         return atoms.get_stress()
 
     @property
-    def traj(self, index=None):
+    def traj(self):
         """Get a trajectory.
 
         This reads Atoms objects from vasprun.xml. By default returns
@@ -657,29 +684,32 @@ class Vasp(FileIOCalculator, object):
         self.update()
 
         if self.neb:
-            return self.neb
+            from ase.calculators.singlepoint import SinglePointCalculator
+            images, energies = self.get_neb()
+            tatoms = [x.copy() for x in images]
+            for i, x in enumerate(tatoms):
+                x.set_calculator(SinglePointCalculator(x, energy=energies[i]))
+            return tatoms
 
-        if index is not None:
-            atoms = read_vasp_xml(os.path.join(self.directory,
-                                               'vasprun.xml'),
-                                  index=index).next()
-        else:
-            LOA = []
-            i = 0
-            while True:
-                try:
-                    atoms = read_vasp_xml(os.path.join(self.directory,
-                                                       'vasprun.xml'),
-                                          index=i).next()
-                    LOA += [atoms]
-                    i += 1
-                except IndexError:
-                    break
-            return LOA
+        LOA = []
+        i = 0
+        while True:
+            try:
+                atoms = read_vasp_xml(os.path.join(self.directory,
+                                                   'vasprun.xml'),
+                                      index=i).next()
+                LOA += [atoms]
+                i += 1
+            except IndexError:
+                break
+        return LOA
 
     def view(self, index=None):
         """Visualize the calculation.
 
         """
         from ase.visualize import view
-        return view(self.traj(index=index))
+        if index is not None:
+            return view(self.traj[index])
+        else:
+            return view(self.traj)

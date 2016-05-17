@@ -37,6 +37,7 @@ from ase.io.vasp import write_vasp
 from ase.calculators.vasp import Vasp
 
 import vasp
+import exceptions
 from vasp import log
 from monkeypatch import monkeypatch_class
 from vasprc import VASPRC
@@ -50,6 +51,8 @@ def get_neb(self, npi=1):
 
     show: if True show an NEB plot
     """
+    if self.in_queue():
+        return self.neb, [None for a in self.neb]
 
     calc_required = False
 
@@ -80,10 +83,11 @@ def get_neb(self, npi=1):
         if not os.path.isdir(self.directory):
             os.makedirs(self.directory)
 
+        self.set(images=len(self.neb) - 2)
         self.write_incar()
         self.write_kpoints()
         self.write_potcar()
-        self.write_metadata()
+        self.write_db()
 
         for i, atoms in enumerate(self.neb):
               # zero-padded directory name
@@ -103,28 +107,27 @@ def get_neb(self, npi=1):
 
         self.write_db(self.neb[0],
                       os.path.join(self.directory,
-                                   '00/DB'))
+                                   '00/DB.db'))
 
         self.write_db(self.neb[-1],
                       os.path.join(self.directory,
-                                   '0{}/energy'.format(len(atoms) - 1)))
+                                   '0{}/DB.db'.format(len(self.neb) - 1)))
 
         VASPRC['queue.ppn'] = npi * (len(self.neb) - 2)
         log.debug('Running on %i cores', VASPRC['queue.ppn'])
 
         self.calculate()  # this will raise VaspSubmitted
+        return
 
     #############################################
     # now we are just retrieving results
-    # this is a tricky point. unless the calc stores an absolute path,
-    # it may be tricky to call get_potential energy
-
     energies = []
-    with open(os.path.join(self.directory,
-                           '00/energy')) as f:
-        energies += [float(f.read())]
-
     import ase.io
+    atoms0 = ase.io.read(os.path.join(self.directory,
+                                      '00',
+                                      'DB.db'))
+    energies += [atoms0.get_potential_energy()]
+
     for i in range(1, len(self.neb) - 1):
         atoms = ase.io.read(os.path.join(self.directory,
                                          str(i).zfill(2),
@@ -142,9 +145,9 @@ def get_neb(self, npi=1):
 
         energies += [energy]
 
-    with open(os.path.join(self.directory,
-                           '0{}/energy'.format(len(self.neb) - 1))) as f:
-        energies += [float(f.read())]
+    atoms_end = ase.io.read(os.path.join(self.directory,
+                                         '0{}/DB.db'.format(len(self.neb) - 1)))
+    energies += [atoms_end.get_potential_energy()]
 
     energies = np.array(energies)
     energies -= energies[0]
@@ -187,8 +190,15 @@ def plot_neb(self, show=True):
     plt.title('\n'.join(s))
     plt.legend(loc='best', numpoints=1)
     if show:
+        from ase.calculators.singlepoint import SinglePointCalculator
         from ase.visualize import view
-        view(images)
+        # It seems there might be some info on the atoms that causes
+        # an error here. Making a copy seems to get rid of the
+        # issue. Hacky.
+        tatoms = [x.copy() for x in images]
+        for i, x in enumerate(tatoms):
+            x.set_calculator(SinglePointCalculator(x, energy=energies[i]))
+        view(tatoms)
         plt.show()
     return p
 

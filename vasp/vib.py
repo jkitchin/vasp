@@ -46,6 +46,8 @@ def get_vibrational_modes(self,
     Note: it seems like it might be much easier to get this out of
     vasprun.xml
     """
+    self.update()
+
     atoms = self.get_atoms()
 
     if hasattr(atoms, 'constraints') and self.parameters['ibrion'] == 5:
@@ -157,7 +159,7 @@ def get_vibrational_frequencies(self):
     You should have run the calculation already. This function does not
     run a calculation.
     """
-
+    self.update()
     atoms = self.get_atoms()
     N = len(atoms)
 
@@ -202,6 +204,8 @@ def get_infrared_intensities(self):
     2011-03-25, ICIQ Tarragona, Spain (www.iciq.es)
     http://homepage.univie.ac.at/david.karhanek/downloads.html#Entry02
     """
+    self.update()
+
     atoms = read(os.path.join(self.directory, 'POSCAR'), format='vasp')
     NIONS = len(atoms)
     BORN_NROWS = NIONS * 4 + 1
@@ -259,7 +263,7 @@ def get_infrared_intensities(self):
 
     EIG_NIONS = BORN_NROWS
     # I guess this counts blank rows and non-data rows
-    # EIG_NROWS = (EIG_NIONS + 3) * EIG_NVIBS + 3 
+    # EIG_NROWS = (EIG_NIONS + 3) * EIG_NVIBS + 3
 
     # i is where the data starts
     i += 6
@@ -285,7 +289,7 @@ def get_infrared_intensities(self):
     # http://othes.univie.ac.at/10117/1/2010-05-05_0547640.pdf, page
     # 21.
 
-    
+
     # I(\omega) = \sum_{\alpha=1}^3 | \sum_{l=1}^M \sum_{\beta=1}^3 Z_{\alpha\beta}(l)e_{\beta}(l)|^2
 
     # omega is the vibrational mode

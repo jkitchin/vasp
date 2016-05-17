@@ -95,21 +95,6 @@ def write_db(self, atoms=None, fname=None, data=None, **kwargs):
 
 
 @monkeypatch_class(vasp.Vasp)
-def write_metadata(self, fname=None):
-    """Write out the METADATA file.
-
-    We use this to store resort data, and any other convenient data.
-
-    """
-
-    if fname is None:
-        fname = os.path.join(self.directory, 'METADATA')
-
-    with open(fname, 'w') as f:
-        f.write(json.dumps(self.metadata))
-
-
-@monkeypatch_class(vasp.Vasp)
 def write_poscar(self, fname=None):
     """Write the POSCAR file."""
     if fname is None:

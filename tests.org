@@ -405,10 +405,11 @@ print con.get_atoms(id=1, add_additional_information=True).info
 #+END_SRC
 
 #+RESULTS:
-: <ase.db.row.AtomsRow instance at 0xf964cb0>
+: {}
+: <ase.db.row.AtomsRow instance at 0x8fdefc8>
 : {u'resort': array([0, 1])}
 : c (0, 1)
-: {'data': {u'resort': array([0, 1])}, 'key_value_pairs': {u'running': True}, 'unique_id': u'a68628ddb95f3b52fd232abda8a86c1d'}
+: {'data': {u'resort': array([0, 1])}, 'key_value_pairs': {u'running': True}, 'unique_id': u'4fd1a4085307494d4c2d0a52e3c6270c'}
 
 #+BEGIN_SRC sh
 ase-db ase.db
@@ -416,9 +417,18 @@ ase-db ase.db
 
 #+RESULTS:
 : id|age|user    |formula|calculator| energy| fmax|pbc| volume|charge|  mass| smax|magmom
-:  1| 7s|jkitchin|CO     |vasp      |-14.691|5.091|TTT|216.000| 0.000|28.010|0.041| 0.000
+:  1| 2s|jkitchin|CO     |vasp      |-14.687|5.091|TTT|216.000| 0.000|28.010|0.041| 0.000
 : Rows: 1
 : Keys: running
+
+#+BEGIN_SRC python
+import ase.io
+atoms = ase.io.read('ase.db')
+print atoms.get_potential_energy()
+#+END_SRC
+
+#+RESULTS:
+: -14.6872498
 
 ** try deleting a key
 #+BEGIN_SRC python

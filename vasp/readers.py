@@ -212,27 +212,6 @@ def read_potcar(self, fname=None):
 
 
 @monkeypatch_class(vasp.Vasp)
-def read_metadata(self, fname=None):
-    """Read the METADATA file.
-
-    Sets self.metadata to the results.
-
-    """
-    if fname is None:
-        fname = os.path.join(self.directory, 'METADATA')
-
-    self.metadata = {}
-    if os.path.exists(fname):
-        with open(fname) as f:
-            import json
-            metadata = json.loads(f.read())
-            self.metadata = metadata
-            log.debug('set metadata to: {}'.format(metadata))
-    else:
-        log.debug('{} did not exist.'.format(fname))
-
-
-@monkeypatch_class(vasp.Vasp)
 def read(self, restart=None):
     """Read the files in a calculation if they exist.
 
@@ -318,7 +297,11 @@ def read(self, restart=None):
     else:
         atoms = None
 
-    if atoms is not None and self.resort is not None:
+    if atoms is not None:
+        if atoms.constraints is not None:
+            cons = atoms.constraints
+            #print dir(cons[0])
+            #self.abort()
         atoms = atoms[self.resort]
         self.sort_atoms(atoms)
 
@@ -355,13 +338,14 @@ def read_results(self):
         forces = atoms.get_forces()  # needs to be resorted
         stress = atoms.get_stress()
 
+        resort = self.get_db('resort')
         if self.atoms is None:
-            atoms = atoms[self.metadata['resort']]
+            atoms = atoms[resort]
             self.sort_atoms(atoms)
             self.atoms.set_calculator(self)
         else:
             # update the atoms
-            self.atoms.positions = atoms.positions[self.metadata['resort']]
+            self.atoms.positions = atoms.positions[resort]
             self.atoms.cell = atoms.cell
 
         self.results['energy'] = energy
@@ -390,7 +374,6 @@ def read_results(self):
 @monkeypatch_class(vasp.Vasp)
 def read_neb(self):
     """Read an NEB calculator."""
-    print('Reading neb')
     import ase
     import glob
     atoms = []
@@ -411,7 +394,6 @@ def read_neb(self):
     if os.path.exists(self.kpoints):
         self.parameters.update(self.read_kpoints())
 
-    self.read_metadata()
 
     # Update the xc functional
     xc_keys = sorted(vasp.Vasp.xc_defaults,
@@ -424,7 +406,3 @@ def read_neb(self):
         if pd == vasp.Vasp.xc_defaults[ex]:
             self.parameters['xc'] = ex
             break
-
-    energies = []
-
-    self.results = {'energy': None}

@@ -9,73 +9,6 @@ from vasp import log
 from monkeypatch import monkeypatch_class
 
 
-# @monkeypatch_class(vasp.Vasp)
-# def get_potential_energy(self, atoms=None):
-#     """Returns potential energy."""
-#     if self.update():
-#         return self.results['energy']
-#     else:
-#         return None
-
-
-# @monkeypatch_class(vasp.Vasp)
-# def get_forces(self, atoms=None, apply_constraint=False):
-#     """Returns forces."""
-#     if self.update():
-#         return self.results['forces']
-#     else:
-#         return None
-
-
-# @monkeypatch_class(vasp.Vasp)
-# def get_stress(self, atoms=None):
-#     """Returns stress."""
-#     if self.update():
-#         return self.results['stress']
-#     else:
-#         return None
-
-
-# @monkeypatch_class(vasp.Vasp)
-# def get_db_kv(self, *keys):
-#     """Retrieve values for each key in *keys from the local DB.
-
-#     Returns a list of values, unless only one key is present then it
-#     returns a single value.
-
-#     """
-#     from ase.db import connect
-#     dbfile = os.path.join(self.directory, 'DB.db')
-#     if not os.path.exists(dbfile):
-#         return [None for key in keys] if len(keys) > 0 else None
-
-#     with connect(dbfile) as con:
-#         at = con.get(id=1)
-#         vals = [at.key_value_pairs.get(key, None) for key in keys]
-
-#         return vals if len(vals) > 1 else vals[0]
-
-
-# @monkeypatch_class(vasp.Vasp)
-# def get_db_data(self, *keys):
-#     """Retrieve values for each key in *keys from the data in the local DB.
-
-#     Returns a list of values, unless only one key is present then it
-#     returns a single value.
-
-#     """
-#     from ase.db import connect
-#     dbfile = os.path.join(self.directory, 'DB.db')
-#     if not os.path.exists(dbfile):
-#         return [None for key in keys] if len(keys) > 0 else None
-
-#     with connect(dbfile) as con:
-#         at = con.get(id=1)
-#         vals = [at.data.get(key, None) for key in keys]
-
-#         return vals if len(vals) > 1 else vals[0]
-
-
 @monkeypatch_class(vasp.Vasp)
 def get_db(self, *keys):
     """Retrieve values for each key in keys.
@@ -83,12 +16,13 @@ def get_db(self, *keys):
     First look for key/value, then in data.
 
     """
-    vals = [None for key in keys]
-    from ase.db import connect
     dbfile = os.path.join(self.directory, 'DB.db')
 
     if not os.path.exists(dbfile):
         return [None for key in keys] if len(keys) > 1 else None
+
+    vals = [None for key in keys]
+    from ase.db import connect
 
     with connect(dbfile) as con:
         try:
@@ -289,6 +223,7 @@ def get_ados(self, atom_index, orbital, spin=1, efermi=None):
 @monkeypatch_class(vasp.Vasp)
 def get_elapsed_time(self):
     """Return elapsed calculation time in seconds from the OUTCAR file."""
+    self.update()
     import re
     regexp = re.compile('Elapsed time \(sec\):\s*(?P<time>[0-9]*\.[0-9]*)')
 
@@ -349,6 +284,7 @@ def get_volumetric_data(self, filename=None, **kwargs):
     """Read filename to read the volumetric data in it.
     Supported filenames are CHG, CHGCAR, and LOCPOT.
     """
+    self.update()
     if filename is None:
         filename = os.path.join(self.directory, 'CHG')
 
@@ -428,7 +364,7 @@ def get_local_potential(self):
 @monkeypatch_class(vasp.Vasp)
 def get_elf(self):
     """Returns x, y, z and electron localization function arrays."""
-
+    self.update()
     fname = os.path.join(self.directory, 'ELFCAR')
     x, y, z, data = get_volumetric_data(self, filename=fname)
     atoms = self.get_atoms()
@@ -441,7 +377,7 @@ def get_electron_density_center(self, spin=0, scaled=True):
     If scaled, use scaled coordinates, otherwise use cartesian
     coordinates.
     """
-
+    self.update()
     atoms = self.get_atoms()
 
     x, y, z, cd = self.get_charge_density(spin)
