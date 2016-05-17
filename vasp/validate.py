@@ -106,9 +106,10 @@ def lcharg(calc, val):
 
 
 def lorbit(calc, val):
-    """
-    Determines whether the PROCAR or PROOUT files are written.
+    """Determines whether the PROCAR or PROOUT files are written.
+
     http://cms.mpi.univie.ac.at/wiki/index.php/LORBIT
+
     """
     if val < 10:
         assert 'rwigs' in calc.parameters
@@ -119,6 +120,7 @@ def lwave(calc, val):
     """LWAVE determines whether the WAVECAR is written. (Boolean)
 
     http://cms.mpi.univie.ac.at/wiki/index.php/LWAVE
+
     """
     assert val in [True, False]
 
@@ -127,6 +129,7 @@ def magmom(calc, val):
     """MAGMOM Specifies the initial magnetic moment for each atom. (list)
 
     http://cms.mpi.univie.ac.at/wiki/index.php/MAGMOM
+
     """
     assert isinstance(val, list)
     assert len(val) == len(calc.atoms)
@@ -172,14 +175,15 @@ def reciprocal(calc, val):
 
 
 def rwigs(calc, val):
-    """RWIGS specifies the Wigner-Seitz radius for each atom type.
+    """RWIGS specifies the Wigner-Seitz radius for each atom type. (list)
+
+    in vasp.py you enter a dictionary of {sym: radius}.
 
     http://cms.mpi.univie.ac.at/wiki/index.php/RWIGS
     """
     assert isinstance(val, list)
     assert calc.parameters.get('lorbit', 0) < 10, \
         'lorbit >= 10, rwigs is ignored.'
-
 
 
 def sigma(calc, val):

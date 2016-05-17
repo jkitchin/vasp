@@ -116,6 +116,7 @@ class Vasp(FileIOCalculator, object):
     special_kwargs = ['xc',  # sets vasp tags for the exc-functional
                       'pp',  # determines where POTCARs are retrieved from
                       'setups',
+                      'ados',  # sets rwigs correctly, a dictionary
                       # kpoints
                       'kpts',
                       'gamma',
@@ -235,21 +236,19 @@ class Vasp(FileIOCalculator, object):
                 kwargs[key] = val
 
         # Next we update kwargs with the special kwarg
-        # dictionaries.
+        # dictionaries. ispin, rwigs are special, and needs sorted
+        # atoms. so we save it for later.
         if 'ispin' in kwargs:
             ispin = kwargs['ispin']
             del kwargs['ispin']
         else:
             ispin = None
 
-        # if 'ldau_luj' in kwargs:
-        #     kwargs.update(self.set_ldau_luj_dict(kwargs['ldau_luj']))
-
-        # if 'xc' in kwargs:
-        #     kwargs.update(self.set_xc_dict(kwargs['xc'].lower()))
-
-        # if 'nsw' in kwargs:
-        #     kwargs.update(self.set_nsw_dict(kwargs['nsw']))
+        if 'rwigs' in kwargs:
+            rwigs = kwargs['rwigs']
+            del kwargs['rwigs']
+        else:
+            rwigs = None
 
         # Now update the parameters. If there are any new kwargs here,
         # it will reset the calculator and cause a calculation to be
@@ -263,10 +262,14 @@ class Vasp(FileIOCalculator, object):
         elif self.neb is not None:
             self.sort_atoms(self.neb[0])
 
-        # This one depends on having atoms already.
+        # These depend on having atoms already.
         if ispin is not None:
             self.set(**self.set_ispin_dict(ispin))
 
+        if rwigs is not None:
+            self.set(**self.set_rwigs_dict(rwigs))
+
+        # Finally run validate functions
         if VASPRC['validate']:
             for key, val in self.parameters.iteritems():
                 if key in validate.__dict__:
@@ -717,7 +720,7 @@ class Vasp(FileIOCalculator, object):
 
 
     def describe(self, long=False):
-        """Describe each parameters used from the docstrings in vasp.validate."""
+        """Describe the parameters used from the docstrings in vasp.validate."""
         for key in sorted(self.parameters.keys()):
             if key in validate.__dict__:
                 f = validate.__dict__[key]

@@ -78,6 +78,21 @@ def set_ispin_dict(self, val):
 
 
 @monkeypatch_class(vasp.Vasp)
+def set_rwigs_dict(self, val):
+    """Return rwigs parameters."""
+    d = {}
+    if val is None:
+        d['rwigs'] = None
+        d['lorbit'] = None
+    else:
+        # val is a dictionary {sym: rwigs}
+        # rwigs needs to be in the order of the potcars
+        d['rwigs'] = [val[x[0]] for x in self.ppp_list]
+
+    return d
+
+
+@monkeypatch_class(vasp.Vasp)
 def set_ldau_luj_dict(self, val):
     """Set the ldau_luj parameters."""
     if 'setups' in self.parameters:

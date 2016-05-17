@@ -116,3 +116,22 @@ def test2():
     incar = calc.read_incar('INCAR')
 
     assert incar['sigma'] == 0.01
+
+
+@with_setup(setup_func, teardown_func)
+def test3():
+    "check rwigs"
+
+    atoms = Atoms([Atom('O', [4, 5, 5], magmom=1),
+                   Atom('C', [5, 5, 5], magmom=2),
+                   Atom('O', [6, 5, 5], magmom=3)],
+                   cell=(10, 10, 10))
+
+    calc = Vasp('vasp',
+                rwigs={'C': 1.5, 'O': 1.0},
+                atoms=atoms)
+
+    calc.write_incar('INCAR')
+
+    incar = calc.read_incar('INCAR')
+    assert incar['rwigs'] == [1.0, 1.5]
