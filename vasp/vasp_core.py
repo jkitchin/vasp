@@ -198,8 +198,7 @@ class Vasp(FileIOCalculator, object):
         """
         # set first so self.directory is right
         # cast as str in case label is unicode, i.e. if it is from hy.
-        label = str(label)
-        self.set_label(str(label))
+        self.set_label(label)
         self.debug = debug
         self.exception_handler = exception_handler
 
@@ -234,7 +233,7 @@ class Vasp(FileIOCalculator, object):
 
         # Add default parameters if they aren't set otherwise.
         for key, val in Vasp.default_parameters.iteritems():
-            if key not in kwargs:
+            if key not in kwargs and key not in self.parameters:
                 kwargs[key] = val
 
         # Next we update kwargs with the special kwarg
@@ -432,7 +431,7 @@ class Vasp(FileIOCalculator, object):
             pd = {k: file_params.get(k, None)
                   for k in Vasp.xc_defaults[ex]}
             if pd == Vasp.xc_defaults[ex]:
-                file_params['xc'] = ex
+                file_params['xc'] = ex.lower()
                 break
 
         # reconstruct ldau_luj if necessary
@@ -460,7 +459,6 @@ class Vasp(FileIOCalculator, object):
             new_keys = set(self.parameters.keys()) - set(file_params.keys())
             missing_keys = (set(file_params.keys()) -
                             set(self.parameters.keys()))
-
             log.debug('New keys: {}'.format(new_keys))
             log.debug('Missing keys: {}'.format(missing_keys))
             system_changes += ['params_on_file']
