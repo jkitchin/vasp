@@ -11,6 +11,7 @@ http://cms.mpi.univie.ac.at/wiki/index.php/Category:INCAR
 """
 import types
 import ase
+from ase.utils import basestring
 
 
 def atoms(calc, val):
@@ -208,7 +209,7 @@ def setups(calc, val):
 
     """
     assert isinstance(val, list)
-    for s, suff in val:
+    for s, suffix in val:
         assert isinstance(s, int) or isinstance(s, basestring)
         assert isinstance(suffix, basestring)
 
