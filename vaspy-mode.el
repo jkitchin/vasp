@@ -1,7 +1,11 @@
 ;;; vaspy-mode.el --- Minor-mode for VASP calculation scripts
 
 ;;; Commentary:
-;;
+;; The primary purpose of this mode is to provide syntax highlighting
+;; for vasp keywords defined in vasp.validate. The syntax highlighting
+;; provides tooltips of the first line of documentation for the
+;; defined keywords, and makes them clickable to show the whole
+;; docstring.
 
 ;;; Code:
 
@@ -12,8 +16,16 @@
     "python -c \"from vasp.validate import keywords; print keywords()\"")))
 
 (defvar *vasp-keywords-regex*
-  (regexp-opt (vasp-keywords) 'symbols)
+  ;; in hy keywords start with : and in Python they sometimes end in =
+  (concat "\\(?1::?\\<" (regexp-opt (vasp-keywords)) "\\)=?")
   "Regexp for vasp keywords.")
+
+(defun vaspdoc (keyword)
+  "Get docstring for KEYWORD."
+  (shell-command-to-string
+   (format
+    "python -c \"from vasp.validate import %s; print(%s.__doc__)\""
+    keyword keyword)))
 
 (defun vasp-tooltip-1 (_ _ position)
   "Get the one line tooltip for the keyword under POSITION."
@@ -32,10 +44,10 @@
 	  (interactive)
 	  (pydoc (format "vasp.validate.%s" (thing-at-point 'word)))))
       (add-text-properties
-       (match-beginning 0)
-       (match-end 0)
+       (match-beginning 1)
+       (match-end 1)
        (list
-	'help-echo 'vasp-tooltip
+	'help-echo 'vasp-tooltip-1
 	'local-map map
 	'face 'font-lock-keyword-face
 	'mouse-face 'highlight)))))
@@ -46,9 +58,11 @@
   :global t
   (font-lock-add-keywords
    nil
-   `((next-vasp-keyword 0 font-lock-keyword-face)) t))
+   `((next-vasp-keyword 1 font-lock-keyword-face)) t))
 
-(provide 'vaspy-mode)
+
+(add-hook 'org-mode-hook (lambda () (vaspy-mode)))
+(add-hook 'python-mode-hook (lambda () (vaspy-mode)))
 
 (provide 'vaspy-mode)
 
