@@ -39,7 +39,6 @@ import runner
 import bader
 
 
-
 def tryit(func):
     """Decorator to wrap function in try block with Vasp exception handler."""
     def inner(self, *args, **kwargs):
