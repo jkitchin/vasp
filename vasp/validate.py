@@ -12,6 +12,11 @@ http://cms.mpi.univie.ac.at/wiki/index.php/Category:INCAR
 import types
 
 
+def atoms(calc, val):
+    """The Atoms object. (ase.atoms.Atoms or a list of them for an NEB)."""
+    assert val is not None
+
+
 def ediffg(calc, val):
     """EDIFFG defines the break condition for the ionic relaxation loop. (float)
 
