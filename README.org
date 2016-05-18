@@ -41,11 +41,14 @@ ls -d $VASP_PP_PATH/potpaw_???
 * Differences from ase.calculators.vasp
 Most things are the same. Here are few differences.
 
-1. "label" is the first argument to the calculator, and it specifies the directory where the results are. Almost all file-io is done by path, so few directory changes ever occur.
+** label is a directory and the first argument
+"label" is the first argument to the calculator, and it specifies the directory where the results are. Almost all file-io is done by path, so few directory changes ever occur.
 
-2. Always starts in "restart" mode. On initialization the calculator always updates from the file system first, including updating the atoms, then from arguments. This allows you to write one script to setup, run and perform analysis.
+** perpetual restart mode
+Always starts in "restart" mode. On initialization the calculator always updates from the file system first, including updating the atoms, then from arguments. This allows you to write one script to setup, run and perform analysis.
 
-3. Special setups are now specified by a list of [atom_symbol, potcar_suffix]
+** special setup syntax
+Special setups are now specified by a list of [atom_symbol, potcar_suffix]
 
 In this example we use the potpaw_PBE/O_s/POTCAR.
 
@@ -60,9 +63,13 @@ calc = Vasp('molecules/O_s',
             atoms=atoms)
 #+END_SRC
 
-4. rwigs is now a dictionary of {atom-symbol: radius}
+This was changed to help make resorting simpler and reliable.
 
-5. New defaults. These may change. We don't usually write out the charge and wavecar files because they are large. An exception is if nsw>0, then we do write out the wavecar file to facilitate restarts.
+** new rwigs syntax
+ rwigs is now a dictionary of {atom-symbol: radius}. This makes it easier to correctly generate the INCAR.
+
+** New default parameters
+These may change. We don't usually write out the charge and wavecar files because they are large. An exception is if nsw>0, then we do write out the wavecar file to facilitate restarts.
 
 #+BEGIN_SRC python
 from vasp import Vasp
@@ -72,29 +79,53 @@ print(Vasp.default_parameters)
 #+RESULTS:
 : {'lcharg': False, 'kpts': [1, 1, 1], 'ismear': 1, 'xc': 'PBE', 'lwave': False, 'sigma': 0.1, 'pp': 'PBE'}
 
-6. Automatic job submission and job management. Calculations are automatically submitted to a queue system with well-defined exceptions to provide job management.
+** Automatic job submission and job management.
+Calculations are automatically submitted to a queue system with well-defined exceptions to provide job management. The setup is somewhat general, and must be tuned for specific clusters.
 
-7. Built-in exception handling. All functions are wrapped in exception handling code to make some things easy to handle.
 
-8. "Smart" kwarg expansion. Some kwargs are special, e.g. you can set ispin=2 and the calculator will automatically set the magmom key from the atoms object.
+** Built-in exception handling.
+All functions are wrapped in exception handling code to make some things easy to handle.
 
-9. Validation of some kwargs. The vasp.validate file defines validation functions for many keywords, as well as brief documentation for them. This is integrated with Emacs to provide tooltips and easy access to documentation while working.
+** "Smart" kwarg expansion.
+Some kwargs are special, e.g. you can set ispin=2 and the calculator will automatically set the magmom key from the atoms object.
 
-10. Native support for the ase-db. We actually use the ase-db to store calculation information.
+** Native support for the ase-db.
+We actually use the ase-db to store calculation information.
 
-* Examples
+#+BEGIN_SRC python
+from vasp import Vasp
+from ase.db import connect
+
+bond_lengths = [1.05, 1.1, 1.15, 1.2, 1.25]
+calcs = [Vasp('molecules/co-{0}'.format(d)) for d in bond_lengths]
+
+con = connect('co-database.db', append=False)
+for atoms in [calc.get_atoms() for calc in calcs]:
+    con.write(atoms)
+#+END_SRC
+
+
+** Validation of some kwargs.
+The vasp.validate file defines validation functions for many keywords, as well as brief documentation for them. This is integrated with Emacs to provide tooltips and easy access to documentation while working.
+
+** VASPRC
+This is a configuration file that allows customization of how jobs are submitted and whether validation is performed.
+
+* Examples of usage
 ** A simple CO calculation
 This is the prototypical simple calculation.
 
 #+BEGIN_SRC python
 from ase import Atoms, Atom
 from vasp import Vasp
+from vasp.vasprc import VASPRC
+VASPRC['mode'] = 'run'
 
 co = Atoms([Atom('C', [0, 0, 0]),
             Atom('O', [1.2, 0, 0])],
            cell=(6., 6., 6.))
 
-calc = Vasp('molecules/simple-co',  # output dir
+calc = Vasp('~/dft-book-new-vasp/molecules/simple-co',  # output dir
             xc='pbe',    # the exchange-correlation functional
             nbands=6,    # number of bands
             encut=350,   # planewave cutoff
@@ -143,9 +174,98 @@ print(energies)
 #+RESULTS:
 : [-14.21584765, -14.72174343, -14.84115208, -14.69111507, -14.35508371]
 
-** Some new ideas
+** Some new ideas in job management
+By default, many exceptions are handled automatically, and if calculations are not finished the quantities are returned as None. This leads to some challenges if you want to do analysis before the results are ready.
+
+Our workflow relies on asynchronously running jobs in a queue. To avoid blocking scripts, we setup everything so that scripts just exit if they cannot continue, and we rerun them later.
+
+We provide the following tools for handling these situations.
+
+*** calc.abort()
+The abort function simply exits the program when called.
+#+BEGIN_SRC python
+from vasp import Vasp
+from ase.lattice.cubic import BodyCenteredCubic
+
+atoms = BodyCenteredCubic(directions=[[1, 0, 0],
+                                      [0, 1, 0],
+                                      [0, 0, 1]],
+                                      size=(1, 1, 1),
+                                      symbol='Fe')
+
+NUPDOWNS = [0.0, 2.0, 4.0, 5.0, 6.0, 8.0]
+energies = []
+for B in NUPDOWNS:
+    calc = Vasp('bulk/Fe-bcc-fixedmagmom-{0:1.2f}'.format(B),
+                xc='PBE',
+                encut=300,
+                kpts=(4, 4, 4),
+                ispin=2,
+                nupdown=B,
+                atoms=atoms)
+    energies.append(atoms.get_potential_energy())
+
+if None in energies:
+    calc.abort()
+
+# some analysis that depends on all energies being present
+#+END_SRC
+
+*** calc.wait()
+The wait function does not actually wait. It does try to get the energy and run the job, and if it is not ready, it exits. The name or action of this function may change.
+
+#+BEGIN_SRC python
+from vasp import Vasp
+from ase.lattice.cubic import FaceCenteredCubic
+
+atoms = FaceCenteredCubic(symbol='Al')
+
+calc = Vasp('bulk/Al-bulk',
+            xc='PBE',
+            kpts=(12, 12, 12),
+            encut=350,
+            prec='High',
+            isif=3,
+            nsw=30,
+            ibrion=1,
+            atoms=atoms)
+calc.wait()
+
+# some analysis that depends on the calculation being done
+#+END_SRC
+
+*** calc.stop_if(condition)
+Sometimes you would like some condition to determine if you stop. This is a one line version of the if statement combined with calc.abort()
+
+#+BEGIN_SRC python
+from vasp import Vasp
+from ase import Atom, Atoms
+import numpy as np
+# fcc
+LC = [3.5, 3.55, 3.6, 3.65, 3.7, 3.75]
+volumes, energies = [], []
+for a in LC:
+    atoms = Atoms([Atom('Ni', (0, 0, 0), magmom=2.5)],
+                  cell=0.5 * a * np.array([[1.0, 1.0, 0.0],
+                                           [0.0, 1.0, 1.0],
+                                           [1.0, 0.0, 1.0]]))
+
+    calc = Vasp('bulk/Ni-{0}'.format(a),
+                xc='PBE',
+                encut=350,
+                kpts=(12, 12, 12),
+                ispin=2,
+                atoms=atoms)
+    energies.append(calc.potential_energy)
+    volumes.append(atoms.get_volume())
+
+calc.stop_if(None in energies)
+
+# some analysis requireing all the energies.
+#+END_SRC
+
 ** Run simulations with a Lisp
-One of my motivations for the rewrite was to enable me to use Hy (http://docs.hylang.org/en/latest/) in these simulations. Hy is a Lisp that runs Python. Here is an example calculation. This might be interesting because it allows you to write macros.
+One of my motivations for the rewrite was to enable me to use Hy (http://docs.hylang.org/en/latest/) in these simulations. Hy is a Lisp that runs Python. Here is an example calculation. This might be interesting because it allows you to write macros. I am not sure what I will do that yet, but I look forward to trying it out.
 
 #+BEGIN_SRC hy
 (import [ase [Atom Atoms]])
@@ -175,6 +295,85 @@ One of my motivations for the rewrite was to enable me to use Hy (http://docs.hy
 : -14.69111507
 : [[ 5.09138064  0.          0.        ]
 :  [-5.09138064  0.          0.        ]]
+
+** vaspsum
+This command line utility provides a variety of ways to summarize a calculation. For example, you can use this to print the input files:
+
+#+BEGIN_SRC sh
+vaspsum --vasp ~/dft-book-new-vasp/molecules/simple-co
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+INCAR
+-----
+INCAR created by Atomic Simulation Environment
+ ENCUT = 350
+ LCHARG = .FALSE.
+ NBANDS = 6
+ ISMEAR = 1
+ LWAVE = .FALSE.
+ SIGMA = 0.01
+
+
+POSCAR
+------
+ C  O
+ 1.0000000000000000
+     6.0000000000000000    0.0000000000000000    0.0000000000000000
+     0.0000000000000000    6.0000000000000000    0.0000000000000000
+     0.0000000000000000    0.0000000000000000    6.0000000000000000
+   1   1
+Cartesian
+  0.0000000000000000  0.0000000000000000  0.0000000000000000
+  1.2000000000000000  0.0000000000000000  0.0000000000000000
+
+
+KPOINTS
+-------
+KPOINTS created by Atomic Simulation Environment
+0
+Monkhorst-Pack
+1 1 1
+0.0 0.0 0.0
+
+
+POTCAR
+------
+cat $VASP_PP_PATH/potpaw_PBE/C/POTCAR $VASP_PP_PATH/potpaw_PBE/O/POTCAR > POTCAR
+#+end_example
+
+Or this to output the ase-db json.
+#+BEGIN_SRC sh
+vaspsum --json ~/dft-book-new-vasp/molecules/simple-co
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+json:  {'lcharg': False, 'pp': 'PBE', 'nbands': 6, 'xc': 'pbe', 'ismear': 1, 'lwave': False, 'sigma': 0.01, 'kpts': [1, 1, 1], 'encut': 350}
+{"1": {
+ "calculator": "vasp",
+ "calculator_parameters": {"xc": "pbe", "nbands": 6, "sigma": 0.01, "encut": 350},
+ "cell": [[6.0, 0.0, 0.0], [0.0, 6.0, 0.0], [0.0, 0.0, 6.0]],
+ "charges": [null, null],
+ "ctime": 16.380341757550546,
+ "data": {"resort": [0, 1], "ppp_list": [["C", "potpaw_PBE/C/POTCAR", 1], ["O", "potpaw_PBE/O/POTCAR", 1]], "parameters": {"lcharg": false, "pp": "PBE", "nbands": 6, "xc": "pbe", "ismear": 1, "lwave": false, "sigma": 0.01, "kpts": [1, 1, 1], "encut": 350}},
+ "energy": -14.69111507,
+ "forces": [[5.09138064, 0.0, 0.0], [-5.09138064, 0.0, 0.0]],
+ "key_value_pairs": {"path": "/home-research/jkitchin/dft-book-new-vasp/molecules/simple-co"},
+ "magmom": 0,
+ "magmoms": [0.0, 0.0],
+ "mtime": 16.380341757550546,
+ "numbers": [6, 8],
+ "pbc": [true, true, true],
+ "positions": [[0.0, 0.0, 0.0], [1.2000000000000002, 0.0, 0.0]],
+ "stress": [0.041455596684986905, 0.01094970637584278, 0.01094970637584278, -0.0, -0.0, -0.0],
+ "unique_id": "671032550621923e208be983ce744d24",
+ "user": "jkitchin"},
+"ids": [1],
+"nextid": 2}
+
+#+end_example
 
 * vaspy-mode
 We provide vaspy-mode to enhance using vasp in Emacs. The main feature it provides is syntax highlighting on vasp keywords with a tooltip on them showing the first line of the validation docstring, and making them clickable to show the whole docstring.
