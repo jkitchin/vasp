@@ -196,7 +196,10 @@ class Vasp(FileIOCalculator, object):
                       'O':{'L':-1, 'U':0.0, 'J':0.0}},
 
         """
-        self.set_label(label)  # set first so self.directory is right
+        # set first so self.directory is right
+        # cast as str in case label is unicode, i.e. if it is from hy.
+        label = str(label)
+        self.set_label(str(label))
         self.debug = debug
         self.exception_handler = exception_handler
 
@@ -220,11 +223,11 @@ class Vasp(FileIOCalculator, object):
 
         if self.neb is not None:
             FileIOCalculator.__init__(self, restart, ignore_bad_restart_file,
-                                      label)
+                                      str(label))
             self.neb = atoms
         else:
             FileIOCalculator.__init__(self, restart, ignore_bad_restart_file,
-                                      label, atoms)
+                                      str(label), atoms)
 
         # The calculator should be up to date with the file
         # system here.

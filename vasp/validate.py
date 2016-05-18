@@ -28,8 +28,11 @@ def encut(calc, val):
     http://cms.mpi.univie.ac.at/wiki/index.php/ENCUT
     """
     assert val > 0, 'encut must be greater than zero.'
-    assert isinstance(val, int) or isinstance(val, float),\
-        'encut should be an int or float'
+    assert (isinstance(val, int)
+            or isinstance(val, long)
+            or isinstance(val, float)),\
+        ('encut should be an int or float.'
+         ' You provided {} ({}).'.format(val, type(val)))
 
 
 def ibrion(calc, val):
@@ -141,7 +144,7 @@ def nbands(calc, val):
     http://cms.mpi.univie.ac.at/wiki/index.php/NBANDS
 
     """
-    assert isinstance(val, int)
+    assert isinstance(val, int) or isinstance(val, long)
     assert val > calc.get_valence_electrons() / 2
 
 
