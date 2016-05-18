@@ -116,7 +116,6 @@ class Vasp(FileIOCalculator, object):
     special_kwargs = ['xc',  # sets vasp tags for the exc-functional
                       'pp',  # determines where POTCARs are retrieved from
                       'setups',
-                      'ados',  # sets rwigs correctly, a dictionary
                       # kpoints
                       'kpts',
                       'gamma',
