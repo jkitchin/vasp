@@ -146,9 +146,20 @@ def calculate(self, atoms=None, properties=['energy'],
                         return exitcode
         else:
             # probably running at cmd line, in serial.
-            vaspcmd = VASPRC['vasp.executable.serial']
-            exitcode = os.system(vaspcmd)
-            return exitcode
+            try:
+                cwd = os.getcwd()
+                os.chdir(self.directory)
+                vaspcmd = VASPRC['vasp.executable.serial']
+                status, output, err = getstatusoutput(vaspcmd,
+                                                      stdout=subprocess.PIPE,
+                                                      stderr=subprocess.PIPE)
+                if status == 0:
+                    self.read_results()
+                    return True
+                else:
+                    return output
+            finally:
+                os.chdir(cwd)
         # end
 
     # if you get here, a job is getting submitted
