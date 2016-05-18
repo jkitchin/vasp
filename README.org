@@ -6,9 +6,10 @@ To make it compliant with the FileIOCalculator in ase, and hopefully simplify it
 
 * Goals
 1. Provide an interface that allows all vasp INCAR tags without
-   further modification, i.e. they are just kwargs to the calculator.
+   further modification, i.e. they are mostly just kwargs to the
+   calculator.
 2. Eliminate need for long lists of supported keywords.
-2. But also an interface that can be extended to allow validation, and
+2. Provide  an interface that can be extended to allow validation, and
    user-defined special keywords.
 3. Better treatment of the xc keyword to make it easier to use
    different functionals.
@@ -16,8 +17,174 @@ To make it compliant with the FileIOCalculator in ase, and hopefully simplify it
    they are already done. We want one script that runs calculations
    and does analysis.
 
-* Roadmap
-  1. vaspsum
-  2. NEB
-  3. [[./vasp/readers.py]]
-    - read_incar
+* Installation
+
+Clone this repo somewhere. Add it to your PYTHONPATH and PATH. Set VASP_PP_PATH to point to the directory containing your POTCARs.
+
+#+BEGIN_SRC python
+export PYTHONPATH=~/kitchin-python/vasp:$PYTHONPATH
+export PATH=~/kitchin-python/vasp/bin:$PATH
+
+export VASP_PP_PATH=/opt/kitchingroup/vasp-5.3.5
+#+END_SRC
+
+These directories should contain your POTCARs.
+#+BEGIN_SRC sh
+ls -d $VASP_PP_PATH/potpaw_???
+#+END_SRC
+
+#+RESULTS:
+: /opt/kitchingroup/vasp-5.3.5/potpaw_GGA
+: /opt/kitchingroup/vasp-5.3.5/potpaw_LDA
+: /opt/kitchingroup/vasp-5.3.5/potpaw_PBE
+
+* Differences from ase.calculators.vasp
+Most things are the same. Here are few differences.
+
+1. "label" is the first argument to the calculator, and it specifies the directory where the results are. Almost all file-io is done by path, so few directory changes ever occur.
+
+2. Always starts in "restart" mode. On initialization the calculator always updates from the file system first, including updating the atoms, then from arguments. This allows you to write one script to setup, run and perform analysis.
+
+3. Special setups are now specified by a list of [atom_symbol, potcar_suffix]
+
+In this example we use the potpaw_PBE/O_s/POTCAR.
+
+#+BEGIN_SRC python
+calc = Vasp('molecules/O_s',
+          encut=300,
+            xc='PBE',
+            ispin=2,
+            ismear=0,
+            sigma=0.001,
+            setups=[['O', '_s']], # specifies O_s potential
+            atoms=atoms)
+#+END_SRC
+
+4. rwigs is now a dictionary of {atom-symbol: radius}
+
+5. New defaults. These may change. We don't usually write out the charge and wavecar files because they are large. An exception is if nsw>0, then we do write out the wavecar file to facilitate restarts.
+
+#+BEGIN_SRC python
+from vasp import Vasp
+print(Vasp.default_parameters)
+#+END_SRC
+
+#+RESULTS:
+: {'lcharg': False, 'kpts': [1, 1, 1], 'ismear': 1, 'xc': 'PBE', 'lwave': False, 'sigma': 0.1, 'pp': 'PBE'}
+
+6. Automatic job submission and job management. Calculations are automatically submitted to a queue system with well-defined exceptions to provide job management.
+
+7. Built-in exception handling. All functions are wrapped in exception handling code to make some things easy to handle.
+
+8. "Smart" kwarg expansion. Some kwargs are special, e.g. you can set ispin=2 and the calculator will automatically set the magmom key from the atoms object.
+
+9. Validation of some kwargs. The vasp.validate file defines validation functions for many keywords, as well as brief documentation for them. This is integrated with Emacs to provide tooltips and easy access to documentation while working.
+
+10. Native support for the ase-db. We actually use the ase-db to store calculation information.
+
+* Examples
+** A simple CO calculation
+This is the prototypical simple calculation.
+
+#+BEGIN_SRC python
+from ase import Atoms, Atom
+from vasp import Vasp
+
+co = Atoms([Atom('C', [0, 0, 0]),
+            Atom('O', [1.2, 0, 0])],
+           cell=(6., 6., 6.))
+
+calc = Vasp('molecules/simple-co',  # output dir
+            xc='pbe',    # the exchange-correlation functional
+            nbands=6,    # number of bands
+            encut=350,   # planewave cutoff
+            ismear=1,    # Methfessel-Paxton smearing
+            sigma=0.01,  # very small smearing factor for a molecule
+            atoms=co)
+
+print('energy = {0} eV'.format(co.get_potential_energy()))
+print(co.get_forces())
+#+END_SRC
+
+#+RESULTS:
+: energy = -14.69111507 eV
+: [[ 5.09138064  0.          0.        ]
+:  [-5.09138064  0.          0.        ]]
+
+** A functional approach to calculations
+
+Here we use list comprehensions to calculate the energy as a function of bond lengths.
+#+BEGIN_SRC python :results output :exports both
+from vasp import Vasp
+from ase import Atom, Atoms
+import logging
+
+bond_lengths = [1.05, 1.1, 1.15, 1.2, 1.25]
+
+ATOMS = [Atoms([Atom('C', [0, 0, 0]),
+                Atom('O', [d, 0, 0])],
+               cell=(6, 6, 6))
+         for d in bond_lengths]
+
+calcs = [Vasp('~/dft-book-new-vasp/molecules/co-{0}'.format(d),  # output dir
+                xc='PBE',
+                nbands=6,
+                encut=350,
+                ismear=1,
+                sigma=0.01, debug=True,
+                atoms=atoms)
+         for d, atoms in zip(bond_lengths, ATOMS)]
+
+energies = [atoms.get_potential_energy() for atoms in ATOMS]
+
+print(energies)
+#+END_SRC
+ tpptree
+#+RESULTS:
+: [-14.21584765, -14.72174343, -14.84115208, -14.69111507, -14.35508371]
+
+** Some new ideas
+** Run simulations with a Lisp
+One of my motivations for the rewrite was to enable me to use Hy (http://docs.hylang.org/en/latest/) in these simulations. Hy is a Lisp that runs Python. Here is an example calculation. This might be interesting because it allows you to write macros.
+
+#+BEGIN_SRC hy
+(import [ase [Atom Atoms]])
+(import [vasp [Vasp]])
+
+(setv co (Atoms [(Atom "C" [0.0 0.0 0.0])
+                 (Atom "O" [1.2 0.0 0.0])]
+                :cell [6.0 6.0 6.0]))
+
+(setv calc (Vasp "~/dft-book-new-vasp/molecules/simple-co-hy"
+                 :xc "pbe"
+                 :nbands 6
+                 :encut 350
+                 :ismear 1
+                 :sigma 0.01
+                 :atoms co))
+
+(print (.format "energy = {0} eV"
+                (.get_potential_energy co)))
+
+(print calc.potential_energy)
+(print (.get_forces co))
+#+END_SRC
+
+#+RESULTS:
+: energy = -14.69111507 eV
+: -14.69111507
+: [[ 5.09138064  0.          0.        ]
+:  [-5.09138064  0.          0.        ]]
+
+* vaspy-mode
+We provide vaspy-mode to enhance using vasp in Emacs. The main feature it provides is syntax highlighting on vasp keywords with a tooltip on them showing the first line of the validation docstring, and making them clickable to show the whole docstring.
+
+Add this to your Emacs initialization file (obviously change the path to where you installed the vasp module.
+
+#+BEGIN_SRC emacs-lisp
+(add-to-list 'load-path "~/kitchin-python/vasp")
+(require 'vaspy-mode)
+#+END_SRC
+
+#+RESULTS:
+: vaspy-mode
