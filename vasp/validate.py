@@ -195,6 +195,24 @@ def rwigs(calc, val):
         'lorbit >= 10, rwigs is ignored.'
 
 
+def setups(calc, val):
+    """Sets up special setups for the POTCARS (list of (symbol/int, suffix)).
+
+    The first element of each pair of the list is either an integer
+    index of the atom for the special setup, or a chemical symbol for
+    all atoms of that type. The second element of the pair is a suffix
+    to be appended to the symbol. For example, to use the O_s potcar
+    set setups to: [['O', '_s']].
+
+    This is not a vasp keyword.
+
+    """
+    assert isinstance(val, list)
+    for s, suff in val:
+        assert isinstance(s, int) or isinstance(s, basestring)
+        assert isinstance(suffix, basestring)
+
+
 def sigma(calc, val):
     """SIGMA determines the width of the smearing in eV. (float)"""
     assert isinstance(val, float)
