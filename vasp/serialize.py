@@ -35,7 +35,6 @@ setattr(VASP.Vasp, 'vasp', property(vasp))
 def vasp_json(self):
     """Return a json representation."""
     json = join(self.directory, 'DB.json')
-
     self.write_db(fname=json)
     with open(json) as f:
         s = f.read()

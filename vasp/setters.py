@@ -169,7 +169,7 @@ def set_xc_dict(self, val):
     Adds all the xc_defaults flags for the chosen xc.
 
     """
-    d = {'xc': val}
+    d = {'xc': val.lower()}
     oxc = self.parameters.get('xc', None)
     if oxc:
         for key in vasp.Vasp.xc_defaults[oxc.lower()]:
