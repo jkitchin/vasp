@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class VaspChargeDensity(object):
     """Class for representing VASP charge density"""
 

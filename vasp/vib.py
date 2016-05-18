@@ -59,7 +59,7 @@ def get_vibrational_modes(self,
                 NMODES += 1
         f.close()
     else:
-        NMODES = 3*len(atoms)
+        NMODES = 3 * len(atoms)
 
     frequencies, eigenvectors = [], []
 
@@ -106,7 +106,7 @@ def get_vibrational_modes(self,
             for i in range(len(atoms)):
                 for j in range(3):
                     an = numbers[i]
-                    M.append(1./np.sqrt(atomic_masses[an]))
+                    M.append(1. / np.sqrt(atomic_masses[an]))
             M = np.array(M)
             M = np.diag(M)  # diagonal array
 
@@ -135,17 +135,17 @@ def get_vibrational_modes(self,
             mode = [mode]  # make a list for next code
 
         # symmetric path from -1 to 1 to -1
-        X = np.append(np.linspace(0,  1, npoints/3),
-                      np.linspace(1, -1, npoints/3))
+        X = np.append(np.linspace(0, 1, npoints / 3),
+                      np.linspace(1, -1, npoints / 3))
         X = np.append(X,
-                      np.linspace(-1, 0, npoints/3))
+                      np.linspace(-1, 0, npoints / 3))
         X *= amplitude
 
         for m in mode:
             traj = []
             for i, x in enumerate(X):
                 a = atoms.copy()
-                a.positions += x*eigenvectors[m]
+                a.positions += x * eigenvectors[m]
                 traj += [a]
 
             view(traj)
@@ -174,7 +174,7 @@ def get_vibrational_frequencies(self):
     f.readline()  # skip ------
     f.readline()  # skip two blank lines
     f.readline()
-    for i in range(3*N):
+    for i in range(3 * N):
         # the next line contains the frequencies
         line = f.readline()
         fields = line.split()
@@ -289,8 +289,8 @@ def get_infrared_intensities(self):
     # http://othes.univie.ac.at/10117/1/2010-05-05_0547640.pdf, page
     # 21.
 
-
-    # I(\omega) = \sum_{\alpha=1}^3 | \sum_{l=1}^M \sum_{\beta=1}^3 Z_{\alpha\beta}(l)e_{\beta}(l)|^2
+    # I(\omega) = \sum_{\alpha=1}^3 |
+    # \sum_{l=1}^M \sum_{\beta=1}^3 Z_{\alpha\beta}(l)e_{\beta}(l)|^2
 
     # omega is the vibrational mode
     # alpha, beta are the cartesian polarizations
@@ -309,8 +309,8 @@ def get_infrared_intensities(self):
                     Zab = BORN_MATRICES[l][alpha][beta]
 
                     s += Zab * e[beta]
-            S += s**2
+            S += s ** 2
         intensities.append(S)
 
-    intensities = np.array(intensities)/max(intensities)
+    intensities = np.array(intensities) / max(intensities)
     return intensities

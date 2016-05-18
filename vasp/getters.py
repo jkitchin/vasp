@@ -297,9 +297,9 @@ def get_volumetric_data(self, filename=None, **kwargs):
     n0, n1, n2 = data[0].shape
 
     # This is the old code, but it doesn't seem to work anymore.
-    #s0 = np.linspace(0, 1, num=n0, endpoint=False)
-    #s1 = np.linspace(0, 1, num=n1, endpoint=False)
-    #s2 = np.linspace(0, 1, num=n2, endpoint=False)
+    # s0 = np.linspace(0, 1, num=n0, endpoint=False)
+    # s1 = np.linspace(0, 1, num=n1, endpoint=False)
+    # s2 = np.linspace(0, 1, num=n2, endpoint=False)
 
     # X, Y, Z = np.meshgrid(s0, s1, s2)
 
@@ -442,7 +442,7 @@ def get_dipole_vector(self, atoms=None):
     # make dictionary for ease of use
     zval = {}
     for sym, ppath, hash in LOP:
-        fullpath = os.path.join(ppp,  ppath)
+        fullpath = os.path.join(ppp, ppath)
         z = get_ZVAL(fullpath)
         zval[sym] = z
 
@@ -452,7 +452,7 @@ def get_dipole_vector(self, atoms=None):
         Z = zval[atom.symbol]
         total_ion_charge += Z
         pos = atom.position
-        ion_charge_center += Z*pos
+        ion_charge_center += Z * pos
 
     ion_charge_center /= total_ion_charge
     ion_dipole_moment = ion_charge_center * total_ion_charge
@@ -474,8 +474,7 @@ def get_dipole_moment(self, atoms=None):
     dv = self.get_dipole_vector(atoms)
 
     from ase.units import Debye
-    return ((dv**2).sum())**0.5 / Debye
-
+    return ((dv ** 2).sum()) ** 0.5 / Debye
 
 
 @monkeypatch_class(vasp.Vasp)

@@ -117,10 +117,12 @@ def calculate(self, atoms=None, properties=['energy'],
                         and VASPRC['queue.ppn'] > 1
                         and (VASPRC['multiprocessing.cores_per_process']
                              == 'None'))):
-                    log.debug('queue.nodes = {0}'.format(VASPRC['queue.nodes']))
+                    s = 'queue.nodes = {0}'.format(VASPRC['queue.nodes'])
+                    log.debug(s)
                     log.debug('queue.ppn = {0}'.format(VASPRC['queue.ppn']))
+                    mpc = VASPRC['multiprocessing.cores_per_process']
                     log.debug('multiprocessing.cores_per_process'
-                              '= {0}'.format(VASPRC['multiprocessing.cores_per_process']))
+                              '= {0}'.format(mpc))
                     log.debug('running vanilla MPI job')
 
                     log.debug('MPI NPROCS = {}'.format(NPROCS))

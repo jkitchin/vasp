@@ -90,7 +90,7 @@ def get_neb(self, npi=1):
         self.write_db()
 
         for i, atoms in enumerate(self.neb):
-              # zero-padded directory name
+            # zero-padded directory name
             image_dir = os.path.join(self.directory, str(i).zfill(2))
             if not os.path.isdir(image_dir):
                 # create if needed.
@@ -145,8 +145,9 @@ def get_neb(self, npi=1):
 
         energies += [energy]
 
-    atoms_end = ase.io.read(os.path.join(self.directory,
-                                         '0{}/DB.db'.format(len(self.neb) - 1)))
+    fname = os.path.join(self.directory,
+                         '0{}/DB.db'.format(len(self.neb) - 1))
+    atoms_end = ase.io.read(fname)
     energies += [atoms_end.get_potential_energy()]
 
     energies = np.array(energies)
@@ -179,12 +180,13 @@ def plot_neb(self, show=True):
     bandfit = -f(xfit)
 
     import matplotlib.pyplot as plt
-    p = plt.plot(energies-energies[0], 'bo ', label='images')
+    p = plt.plot(energies - energies[0], 'bo ', label='images')
     plt.plot(xfit, bandfit, 'r-', label='fit')
     plt.plot(xmax, -f(xmax), '* ', label='max')
     plt.xlabel('Image')
     plt.ylabel('Energy (eV)')
-    s = ['$\Delta E$ = {0:1.3f} eV'.format(float(energies[-1]-energies[0])),
+    s = ['$\Delta E$ = {0:1.3f} eV'.format(float(energies[-1]
+                                                 - energies[0])),
          '$E^\ddag$ = {0:1.3f} eV'.format(float(-f(xmax)))]
 
     plt.title('\n'.join(s))

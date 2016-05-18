@@ -138,7 +138,7 @@ def set_nbands(self, N=None, f=1.5):
         return
     atoms = self.get_atoms()
     nelectrons = self.get_valence_electrons()
-    nbands = int(np.ceil(nelectrons/2.) + len(atoms)*f)
+    nbands = int(np.ceil(nelectrons / 2.) + len(atoms) * f)
     self.set(nbands=nbands)
 
 

@@ -16,11 +16,12 @@ also be used to identify the vasp executables used by runvasp.py.
 """
 import os
 
+vs = '/home-research/zhongnanxu/opt/vasp-5.3.5/bin/vasp-vtst-beef-serial'
+vp = '/home-research/zhongnanxu/opt/vasp-5.3.5/bin/vasp-vtst-beef-parallel'
+
 # default settings
-VASPRC = {'vasp.executable.serial':
-          '/home-research/zhongnanxu/opt/vasp-5.3.5/bin/vasp-vtst-beef-serial',
-          'vasp.executable.parallel':
-          '/home-research/zhongnanxu/opt/vasp-5.3.5/bin/vasp-vtst-beef-parallel',
+VASPRC = {'vasp.executable.serial': vs,
+          'vasp.executable.parallel': vp,
           'mode': 'queue',  # other value is 'run'
           'queue.command': 'qsub',
           'queue.options': '-joe',
@@ -30,7 +31,8 @@ VASPRC = {'vasp.executable.serial':
           'queue.mem': '2GB',
           'queue.jobname': 'None',
           'multiprocessing.cores_per_process': 'None',
-          'vdw_kernel.bindat': '/opt/kitchingroup/vasp-5.3.5/vdw_kernel.bindat',
+          'vdw_kernel.bindat':
+          '/opt/kitchingroup/vasp-5.3.5/vdw_kernel.bindat',
           'restart_unconverged': True,
           'validate': True
           }

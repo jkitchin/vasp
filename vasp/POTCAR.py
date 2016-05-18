@@ -44,5 +44,6 @@ def get_ENMIN(potcar):
     with open(potcar) as f:
         for line in f:
             if 'ENMIN' in line:
-                m = re.search('ENMIN\s*=\s*(?P<ENMIN>[0-9]+.[0-9]+)\s+eV', line)
+                regex = 'ENMIN\s*=\s*(?P<ENMIN>[0-9]+.[0-9]+)\s+eV'
+                m = re.search(regex, line)
                 return float(m.groupdict()['ENMIN'])

@@ -203,7 +203,7 @@ def read_potcar(self, fname=None):
     for xc, sym, date in potcars:
         if '_' in sym:  # we have a special setup
             symbol, setup = sym.split('_')
-            special_setups += [[symbol,  '_' + setup]]
+            special_setups += [[symbol, '_' + setup]]
 
     if special_setups:
         params['setups'] = special_setups
@@ -364,7 +364,8 @@ def read_results(self):
 
                 if line.rfind('magnetization (x)') > -1:
                     for m in range(len(atoms)):
-                        magnetic_moments[m] = float(lines[n + m + 4].split()[4])
+                        val = float(lines[n + m + 4].split()[4])
+                        magnetic_moments[m] = val
 
         self.results['magmom'] = magnetic_moment
         self.results['magmoms'] = np.array(magnetic_moments)[self.resort]
@@ -392,7 +393,6 @@ def read_neb(self):
         self.parameters.update(self.read_potcar())
     if os.path.exists(self.kpoints):
         self.parameters.update(self.read_kpoints())
-
 
     # Update the xc functional
     xc_keys = sorted(vasp.Vasp.xc_defaults,

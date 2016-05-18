@@ -28,7 +28,7 @@ def attach_charges(self, fileobj=None, displacement=1e-4):
 
     zval = {}
     for sym, ppath, hash in LOP:
-        fullpath = os.path.join(ppp,  ppath)
+        fullpath = os.path.join(ppp, ppath)
         z = get_ZVAL(fullpath)
         zval[sym] = z
 

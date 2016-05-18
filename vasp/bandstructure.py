@@ -69,7 +69,7 @@ def get_bandstructure(self,
             for j in range(nbands):
                 fields = f.readline().split()
                 id, energy = int(fields[0]), float(fields[1])
-                band_energies[id-1].append(energy)
+                band_energies[id - 1].append(energy)
             f.readline()  # skip line
 
     ax1 = plt.subplot(121)
@@ -81,7 +81,7 @@ def get_bandstructure(self,
     plt.xlabel('k-vector')
     plt.ylabel('Energy (eV)')
 
-    nticks = len(labels)/2 + 1
+    nticks = len(labels) / 2 + 1
     ax.set_xticks(np.linspace(0, npoints, nticks))
     L = []
     L.append(labels[0])

@@ -11,7 +11,7 @@ def vasp(self):
 
     """
     s = 'INCAR'
-    s += '\n' + len('INCAR')*"-" + '\n'
+    s += '\n' + len('INCAR') * "-" + '\n'
     with open(join(self.directory, 'INCAR')) as f:
         s += f.read() + '\n\n'
 
@@ -24,7 +24,8 @@ def vasp(self):
         s += f.read() + '\n\n'
 
     s += 'POTCAR\n' + '-' * len('POTCAR') + '\n'
-    s += 'cat ' + ' '.join(['$VASP_PP_PATH/' + x[1] for x in self.ppp_list]) + ' > POTCAR'
+    s += 'cat ' + ' '.join(['$VASP_PP_PATH/' + x[1] for x in self.ppp_list])
+    s += ' > POTCAR'
 
     return s
 

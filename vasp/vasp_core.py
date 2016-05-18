@@ -81,8 +81,8 @@ class Vasp(FileIOCalculator, object):
                    # vdW-DFs
                    'optpbe-vdw': {'pp': 'LDA', 'gga': 'OR', 'luse_vdw': True,
                                   'aggac': 0.0},
-                   'optb88-vdw': {'pp': 'LDA', 'gga': 'BO',  'luse_vdw': True,
-                                  'aggac': 0.0, 'param1': 1.1/6.0,
+                   'optb88-vdw': {'pp': 'LDA', 'gga': 'BO', 'luse_vdw': True,
+                                  'aggac': 0.0, 'param1': 1.1 / 6.0,
                                   'param2': 0.22},
                    'optb86b-vdw': {'pp': 'LDA', 'gga': 'MK', 'luse_vdw': True,
                                    'aggac': 0.0, 'param1': 0.1234,
@@ -717,9 +717,8 @@ class Vasp(FileIOCalculator, object):
         else:
             return view(self.traj)
 
-
     def describe(self, long=False):
-        """Describe the parameters used from the docstrings in vasp.validate."""
+        """Describe the parameters used with docstrings in vasp.validate."""
         for key in sorted(self.parameters.keys()):
             if key in validate.__dict__:
                 f = validate.__dict__[key]
