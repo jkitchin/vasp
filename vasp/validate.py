@@ -1,20 +1,21 @@
 """Validation functions for Vasp keywords.
 
-Each function should have the signature func(calc, val) and it should use
-exceptions or assertions to validate. Each function should have a brief
-docstring. The first line will be used as a tooltip in Emacs. A command will
-give access to the full docstring. It is encouraged to put URLs to full
-documentation, as they will be clickable in Emacs.
+Each function should have the signature func(calc, val) and it should
+use exceptions or assertions to validate. Each function should have a
+brief docstring. The first line will be used as a tooltip in Emacs. An
+Emacs command will give access to the full docstring. It is encouraged
+to put URLs to full documentation, as they will be clickable in Emacs.
 
 http://cms.mpi.univie.ac.at/wiki/index.php/Category:INCAR
 
 """
 import types
+import ase
 
 
 def atoms(calc, val):
     """The Atoms object. (ase.atoms.Atoms or a list of them for an NEB)."""
-    assert val is not None
+    assert isinstance(val, ase.atoms.Atoms) or isinstance(val, list)
 
 
 def ediffg(calc, val):
