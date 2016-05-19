@@ -364,6 +364,9 @@ def get_local_potential(self):
 @monkeypatch_class(vasp.Vasp)
 def get_elf(self):
     """Returns x, y, z and electron localization function arrays."""
+    assert self.parameters.get('lelf', None) is True,\
+        "lelf is not set to True!"
+
     self.update()
     fname = os.path.join(self.directory, 'ELFCAR')
     x, y, z, data = get_volumetric_data(self, filename=fname)
