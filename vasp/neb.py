@@ -117,7 +117,7 @@ def get_neb(self, npi=1):
         log.debug('Running on %i cores', VASPRC['queue.ppn'])
 
         self.calculate()  # this will raise VaspSubmitted
-        return
+        return self.neb, [None for a in self.neb]
 
     #############################################
     # now we are just retrieving results
