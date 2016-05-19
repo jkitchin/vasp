@@ -34,7 +34,8 @@ VASPRC = {'vasp.executable.serial': vs,
           'vdw_kernel.bindat':
           '/opt/kitchingroup/vasp-5.3.5/vdw_kernel.bindat',
           'restart_unconverged': True,
-          'validate': True
+          'validate': True,
+          'handle_exceptions': True
           }
 
 
