@@ -204,6 +204,10 @@ def get_infrared_intensities(self):
     2011-03-25, ICIQ Tarragona, Spain (www.iciq.es)
     http://homepage.univie.ac.at/david.karhanek/downloads.html#Entry02
     """
+    assert self.parameters.get('lepsilon', None) is True
+    assert self.parameters.get('nwrite', 0) == 3
+    assert self.parameters.get('ibrion', 0) == 7
+
     self.update()
 
     atoms = read(os.path.join(self.directory, 'POSCAR'), format='vasp')
