@@ -68,6 +68,21 @@ This was changed to help make resorting simpler and reliable.
 ** new rwigs syntax
  rwigs is now a dictionary of {atom-symbol: radius}. This makes it easier to correctly generate the INCAR.
 
+** ADOS is part of Vasp
+The syntax to get the 's' orbital on the 0-indexed atom is:
+#+BEGIN_SRC python
+energies, c_s = calc.get_ados(0, 's')
+#+END_SRC
+
+Only 's', 'p', and 'd' are currently supported.
+** Integrated visualization
+This will show you the trajectory of the geometry relaxation.
+#+BEGIN_SRC python
+from vasp import Vasp
+calc = Vasp('molecules/h2o-relax-centered')
+calc.view()
+#+END_SRC
+
 ** New default parameters
 These may change. We don't usually write out the charge and wavecar files because they are large. An exception is if nsw>0, then we do write out the wavecar file to facilitate restarts.
 
@@ -81,7 +96,6 @@ print(Vasp.default_parameters)
 
 ** Automatic job submission and job management.
 Calculations are automatically submitted to a queue system with well-defined exceptions to provide job management. The setup is somewhat general, and must be tuned for specific clusters.
-
 
 ** Built-in exception handling.
 All functions are wrapped in exception handling code to make some things easy to handle.
@@ -103,7 +117,6 @@ con = connect('co-database.db', append=False)
 for atoms in [calc.get_atoms() for calc in calcs]:
     con.write(atoms)
 #+END_SRC
-
 
 ** Validation of some kwargs.
 The vasp.validate file defines validation functions for many keywords, as well as brief documentation for them. This is integrated with Emacs to provide tooltips and easy access to documentation while working.
