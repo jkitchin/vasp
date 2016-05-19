@@ -12,7 +12,7 @@ http://cms.mpi.univie.ac.at/wiki/index.php/Category:INCAR
 import types
 import ase
 from ase.utils import basestring
-
+import warnings
 
 def atoms(calc, val):
     """The Atoms object. (ase.atoms.Atoms or a list of them for an NEB)."""
@@ -51,6 +51,16 @@ def ibrion(calc, val):
     assert val in [-1, 0, 1, 2, 3, 5, 6, 7, 8, 44]
 
 
+def images(calc, val):
+    """The number of images not counting the end-points for an NEB. (int)
+
+    http://cms.mpi.univie.ac.at/wiki/index.php/IMAGES
+
+    """
+    assert isinstance(val, int)
+    assert val == len(calc.neb) - 2
+
+
 def isif(calc, val):
     """ISIF determines what is changed during relaxations. (int)
 
@@ -72,6 +82,8 @@ def isif(calc, val):
 
 def ismear(calc, val):
     """ISMEAR determines how the partial occupancies are set (int).
+
+    http://cms.mpi.univie.ac.at/wiki/index.php/ISMEAR
 
     """
     assert val in [-5, -4, -3, -2, -1, 0, 1, 2]
@@ -141,7 +153,9 @@ def magmom(calc, val):
     http://cms.mpi.univie.ac.at/wiki/index.php/MAGMOM
 
     """
-    assert isinstance(val, list)
+    assert isinstance(val, list),\
+        'Got {} for magmom. Should be a list.'.format(val)
+
     assert len(val) == len(calc.atoms)
 
 
@@ -152,7 +166,8 @@ def nbands(calc, val):
 
     """
     assert isinstance(val, int) or isinstance(val, long)
-    assert val > calc.get_valence_electrons() / 2
+    assert val > calc.get_valence_electrons() / 2, \
+        'nbands = {} which is less than {}.'.format(val, calc.get_valence_electrons() / 2)
 
 
 def nsw(calc, val):
@@ -218,6 +233,16 @@ def sigma(calc, val):
     """SIGMA determines the width of the smearing in eV. (float)"""
     assert isinstance(val, float)
     assert val > 0
+
+
+def spring(calc, val):
+    """The Spring constant  in the elastic band method. -5 = NEB.
+
+    http://cms.mpi.univie.ac.at/wiki/index.php/SPRING
+    """
+    assert isinstance(val, int) or isinstance(val, float)
+    if calc.parameters.get('ibrion') not in [1, 3]:
+        warnings.warn('ibrion should be 1 or 3.')
 
 
 def xc(calc, val):
