@@ -74,7 +74,7 @@ def ismear(calc, val):
     """ISMEAR determines how the partial occupancies are set (int).
 
     """
-    assert val in [-5, -4, -3, -2, 0, 1, 2]
+    assert val in [-5, -4, -3, -2, -1, 0, 1, 2]
 
 
 def ispin(calc, val):
