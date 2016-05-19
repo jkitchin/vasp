@@ -59,7 +59,7 @@ def read_incar(self, fname=None):
         key, val = line.split('=')
         key = key.strip().lower()
         val = val.strip()
-        # now we need some logic.
+        # now we need some logic
         if val == '.TRUE.':
             val = True
         elif val == '.FALSE.':
@@ -78,6 +78,12 @@ def read_incar(self, fname=None):
         else:
             # I guess we have a string here.
             pass
+
+        # make sure magmom is returned as a list. This is an issue
+        # when there is only one atom. Then it looks like a float.
+        if key == 'magmom':
+            if not isinstance(val, list):
+                val = [val]
 
         params[key] = val
 
@@ -346,6 +352,9 @@ def read_results(self):
             # update the atoms
             self.atoms.positions = atoms.positions[resort]
             self.atoms.cell = atoms.cell
+            imm = self.parameters.get('magmom',
+                                      [0 for atom in self.atoms])
+            self.atoms.set_initial_magnetic_moments(imm)
 
         self.results['energy'] = energy
         self.results['forces'] = forces[self.resort]
