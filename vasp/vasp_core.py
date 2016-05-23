@@ -361,22 +361,108 @@ class Vasp(FileIOCalculator, object):
     def __str__(self):
         """Pretty representation of a calculation.
 
-        TODO: make more like jaspsum.
+        TODO: 1. Incorporate magmoms and vibrational frequencies.
+              2. Read constraints from POSCAR/CONTCAR to allow for
+              separation of vector constraints.
+              3. Fix alpha, beta, gamma code or remove completely.
+              4. Implement convergence check?
 
         """
-        s = ['']
-        s += ['Vasp calculation in {self.directory}\n']
-        if os.path.exists(self.incar):
-            with open(self.incar) as f:
-                s += [f.read()]
-        else:
-            s += ['No INCAR yet']
+        s = ['\n*************** VASP CALCULATION SUMMARY ***************']
+        s += ['Vasp calculation directory:']
+        s += ['---------------------------']
+        s += ['  {self.directory}']
+        # Not yet implemented
+        # if hasattr(self, 'converged'):
+        #     s += ['  Converged: {self.converged}']
+        # try:
+        #     self.converged = self.read_convergence()
+        # except IOError:
+        #     # eg no outcar
+        #     self.converged = False
 
-        if os.path.exists(self.poscar):
-            with open(self.poscar) as f:
-                s += [f.read()]
-        else:
-            s += ['No POSCAR yet']
+        try:
+            atoms = self.get_atoms()
+            cell = atoms.get_cell()
+
+            A, B, C = [i for i in cell]
+            l = map(np.linalg.norm, cell)
+
+            # # Not yet implemented, copied from jasp, but an
+            # # error seems likely since alpha = gamma.
+            # alpha = np.arccos(np.dot(B/l[2], C/l[3])) * 180/np.pi
+            # beta = np.arccos(np.dot(A/l[1], C/l[3])) * 180/np.pi
+            # gamma = np.arccos(np.dot(B/l[2], C/l[3])) * 180/np.pi
+
+            # Format unit cell output
+            #########################
+            s += ['\nUnit cell:']
+            s += ['----------']
+            s += ['    {:^8}{:^8}{:^8}{:>12}'.format('x', 'y', 'z',
+                                                     'magnitude')]
+            for i, v in enumerate(cell):
+                s += ['  v{0}{2:>8.3f}{3:>8.3f}{4:>8.3f}'
+                      '{1:>12.3f} Ang'.format(i, l[i], *v)]
+
+            volume = atoms.get_volume()
+            s += ['  Total volume:{:>25.3f} Ang^3'.format(volume)]
+
+            # Format stress output
+            #########################
+            stress = atoms.get_stress()
+            if stress is not None:
+                s += ['  Stress:{:>6}{:>7}{:>7}'
+                      '{:>7}{:>7}{:>7}'.format('xx', 'yy', 'zz',
+                                               'yz', 'xz', 'xy')]
+                s += ['{:>15.3f}{:7.3f}{:7.3f}'
+                      '{:7.3f}{:7.3f}{:7.3f} GPa\n'.format(*stress)]
+            else:
+                s += ['  Stress was not computed\n']
+
+            # Format atoms output
+            #########################
+            if hasattr(atoms, 'constraints'):
+                # Reads constraints from atoms object
+                # Rather than POS or CONTCAR
+                constraints = atoms.constraints
+                constraints = constraints[0].todict()['kwargs']['indices']
+                s += ['  {:<4}{:<8}{:<3}{:^9}{:^9}{:^9}'
+                      '{:>8}{:>18}'.format('ID', 'tag', 'sym',
+                                           'x', 'y', 'z', 'rmsF',
+                                           'constrained')]
+            else:
+                s += ['  {:<4}{:<8}{:<3}{:^9}{:^9}{:^9}'
+                      '{:>8}'.format('ID', 'tag', 'sym',
+                                     'x', 'y', 'z', 'rmsF')]
+
+            forces = atoms.get_forces()
+            for i, atom in enumerate(atoms):
+                rms_f = np.sum(forces[i]**2)**0.5
+                ts = ('  {:<4}{:<8}{:3}{:9.3f}{:9.3f}{:9.3f}'
+                      '{:>8.2f} Ang'.format(i, atom.tag, atom.symbol,
+                                            atom.x, atom.y, atom.z, rms_f))
+
+                if constraints is not None:
+                    ts += '{:^18}'.format('Y' if i in constraints else 'N')
+                s += [ts]
+            energy = atoms.get_potential_energy()
+            s += ['  Potential energy: {:.4f} eV'.format(energy)]
+
+            # Format INCAR output
+            #########################
+            s += ['\nINCAR Parameters:']
+            s += ['-----------------']
+            for key, value in self.parameters.iteritems():
+                s += ['  {0:<10}: {1}'.format(key, value)]
+
+            # Format pseudo-potential output
+            #########################
+            s += ['\nPseudopotentials used:']
+            s += ['----------------------']
+            for sym, ppp, hash in self.get_pseudopotentials():
+                s += ['  {}: {} (git-hash: {})'.format(sym, ppp, hash)]
+        except:
+            s += ['  Could not complete VASPUM']
 
         return '\n'.join(s).format(self=self)
 
