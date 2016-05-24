@@ -14,9 +14,18 @@ import ase
 from ase.utils import basestring
 import warnings
 
+
 def atoms(calc, val):
     """The Atoms object. (ase.atoms.Atoms or a list of them for an NEB)."""
     assert isinstance(val, ase.atoms.Atoms) or isinstance(val, list)
+
+
+def ediff(calc, val):
+    """EDIFF specifies the global break condition for the electronic loop. (float)
+
+    http://cms.mpi.univie.ac.at/wiki/index.php/EDIFF
+    """
+    assert isinstance(val, float) or val == 0
 
 
 def ediffg(calc, val):

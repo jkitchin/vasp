@@ -6,7 +6,6 @@ These are separated out by design to keep vasp.py small. Each function is
 monkey-patched onto the Vasp class as if it were defined in vasp.py.
 
 """
-import json
 import os
 import numpy as np
 import vasp
