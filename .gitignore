@@ -23,7 +23,7 @@ WAVECAR
 *.o[0-9]*
 DYNMAT
 jobid
-
+DB.db
 # calculation directories
 molecules
 /.doit.db
