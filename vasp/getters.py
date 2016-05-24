@@ -497,3 +497,29 @@ def get_pseudopotentials(self):
         hashes.append(s.hexdigest())
 
     return zip(symbols, paths, hashes)
+
+
+@monkeypatch_class(vasp.Vasp)
+def get_memory(self):
+    """ Retrieves the recommended memory from the OUTCAR in GB.
+
+    If no OUTCAR exists, or the memory estimate can not be
+    found, return None
+    """
+
+    OUTCAR = os.path.join(self.directory, 'OUTCAR')
+    if os.path.exists(OUTCAR):
+        with open(OUTCAR) as f:
+            lines = f.readlines()
+    else:
+        return None
+
+    for line in lines:
+
+        # There are often two instances of this,
+        # but they  seem to be identical in all cases
+        if 'memory' in line:
+
+            # Return memory estimate in GB
+            required_mem = float(line.split()[-2]) / 1e6
+            return required_mem

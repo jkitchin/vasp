@@ -202,3 +202,120 @@ runvasp.py     # this is the vasp command
 
     raise VaspSubmitted('{} submitted: {}'.format(self.directory,
                                                   out.strip()))
+
+
+@monkeypatch_class(vasp.Vasp)
+def set_memory(self,
+               eff_loss=0.1):
+    """ Sets the recommended memory needed for a VASP calculation
+
+    Code retrieves memory estimate based on the following priority:
+    1) DB file
+    2) existing OUTCAR
+    3) run partial diagnostic calculation
+
+    The final method determines the memory requirements from
+    KPOINT calculations run locally before submission to the queue
+
+    returns the memory estimate from the OUTCAR file
+
+    :param eff_loss: Estimated loss in computational efficiency
+                     when parallelizing over multiple processors.
+                     10% is a safe upper bound from personal experience.
+    :type eff_loss: float
+    """
+
+    # Attempt to get the recommended memory from DB
+    memory = self.get_db('memory')
+
+    if memory is None:
+        # Check if an OUTCAR exists from a previous run
+
+        # WARNING: if calculation was run with > 1 ppn, estimate
+        # in OUTCAR will reflect that recommended memory for that
+        # number of ppn. This can lead to over-estimation of memory
+        # requirements on calculations where set_required_memory
+        # was not used initially.
+        if os.path.exists(os.path.join(self.directory, 'OUTCAR')):
+            memory = self.get_memory()
+
+            # Write the recommended memory to the DB file
+            self.write_db(data={'memory': memory})
+
+        # If no OUTCAR exists, we run a 'dummy' calculation
+        else:
+            try:
+                original_ialgo = self.parameters['ialgo']
+            except(KeyError):
+                original_ialgo = None
+            self.set(ialgo=-1)
+
+            # Generate the base files needed for VASP calculation
+            from ase.calculators.calculator import FileIOCalculator
+            FileIOCalculator.write_input(self, None, None, None)
+            self.write_poscar()
+            self.write_incar()
+            self.write_kpoints()
+            self.write_potcar()
+
+            # Need to pass a function to Timer for delayed execution
+            def kill():
+                process.kill()
+
+            # We only need the memory estimate, so we can greatly
+            # accelerate the process by terminating after we have it
+            cwd = os.getcwd()
+            os.chdir(self.directory)
+            from subprocess import Popen, PIPE
+            process = Popen(VASPRC['vasp.executable.serial'],
+                            stdout=PIPE)
+
+            from threading import Timer
+            import time
+            timer = Timer(20.0, kill)
+            timer.start()
+            while True:
+                if timer.is_alive():
+                    memory = self.get_memory()
+                    if memory:
+                        timer.cancel()
+                        process.terminate()
+                        break
+                    else:
+                        time.sleep(0.1)
+                else:
+                    raise RuntimeError('Memory estimate timed out')
+
+            os.chdir(cwd)
+            # return to original settings
+            if original_ialgo:
+                self.set(ialgo=original_ialgo)
+            else:
+                del self.parameters['ialgo']
+            self.write_incar()
+
+            # Write the recommended memory to the DB file
+            self.write_db(data={'memory': memory})
+
+            # Remove all non-initialization files
+            files = ['CHG', 'CHGCAR', 'CONTCAR', 'DOSCAR',
+                     'EIGENVAL', 'IBZKPT', 'OSZICAR', 'PCDAT',
+                     'vasprun.xml', 'OUTCAR', 'WAVECAR', 'XDATCAR']
+
+            for f in files:
+                os.unlink(os.path.join(self.directory, f))
+
+    # One node will require the memory read from the OUTCAR
+    processors = VASPRC['queue.ppn'] + VASPRC['queue.nodes']
+
+    # Apply eff_loss
+    if processors > 1:
+        eff_factor = 1 + (eff_loss * float(processors))
+
+    # Rounded up to the nearest GB, and set the memory
+    import math
+    total_memory = int(math.ceil(eff_factor * float(memory)))
+    VASPRC['queue.mem'] = '{0}GB'.format(total_memory)
+
+    # Return the memory as read from the OUTCAR
+    return memory
