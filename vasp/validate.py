@@ -115,8 +115,8 @@ def ispin(calc, val):
 
 
 def kpts(calc, val):
-    """Sets k-points. Not a Vasp keyword. (list or tuple)"""
-    assert isinstance(val, list) or isinstance(val, tuple)
+    """Sets k-points. Not a Vasp keyword. (list)"""
+    assert isinstance(val, list), 'kpts should be a list.'
 
 
 def kpts_nintersections(calc, val):
