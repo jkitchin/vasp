@@ -545,8 +545,11 @@ class Vasp(FileIOCalculator, object):
             new_keys = set(self.parameters.keys()) - set(file_params.keys())
             missing_keys = (set(file_params.keys()) -
                             set(self.parameters.keys()))
-            log.debug('New keys: {}'.format(new_keys))
-            log.debug('Missing keys: {}'.format(missing_keys))
+            #print('New keys: {}'.format(new_keys))
+            #print('Missing keys: {}'.format(missing_keys))
+            #print('self.parameters == file_params: ',self.parameters == file_params)
+            #print self.parameters
+            #print file_params
             system_changes += ['params_on_file']
 
         return system_changes
@@ -582,13 +585,12 @@ class Vasp(FileIOCalculator, object):
 
         system_changes = self.check_state(atoms)
         if system_changes:
-            log.debug('Calculation needed for {}'.format(system_changes))
+            print('Calculation needed for {}'.format(system_changes))
             return True
-
         for name in properties:
             if name not in self.results:
-                log.debug('{} not in {}. Calc required.'.format(name,
-                                                                self.results))
+                print('{} not in {}. Calc required.'.format(name,
+                                                            self.results))
                 return True
 
         # if the calculation is finished we do not need to run.
