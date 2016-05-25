@@ -175,8 +175,23 @@ def nbands(calc, val):
 
     """
     assert isinstance(val, int) or isinstance(val, long)
+
+    s = 'nbands = {} which is less than {}.'
     assert val > calc.get_valence_electrons() / 2, \
-        'nbands = {} which is less than {}.'.format(val, calc.get_valence_electrons() / 2)
+        s.format(val, calc.get_valence_electrons() / 2)
+
+
+def nupdown(calc, val):
+    """NUPDOWN = difference between number of spin up and down electrons.
+
+    This fixes the bulk magnetic moment.
+    The VASP manual specifies this should be an integer, but it
+    appears floats work too.
+
+    http://cms.mpi.univie.ac.at/vasp/vasp/NUPDOWN.html
+
+    """
+    assert isinstance(val, int) or isinstance(val, float)
 
 
 def nsw(calc, val):
