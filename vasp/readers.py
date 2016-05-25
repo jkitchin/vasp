@@ -368,8 +368,11 @@ def read_results(self):
             lines = open(os.path.join(self.directory, 'OUTCAR'),
                          'r').readlines()
             for n, line in enumerate(lines):
-                if line.rfind('number of electron  ') > -1:
-                    magnetic_moment = float(line.split()[-1])
+                if line.startswith(' number of electron  '):
+                    try:
+                        magnetic_moment = float(line.split()[-1])
+                    except:
+                        print self.directory, line
 
                 if line.rfind('magnetization (x)') > -1:
                     for m in range(len(atoms)):
