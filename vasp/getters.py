@@ -60,59 +60,106 @@ def get_beefens(self, n=-1):
     return np.array(beefens[n])
 
 
-@monkeypatch_class(vasp.Vasp)
-def get_ibz_k_points(self):
-    """Return the irreducible k-points."""
-    self.update()
-    lines = open(os.path.join(self.directory, 'OUTCAR'), 'r').readlines()
-    ibz_kpts = []
-    n = 0
-    i = 0
-    for line in lines:
-        if line.rfind('Following cartesian coordinates') > -1:
-            m = n + 2
-            while i == 0:
-                ibz_kpts.append([float(lines[m].split()[p])
-                                 for p in range(3)])
-                m += 1
-                if lines[m] == ' \n':
-                    i = 1
-        if i == 1:
-            continue
-        n += 1
-    ibz_kpts = np.array(ibz_kpts)
-    return np.array(ibz_kpts)
+# @monkeypatch_class(vasp.Vasp)
+# def get_ibz_k_points(self):
+#     """Return the irreducible k-points."""
+#     self.update()
+#     lines = open(os.path.join(self.directory, 'OUTCAR'), 'r').readlines()
+#     ibz_kpts = []
+#     n = 0
+#     i = 0
+#     for line in lines:
+#         if line.rfind('Following cartesian coordinates') > -1:
+#             m = n + 2
+#             while i == 0:
+#                 ibz_kpts.append([float(lines[m].split()[p])
+#                                  for p in range(3)])
+#                 m += 1
+#                 if lines[m] == ' \n':
+#                     i = 1
+#         if i == 1:
+#             continue
+#         n += 1
+#     ibz_kpts = np.array(ibz_kpts)
+#     return np.array(ibz_kpts)
 
+
+@monkeypatch_class(vasp.Vasp)
+def get_ibz_k_points(self, cartesian=True):
+    """Return the IBZ k-point list.
+
+    Uses vasprun.xml and returns them in cartesian coordinates.
+    set cartesian=False to get them in reciprocal coordinates.
+
+    """
+    self.update()
+
+    with open(os.path.join(self.directory,
+                           'vasprun.xml')) as f:
+        tree = ElementTree.parse(f)
+        # each weight is in a <v>w</v> element in this varray
+        kpts = np.array([[float(y) for y in x.text.split()] for x in
+                         tree.find("kpoints/varray[@name='kpointlist']")])
+        if cartesian:
+            kpts = np.dot(kpts, np.linalg.inv(self.atoms.cell).T)
+        return kpts
+
+
+# @monkeypatch_class(vasp.Vasp)
+# def get_occupation_numbers(self, kpt=0, spin=0):
+#     """Return the occupation of each k-point."""
+#     self.update()
+#     lines = open(os.path.join(self.directory, 'OUTCAR')).readlines()
+#     nspins = self.get_number_of_spins()
+#     start = 0
+#     if nspins == 1:
+#         for n, line in enumerate(lines):  # find it in the last iteration
+#             m = re.search(' k-point *' + str(kpt + 1) + ' *:', line)
+#             if m is not None:
+#                 start = n
+#     else:
+#         for n, line in enumerate(lines):
+#             # find it in the last iteration
+#             if line.find(' spin component ' + str(spin + 1)) != -1:
+#                 start = n
+#         for n2, line2 in enumerate(lines[start:]):
+#             m = re.search(' k-point *' + str(kpt + 1) + ' *:', line2)
+#             if m is not None:
+#                 start = start + n2
+#                 break
+#     for n2, line2 in enumerate(lines[start + 2:]):
+#         if not line2.strip():
+#             break
+#         occ = []
+#         for line in lines[start + 2:start + 2 + n2]:
+#             occ.append(float(line.split()[2]))
+#     return np.array(occ)
 
 @monkeypatch_class(vasp.Vasp)
 def get_occupation_numbers(self, kpt=0, spin=0):
-    """Return the occupation of each k-point."""
+    """Read occupation_numbers for KPT and spin.
+
+    Read from vasprun.xml. This may be fractional occupation. For
+    non-spin-polarized calculations you may need to multiply by 2.
+
+    Returns an np.array.
+
+    """
     self.update()
-    lines = open(os.path.join(self.directory, 'OUTCAR')).readlines()
-    nspins = self.get_number_of_spins()
-    start = 0
-    if nspins == 1:
-        for n, line in enumerate(lines):  # find it in the last iteration
-            m = re.search(' k-point *' + str(kpt + 1) + ' *:', line)
-            if m is not None:
-                start = n
-    else:
-        for n, line in enumerate(lines):
-            # find it in the last iteration
-            if line.find(' spin component ' + str(spin + 1)) != -1:
-                start = n
-        for n2, line2 in enumerate(lines[start:]):
-            m = re.search(' k-point *' + str(kpt + 1) + ' *:', line2)
-            if m is not None:
-                start = start + n2
-                break
-    for n2, line2 in enumerate(lines[start + 2:]):
-        if not line2.strip():
-            break
-    occ = []
-    for line in lines[start + 2:start + 2 + n2]:
-        occ.append(float(line.split()[2]))
-    return np.array(occ)
+
+    with open(os.path.join(self.directory,
+                           'vasprun.xml')) as f:
+        tree = ElementTree.parse(f)
+        path = '/'.join(['calculation',
+                         'eigenvalues',
+                         'array',
+                         'set',
+                         "set[@comment='spin {}']".format(spin + 1),
+                         "set[@comment='kpoint {}']".format(kpt + 1)])
+        # these are all in elements like this.
+        # <r>   -3.8965    1.0000 </r>
+        return np.array([float(x.text.split()[1]) for x
+                         in tree.find(path)])
 
 
 @monkeypatch_class(vasp.Vasp)
