@@ -1106,3 +1106,85 @@ print sigma.__doc__
 : SIGMA = 0.4
 : INCAR
 : SIGMA determines the width of the smearing in eV.
+* ibz-kpts
+
+#+BEGIN_SRC python
+from ase import Atoms, Atom
+from vasp import Vasp
+
+co = Atoms([Atom('C', [0, 0, 0]),
+            Atom('O', [1.2, 0, 0])],
+           cell=(6., 6., 6.))
+
+calc = Vasp('molecules/simple-co',  # output dir
+            xc='pbe',  # the exchange-correlation functional
+            nbands=6,    # number of bands
+            encut=350,    # planewave cutoff
+            ismear=1,    # Methfessel-Paxton smearing
+            sigma=0.01,  # very small smearing factor for a molecule
+            atoms=co)
+
+print('energy = {0} eV'.format(co.get_potential_energy()))
+print(co.get_forces())
+print calc.get_ibz_k_points()
+print calc.get_occupation_numbers()
+#+END_SRC
+
+#+RESULTS:
+: energy = -14.69111507 eV
+: [[ 5.09138064  0.          0.        ]
+:  [-5.09138064  0.          0.        ]]
+: [[ 0.  0.  0.]]
+: [ 2.  2.  2.  2.  2.]
+
+
+** Al example
+#+BEGIN_SRC python
+from vasp import Vasp
+from ase.lattice import bulk
+
+Al = bulk('Al', 'fcc', a=4.5, cubic=True)
+calc = Vasp('bulk/Al-lda-vasp',
+            xc='LDA', kpts=[4, 4, 4],
+            atoms=Al)
+
+print(calc.get_ibz_k_points())
+#+END_SRC
+
+#+RESULTS:
+: [[ 0.02777778  0.02777778  0.02777778]
+:  [ 0.08333333  0.02777778  0.02777778]
+:  [ 0.08333333  0.08333333  0.02777778]
+:  [ 0.08333333  0.08333333  0.08333333]]
+
+
+#+BEGIN_SRC python
+from vasp import Vasp
+
+c = Vasp('bulk/Al-lda-vasp')
+c.update()
+print c.get_occupation_numbers()
+#+END_SRC
+
+#+RESULTS:
+: [ 1.      1.      1.      1.      0.5576  0.5576  0.5576  0.      0.      0.    ]
+
+
+#+BEGIN_SRC python
+import os
+from xml.etree import ElementTree
+import numpy as np
+
+with open(os.path.join('bulk/Al-lda-vasp',
+                       'vasprun.xml')) as f:
+        tree = ElementTree.parse(f)
+        # each weight is in a <v>w</v> element in this varray
+
+        print np.array([[float(y) for y in x.text.split()] for x in tree.find("kpoints/varray[@name='kpointlist']")])
+#+END_SRC
+
+#+RESULTS:
+: [[ 0.125  0.125  0.125]
+:  [ 0.375  0.125  0.125]
+:  [ 0.375  0.375  0.125]
+:  [ 0.375  0.375  0.375]]
