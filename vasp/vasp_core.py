@@ -60,6 +60,9 @@ class Vasp(FileIOCalculator, object):
     command = None
     debug = None
 
+    # List of calculators created
+    calculators = []
+
     implemented_properties = ['energy', 'forces', 'stress',
                               'charges', 'dipole',
                               'magmom',  # the overall magnetic moment
@@ -278,6 +281,15 @@ class Vasp(FileIOCalculator, object):
                     f(self, val)
                 else:
                     warnings.warn('No validation for {}'.format(key))
+
+        # Store instance in class for future reference
+        Vasp.calculators += [self]
+
+        # We define some classmethods that work on the class
+        # Here we redefine some instance methods.
+        self.run = self._run
+        self.abort = self._abort
+        self.wait = self._wait
 
     def sort_atoms(self, atoms=None):
         """Generate resort list, and make list of POTCARs to use.
@@ -633,25 +645,6 @@ class Vasp(FileIOCalculator, object):
         # This sets self.results, and updates the atoms
         self.read_results()
 
-    def abort(self):
-        """Abort and exit the program the calculator is running in."""
-        import sys
-        sys.exit()
-
-    def stop_if(self, condition=None):
-        """Stop program if condition is truthy."""
-        if condition:
-            import sys
-            sys.exit()
-
-    def wait(self):
-        """Stop program if not ready."""
-        self.stop_if(self.potential_energy is None)
-
-    def run(self):
-        """Convenience function to run calculation."""
-        return self.potential_energy
-
     def clone(self, newdir):
         """Copy the calculation directory to newdir and set label to
         newdir.
@@ -818,3 +811,125 @@ class Vasp(FileIOCalculator, object):
                 else:
                     print('  ' + d.split('\n')[0])
                 print('')
+
+    @property
+    def ready(self):
+        """Property for is calculator ready.
+
+        That means no calculation is required to get results.
+
+        """
+        self.update()
+        return not self.calculation_required()
+
+    @classmethod
+    def run(cls, wait=False):
+        """Convenience function to run calculators.
+
+        The default behavior is to exit after doing this. If wait is
+        True, iy will cause it to wait with the default args to
+        Vasp.wait.
+
+        If wait is a dictionary, it will be passed as kwargs to
+        Vasp.wait.
+
+        """
+        energies = [calc.potential_energy for calc in Vasp.calculators]
+
+        if None not in energies:
+            # They are all done.
+            return energies
+
+        if wait is False:
+            Vasp.abort()
+        elif isinstance(wait, dict):
+            Vasp.wait(**wait)
+        else:
+            Vasp.wait()
+
+    def _run(self):
+        """Convenience function to run the calculator."""
+        return self.potential_energy
+
+    @classmethod
+    def all(cls):
+        """Returns if all calculators in the class are ready."""
+        status = [c.ready for c in Vasp.calculators]
+        return False not in status
+
+    @classmethod
+    def stop_if(cls, condition):
+        """Stops the program if condition is truthy."""
+        if condition:
+            import sys
+            sys.exit()
+
+    @classmethod
+    def abort(cls):
+        """Abort and exit the program the calculator is running in."""
+        import sys
+        sys.exit()
+
+    def _abort(self):
+        """Abort and exit program the calculator is running in."""
+        import sys
+        sys.exit()
+
+    @classmethod
+    def clear_calculators(cls):
+        """Clear the stored calculators."""
+        Vasp.calculators = []
+
+    @classmethod
+    def wait(cls, poll_interval=5, timeout=None, abort=False):
+        """Control function to wait until all calculators are ready.
+
+        if abort is truthy, stop the program.
+
+        Otherwise check the calculators every poll_interval seconds,
+        up to timeout seconds later. If timeout is None, poll forever.
+
+        """
+        if abort:
+            Vasp.abort()
+
+        import time
+        if timeout is not None:
+            t0 = time.time()
+            while not Vasp.all() and time.time() - t0 < timeout:
+                time.sleep(poll_interval)
+
+            if time.time() - t0 > timeout:
+                print('Timeout exceeded without finishing.')
+                Vasp.abort()
+
+        else:
+            while not Vasp.all():
+                print Vasp.all()
+                time.sleep(poll_interval)
+
+    def _wait(self, poll_interval=5, timeout=None, abort=False):
+        """Control function to wait until all calculators are ready.
+
+        if abort is truthy, stop the program.
+
+        Otherwise check the calculators every poll_interval seconds,
+        up to timeout seconds later. If timeout is None, poll forever.
+
+        """
+        if abort:
+            self.abort()
+
+        import time
+        if timeout is not None:
+            t0 = time.time()
+            while not self.ready and time.time() - t0 < timeout:
+                time.sleep(poll_interval)
+
+            if time.time() - t0 > timeout:
+                print('Timeout exceeded without finishing.')
+                self.abort()
+
+        else:
+            while not self.ready:
+                time.sleep(poll_interval)
