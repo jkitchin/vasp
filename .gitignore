@@ -27,3 +27,4 @@ DB.db
 # calculation directories
 molecules
 /.doit.db
+bulk
