@@ -407,3 +407,36 @@ def qoutput(self):
             return f.read()
     else:
         return "In queue or no output found."
+
+
+def torque(cls):
+    """Returns an array of jobids and actions suitable for org-mode.
+
+    | directory | jobid | qdel |
+
+    The directory link opens in xterm or dired,
+    The jobid runs qstat on the job_status
+    qdel will delete the job from the queue.
+    """
+    jobids = [calc.jobid() for calc in vasp.Vasp.calculators]
+
+    qstat = ['[[shell:qstat {}][{}]]'.format(jobid, jobid)
+             for jobid in jobids]
+    qdel = ['[[shell:qdel {}][qdel]]'.format(jobid)
+            for jobid in jobids]
+
+    dirs = [calc.directory
+            for calc in vasp.Vasp.calculators]
+
+    s = '[[shell:xterm -e "cd {}; ls && /bin/bash"][{}]]'
+    xterm = [s.format(d, os.path.relpath(d))
+             for d in dirs]
+
+    s = '[[elisp:(find-file "{}")][dired]]'
+    dired = [s.format(d)
+             for d in dirs]
+
+    return '\n'.join(['| {0} {1} | {2} | {3} |'.format(xt, dd, qs, qd)
+                      for xt, qs, qd, dd in zip(xterm, qstat, qdel, dired)])
+
+vasp.Vasp.torque = classmethod(torque)
