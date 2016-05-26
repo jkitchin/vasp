@@ -58,12 +58,17 @@ def tryit(func):
                     raise
 
     inner.__name__ = func.__name__
-    template = '''
+    if hasattr(func, 'im_func'):
+        template = '''
 
-    Wrapped in vasp.tryit.
+        Wrapped in vasp.tryit.
 
-    Defined at [[{0}::{1}]].'''.format(func.im_func.func_code.co_filename,
-                                       func.im_func.func_code.co_firstlineno)
+        Defined at [[{0}::{1}]].'''.format(func.im_func.func_code.co_filename,
+                                           func.im_func.func_code.co_firstlineno)
+    else:
+        template = '''
+
+        Wrapped in vasp.tryit.'''
 
     if func.__doc__ is not None:
         inner.__doc__ = func.__doc__ + template
@@ -74,15 +79,21 @@ def tryit(func):
 from ase.calculators.calculator import Calculator,\
     FileIOCalculator
 
+import inspect
+
+# We avoid decorating class methods. It seems to break them.
 for attr in Vasp.__dict__:
-    if callable(getattr(Vasp, attr)):
+    f = getattr(Vasp, attr)
+    if inspect.ismethod(f) and f.__self__ is not Vasp:
         setattr(Vasp, attr, tryit(getattr(Vasp, attr)))
 
 for attr in Calculator.__dict__:
-    if callable(getattr(Calculator, attr)):
+    f = getattr(Vasp, attr)
+    if inspect.ismethod(f) and f.__self__ is not Vasp:
         setattr(Calculator, attr, tryit(getattr(Calculator, attr)))
 
 for attr in FileIOCalculator.__dict__:
-    if callable(getattr(FileIOCalculator, attr)):
+    f = getattr(Vasp, attr)
+    if inspect.ismethod(f) and f.__self__ is not Vasp:
         setattr(FileIOCalculator, attr,
                 tryit(getattr(FileIOCalculator, attr)))
