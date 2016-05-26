@@ -5,6 +5,7 @@ class methods are actually imported at the end.
 
 """
 
+import logging
 import os
 import subprocess
 import warnings
@@ -16,9 +17,9 @@ from ase.io.vasp import read_vasp_xml
 
 # internal modules
 import exceptions
-from vasp import log
 import validate
 from vasprc import VASPRC
+from vasp import log
 
 
 def VaspExceptionHandler(calc, exc_type, exc_value, exc_traceback):
@@ -200,7 +201,6 @@ class Vasp(FileIOCalculator, object):
 
         """
         # set first so self.directory is right
-        # cast as str in case label is unicode, i.e. if it is from hy.
         self.set_label(label)
         self.debug = debug
         self.exception_handler = exception_handler
@@ -214,7 +214,7 @@ class Vasp(FileIOCalculator, object):
             atoms.pbc = [True, True, True]
         elif atoms is not None:
             for a in atoms:
-                a.pbs = [True, True, True]
+                a.pbc = [True, True, True]
             self.neb = True
 
         # We do not pass kwargs here. Some of the special kwargs
@@ -383,7 +383,7 @@ class Vasp(FileIOCalculator, object):
         s = ['\n*************** VASP CALCULATION SUMMARY ***************']
         s += ['Vasp calculation directory:']
         s += ['---------------------------']
-        s += ['  {self.directory}']
+        s += ['  [[{self.directory}]]']
         # Not yet implemented
         # if hasattr(self, 'converged'):
         #     s += ['  Converged: {self.converged}']
@@ -393,88 +393,102 @@ class Vasp(FileIOCalculator, object):
         #     # eg no outcar
         #     self.converged = False
 
-        try:
-            atoms = self.get_atoms()
-            cell = atoms.get_cell()
 
-            A, B, C = [i for i in cell]
-            l = map(np.linalg.norm, cell)
+        atoms = self.get_atoms()
+        cell = atoms.get_cell()
 
-            # # Not yet implemented, copied from jasp, but an
-            # # error seems likely since alpha = gamma.
-            # alpha = np.arccos(np.dot(B/l[2], C/l[3])) * 180/np.pi
-            # beta = np.arccos(np.dot(A/l[1], C/l[3])) * 180/np.pi
-            # gamma = np.arccos(np.dot(B/l[2], C/l[3])) * 180/np.pi
+        A, B, C = [i for i in cell]
+        l = map(np.linalg.norm, cell)
+        a, b, c = l
 
-            # Format unit cell output
-            #########################
-            s += ['\nUnit cell:']
-            s += ['----------']
-            s += ['    {:^8}{:^8}{:^8}{:>12}'.format('x', 'y', 'z',
-                                                     'magnitude')]
-            for i, v in enumerate(cell):
-                s += ['  v{0}{2:>8.3f}{3:>8.3f}{4:>8.3f}'
-                      '{1:>12.3f} Ang'.format(i, l[i], *v)]
+        # # Not yet implemented, copied from jasp, but an
+        # # error seems likely since alpha = gamma.
+        alpha = np.arccos(np.dot(B/b, C/c)) * 180/np.pi
+        beta = np.arccos(np.dot(A/a, C/c)) * 180/np.pi
+        gamma = np.arccos(np.dot(A/a, B/b)) * 180/np.pi
 
-            volume = atoms.get_volume()
-            s += ['  Total volume:{:>25.3f} Ang^3'.format(volume)]
+        # Format unit cell output
+        #########################
+        s += ['\nUnit cell:']
+        s += ['----------']
+        s += ['    {:^8}{:^8}{:^8}{:>12}'.format('x', 'y', 'z',
+                                                 '|v|')]
+        for i, v in enumerate(cell):
+            s += ['  v{0}{2:>8.3f}{3:>8.3f}{4:>8.3f}'
+                  '{1:>12.3f} Ang'.format(i, l[i], *v)]
 
-            # Format stress output
-            #########################
-            stress = atoms.get_stress()
-            if stress is not None:
-                s += ['  Stress:{:>6}{:>7}{:>7}'
-                      '{:>7}{:>7}{:>7}'.format('xx', 'yy', 'zz',
-                                               'yz', 'xz', 'xy')]
-                s += ['{:>15.3f}{:7.3f}{:7.3f}'
-                      '{:7.3f}{:7.3f}{:7.3f} GPa\n'.format(*stress)]
-            else:
-                s += ['  Stress was not computed\n']
+        s.append('  a,b,c,alpha,beta,gamma (deg): '
+                 '%1.3f %1.3f %1.3f %1.1f %1.1f %1.1f' % (a,
+                                                          b,
+                                                          c,
+                                                          alpha,
+                                                          beta,
+                                                          gamma))
 
-            # Format atoms output
-            #########################
-            if hasattr(atoms, 'constraints'):
-                # Reads constraints from atoms object
-                # Rather than POS or CONTCAR
-                constraints = atoms.constraints
-                constraints = constraints[0].todict()['kwargs']['indices']
-                s += ['  {:<4}{:<8}{:<3}{:^9}{:^9}{:^9}'
-                      '{:>8}{:>18}'.format('ID', 'tag', 'sym',
-                                           'x', 'y', 'z', 'rmsF',
-                                           'constrained')]
-            else:
-                s += ['  {:<4}{:<8}{:<3}{:^9}{:^9}{:^9}'
-                      '{:>8}'.format('ID', 'tag', 'sym',
-                                     'x', 'y', 'z', 'rmsF')]
+        volume = atoms.get_volume()
+        s += ['  Total volume:{:>25.3f} Ang^3'.format(volume)]
 
-            forces = atoms.get_forces()
-            for i, atom in enumerate(atoms):
-                rms_f = np.sum(forces[i]**2)**0.5
-                ts = ('  {:<4}{:<8}{:3}{:9.3f}{:9.3f}{:9.3f}'
-                      '{:>8.2f} Ang'.format(i, atom.tag, atom.symbol,
-                                            atom.x, atom.y, atom.z, rms_f))
+        # Format stress output
+        #########################
+        stress = atoms.get_stress()
+        if stress is not None:
+            s += ['  Stress:{:>6}{:>7}{:>7}'
+                  '{:>7}{:>7}{:>7}'.format('xx', 'yy', 'zz',
+                                           'yz', 'xz', 'xy')]
+            s += ['{:>15.3f}{:7.3f}{:7.3f}'
+                  '{:7.3f}{:7.3f}{:7.3f} GPa\n'.format(*stress)]
+        else:
+            s += ['  Stress was not computed\n']
 
-                if constraints is not None:
-                    ts += '{:^18}'.format('Y' if i in constraints else 'N')
-                s += [ts]
-            energy = atoms.get_potential_energy()
-            s += ['  Potential energy: {:.4f} eV'.format(energy)]
+        # Format atoms output
+        #########################
+        s += ['  {:<4}{:<8}{:<3}{:^9}{:^9}{:^9}'
+              '{:>8}{:>18}'.format('ID', 'tag', 'sym',
+                                   'x', 'y', 'z', 'rmsF (eV/A)',
+                                   'constraints (F=Frozen)')]
 
-            # Format INCAR output
-            #########################
-            s += ['\nINCAR Parameters:']
-            s += ['-----------------']
-            for key, value in self.parameters.iteritems():
-                s += ['  {0:<10}: {1}'.format(key, value)]
+        from ase.constraints import FixAtoms, FixScaled
+        constraints = [[None, None, None] for atom in atoms]
+        for constraint in atoms.constraints:
+            if isinstance(constraint, FixAtoms):
+                for i, constrained in enumerate(constraint.index):
+                    if constrained:
+                        constraints[i] = [True, True, True]
+            elif isinstance(constraint, FixScaled):
+                constraints[constraint.a] = constraint.mask.tolist()
 
-            # Format pseudo-potential output
-            #########################
-            s += ['\nPseudopotentials used:']
-            s += ['----------------------']
-            for sym, ppp, hash in self.get_pseudopotentials():
-                s += ['  {}: {} (git-hash: {})'.format(sym, ppp, hash)]
-        except:
-            s += ['  Could not complete VASPUM']
+        forces = atoms.get_forces()
+        for i, atom in enumerate(atoms):
+            rms_f = np.sum(forces[i]**2)**0.5
+            ts = ('  {:<4}{:<8}{:3}{:9.3f}{:9.3f}{:9.3f}'
+                  '{:>8.2f}'.format(i, atom.tag, atom.symbol,
+                                    atom.x, atom.y, atom.z,
+                                    rms_f))
+
+            ts += '      {0} {1} {2}'.format('F' if constraints[i][0]
+                                             is True else 'T',
+                                             'F' if constraints[i][1]
+                                             is True else 'T',
+                                             'F' if constraints[i][2]
+                                             is True else 'T')
+
+            s += [ts]
+        energy = atoms.get_potential_energy()
+        s += ['  Potential energy: {:.4f} eV'.format(energy)]
+
+        # Format INPUT output
+        #########################
+        s += ['\nINPUT Parameters:']
+        s += ['-----------------']
+        for key, value in self.parameters.iteritems():
+            s += ['  {0:<10}: {1}'.format(key, value)]
+
+        # Format pseudo-potential output
+        #########################
+        s += ['\nPseudopotentials used:']
+        s += ['----------------------']
+        for sym, ppp, hash in self.get_pseudopotentials():
+            s += ['  {}: {} (git-hash: {})'.format(sym, ppp, hash)]
 
         return '\n'.join(s).format(self=self)
 
@@ -597,12 +611,12 @@ class Vasp(FileIOCalculator, object):
 
         system_changes = self.check_state(atoms)
         if system_changes:
-            print('Calculation needed for {}'.format(system_changes))
+            log.debug('Calculation needed for {}'.format(system_changes))
             return True
         for name in properties:
             if name not in self.results:
-                print('{} not in {}. Calc required.'.format(name,
-                                                            self.results))
+                log.debug('{} not in {}. Calc required.'.format(name,
+                                                                self.results))
                 return True
 
         # if the calculation is finished we do not need to run.
@@ -867,13 +881,11 @@ class Vasp(FileIOCalculator, object):
     @classmethod
     def abort(cls):
         """Abort and exit the program the calculator is running in."""
-        import sys
-        sys.exit()
+        Vasp.stop_if(True)
 
     def _abort(self):
         """Abort and exit program the calculator is running in."""
-        import sys
-        sys.exit()
+        Vasp.stop_if(True)
 
     @classmethod
     def clear_calculators(cls):
