@@ -1211,25 +1211,131 @@ calc = Vasp('bulk/Fe-bcc-fixedmagmom-{0:1.2f}'.format(0.0),
             ispin=2,
             nupdown=0,
             atoms=atoms)
-
-print calc.results
-print calc.calculation_required()
-print calc.check_state()
-print(atoms.get_potential_energy())
-print atoms.get_initial_magnetic_moments()
-print atoms.get_magnetic_moment()
-print atoms.get_magnetic_moments()
 #+END_SRC
 
 #+RESULTS:
-: {'magmom': 0.0, 'stress': array([ 0.15788934,  0.15788934,  0.15788934, -0.        , -0.        , -0.        ]), 'magmoms': array([ 0.,  0.]), 'charges': array([None, None], dtype=object), 'energy': -15.34226703, 'dipole': None, 'forces': array([[ 0.,  0.,  0.],
-:        [ 0.,  0.,  0.]])}
-: False
-: []
-: -15.34226703
-: [ 0.  0.]
-: 0.0
-: [ 0.  0.]
+#+begin_example
+energy not in {}. Calc required.
+/home-research/jkitchin/kitchin-python/vasp/tests/bulk/Fe-bcc-fixedmagmom-0.00 Queued: 1397213.gilgamesh.cheme.cmu.edu
+Job Id: 1397213.gilgamesh.cheme.cmu.edu
+    Job_Name = /home-research/jkitchin/kitchin-python/vasp/tests/bulk/Fe-bcc-f
+	ixedmagmom-0.00
+    Job_Owner = jkitchin@gilgamesh.cheme.cmu.edu
+    job_state = R
+    queue = short
+    server = gilgamesh.cheme.cmu.edu
+    Checkpoint = u
+    ctime = Thu May 26 08:37:58 2016
+    Error_Path = gilgamesh.cheme.cmu.edu:/home-research/jkitchin/kitchin-pytho
+	n/vasp/tests/Fe-bcc-fixedmagmom-0.00.e1397213
+    exec_host = n27/43
+    Hold_Types = n
+    Join_Path = oe
+    Keep_Files = n
+    Mail_Points = a
+    mtime = Thu May 26 08:37:59 2016
+    Output_Path = gilgamesh.cheme.cmu.edu:/home-research/jkitchin/kitchin-pyth
+	on/vasp/tests/bulk/Fe-bcc-fixedmagmom-0.00
+    Priority = 0
+    qtime = Thu May 26 08:37:58 2016
+    Rerunable = True
+    Resource_List.mem = 2gb
+    Resource_List.neednodes = 1:ppn=1
+    Resource_List.nice = 5
+    Resource_List.nodect = 1
+    Resource_List.nodes = 1:ppn=1
+    Resource_List.walltime = 23:00:00
+    session_id = 65474
+    substate = 42
+    Variable_List = PBS_O_HOME=/home-research/jkitchin,PBS_O_LANG=en_US.UTF-8,
+	PBS_O_LOGNAME=jkitchin,
+	PBS_O_PATH=/opt/kitchingroup/vasp-5.3.5/vtstscripts-914:/home-researc
+	h/jkitchin/kitchin-python/ase-jkitchin/tools:/home-research/jkitchin/k
+	itchin-python/vasp/bin:/home-research/jkitchin/bin:/opt/kitchingroup/C
+	ANOPY/Canopy_64bit/User/bin:/opt/vtk-canopy/bin:/opt/intel/Compiler/11
+	.1/072/bin/intel64:/opt/intel/impi/4.0.0.028/intel64/bin:/opt/maui/bin
+	:/opt/bin:/usr/local/texlive/2012/bin/x86_64-linux:/usr/lib64/qt-3.3/b
+	in:/usr/kerberos/bin:/usr/local/bin:/bin:/usr/bin:/usr/share/pvm3/lib:
+	/home-research/jkitchin/anaconda3/bin:/home-research/jkitchin/bin:/hom
+	e-research/jkitchin/.rvm/bin,PBS_O_MAIL=/var/spool/mail/jkitchin,
+	PBS_O_SHELL=/bin/bash,PBS_O_HOST=gilgamesh.cheme.cmu.edu,
+	PBS_SERVER=gilgamesh.cheme.cmu.edu,
+	PBS_O_WORKDIR=/home-research/jkitchin/kitchin-python/vasp/tests,
+	PBS_O_QUEUE=q_feed
+    euser = jkitchin
+    egroup = jkitchin
+    hashname = 1397213.gilgamesh.cheme.cmu.edu
+    queue_rank = 558996
+    queue_type = E
+    etime = Thu May 26 08:37:58 2016
+    submit_args = -o /home-research/jkitchin/kitchin-python/vasp/tests/bulk/Fe
+	-bcc-fixedmagmom-0.00 -joe -N /home-research/jkitchin/kitchin-python/v
+	asp/tests/bulk/Fe-bcc-fixedmagmom-0.00 -l walltime=23:00:00 -l nodes=1
+	:ppn=1 -l mem=2GB
+    start_time = Thu May 26 08:37:59 2016
+    start_count = 1
+
+
+Job Id: 1397213.gilgamesh.cheme.cmu.edu
+    Job_Name = /home-research/jkitchin/kitchin-python/vasp/tests/bulk/Fe-bcc-f
+	ixedmagmom-0.00
+    Job_Owner = jkitchin@gilgamesh.cheme.cmu.edu
+    job_state = R
+    queue = short
+    server = gilgamesh.cheme.cmu.edu
+    Checkpoint = u
+    ctime = Thu May 26 08:37:58 2016
+    Error_Path = gilgamesh.cheme.cmu.edu:/home-research/jkitchin/kitchin-pytho
+	n/vasp/tests/Fe-bcc-fixedmagmom-0.00.e1397213
+    exec_host = n27/43
+    Hold_Types = n
+    Join_Path = oe
+    Keep_Files = n
+    Mail_Points = a
+    mtime = Thu May 26 08:38:10 2016
+    Output_Path = gilgamesh.cheme.cmu.edu:/home-research/jkitchin/kitchin-pyth
+	on/vasp/tests/bulk/Fe-bcc-fixedmagmom-0.00
+    Priority = 0
+    qtime = Thu May 26 08:37:58 2016
+    Rerunable = True
+    Resource_List.mem = 2gb
+    Resource_List.neednodes = 1:ppn=1
+    Resource_List.nice = 5
+    Resource_List.nodect = 1
+    Resource_List.nodes = 1:ppn=1
+    Resource_List.walltime = 10:00:00
+    session_id = 65474
+    substate = 42
+    Variable_List = PBS_O_HOME=/home-research/jkitchin,PBS_O_LANG=en_US.UTF-8,
+	PBS_O_LOGNAME=jkitchin,
+	PBS_O_PATH=/opt/kitchingroup/vasp-5.3.5/vtstscripts-914:/home-researc
+	h/jkitchin/kitchin-python/ase-jkitchin/tools:/home-research/jkitchin/k
+	itchin-python/vasp/bin:/home-research/jkitchin/bin:/opt/kitchingroup/C
+	ANOPY/Canopy_64bit/User/bin:/opt/vtk-canopy/bin:/opt/intel/Compiler/11
+	.1/072/bin/intel64:/opt/intel/impi/4.0.0.028/intel64/bin:/opt/maui/bin
+	:/opt/bin:/usr/local/texlive/2012/bin/x86_64-linux:/usr/lib64/qt-3.3/b
+	in:/usr/kerberos/bin:/usr/local/bin:/bin:/usr/bin:/usr/share/pvm3/lib:
+	/home-research/jkitchin/anaconda3/bin:/home-research/jkitchin/bin:/hom
+	e-research/jkitchin/.rvm/bin,PBS_O_MAIL=/var/spool/mail/jkitchin,
+	PBS_O_SHELL=/bin/bash,PBS_O_HOST=gilgamesh.cheme.cmu.edu,
+	PBS_SERVER=gilgamesh.cheme.cmu.edu,
+	PBS_O_WORKDIR=/home-research/jkitchin/kitchin-python/vasp/tests,
+	PBS_O_QUEUE=q_feed
+    euser = jkitchin
+    egroup = jkitchin
+    hashname = 1397213.gilgamesh.cheme.cmu.edu
+    queue_rank = 558996
+    queue_type = E
+    etime = Thu May 26 08:37:58 2016
+    submit_args = -o /home-research/jkitchin/kitchin-python/vasp/tests/bulk/Fe
+	-bcc-fixedmagmom-0.00 -joe -N /home-research/jkitchin/kitchin-python/v
+	asp/tests/bulk/Fe-bcc-fixedmagmom-0.00 -l walltime=23:00:00 -l nodes=1
+	:ppn=1 -l mem=2GB
+    start_time = Thu May 26 08:37:59 2016
+    start_count = 1
+
+
+#+end_example
 
 
 #+BEGIN_SRC python
@@ -1309,3 +1415,36 @@ Vasp.wait()
 : [True, True, True, True, True]
 : [[], [], [], [], []]
 : True
+* logging
+
+#+BEGIN_SRC python
+from vasp import Vasp
+import logging
+c = Vasp('test', debug=logging.DEBUG)
+
+log = logging.getLogger('Vasp')
+log.debug('t')
+log.info('t')
+#+END_SRC
+
+#+RESULTS:
+: INFO     [[<stdin>::7][<module>]]: t
+* xterm
+
+#+BEGIN_SRC python
+from vasp import Vasp
+calc = Vasp('bulk/Fe-bcc-fixedmagmom-{0:1.2f}'.format(6.0))
+calc.xterm()
+#+END_SRC
+
+#+RESULTS:
+
+
+#+BEGIN_SRC python
+from vasp import Vasp
+calc = Vasp('bulk/Fe-bcc-fixedmagmom-{0:1.2f}'.format(0.0))
+calc.qstat()
+#+END_SRC
+
+#+RESULTS:
+: /home-research/jkitchin/kitchin-python/vasp/tests/bulk/Fe-bcc-fixedmagmom-0.00 not in queue.

@@ -28,6 +28,12 @@ def getstatusoutput(*args, **kwargs):
 
 
 @monkeypatch_class(vasp.Vasp)
+def jobid(self):
+    """Return jobid for the calculation."""
+    return self.get_db('jobid')
+
+
+@monkeypatch_class(vasp.Vasp)
 def in_queue(self):
     """Return True or False if the directory has a job in the queue."""
     if self.get_db('jobid') is None:
@@ -319,3 +325,85 @@ def set_memory(self,
 
     # Return the memory as read from the OUTCAR
     return memory
+
+
+@monkeypatch_class(vasp.Vasp)
+def qdel(self, *options):
+    """Delete job from the queue.
+
+    options are strings passed to the qdel command.
+
+    This
+    >>> calc.qdel('-p')
+
+    is equivalent to the shell-command 'qdel -p jobid'.
+    """
+    if self.in_queue():
+        jobid = self.get_db('jobid')
+        cmd = ['qdel'] + list(options) + [jobid]
+        status, output, err = getstatusoutput(cmd,
+                                              stdout=subprocess.PIPE,
+                                              stderr=subprocess.PIPE)
+        if status != 0:
+            print(output + err)
+        return status, output
+    return '{} not in queue.'.format(self.directory)
+
+
+@monkeypatch_class(vasp.Vasp)
+def qstat(self, *options):
+    """Get queue status of the job.
+
+    options are strings, e.g. '-f'
+
+    """
+    if self.in_queue():
+        jobid = self.get_db('jobid')
+        cmd = ['qstat'] + list(options) + [jobid]
+
+        status, output, err = getstatusoutput(cmd,
+                                              stdout=subprocess.PIPE,
+                                              stderr=subprocess.PIPE)
+        if status == 0:
+            print(output)
+        else:
+            print(output + err)
+    else:
+        print('{} not in queue.'.format(self.directory))
+
+
+@monkeypatch_class(vasp.Vasp)
+def qalter(self, *options):
+    """Run qalter on the jobid.
+
+    E.g.
+    >>> calc.qalter('-l', 'walltime=10:00:00')
+
+    """
+    jobid = self.get_db('jobid')
+    cmd = ['qalter'] + list(options) + [jobid]
+
+    status, output, err = getstatusoutput(cmd,
+                                          stdout=subprocess.PIPE,
+                                          stderr=subprocess.PIPE)
+    return status, output
+
+
+@monkeypatch_class(vasp.Vasp)
+def xterm(self):
+    """Open an xterm in the calculator directory."""
+
+    cmd = 'xterm -e "cd {}; ls && /bin/bash"'.format(self.directory)
+    os.system(cmd)
+
+
+@monkeypatch_class(vasp.Vasp)
+def qoutput(self):
+    """Print job output from the queue."""
+    jobid = self.jobid()
+    ou = os.path.join(self.directory, jobid + '.OU')
+    if not self.in_queue() and os.path.exists(ou):
+        with open(ou) as f:
+            return f.read()
+    else:
+        return "In queue or no output found."
