@@ -18,7 +18,7 @@ def teardown_func():
 @with_setup(setup_func, teardown_func)
 def test0():
     "write automatic with Monkhorstpack grid"
-    calc = Vasp('vasp', kpts=(4, 4, 4))
+    calc = Vasp('vasp', kpts=[4, 4, 4])
     calc.write_kpoints('KPOINTS')
     result = open('KPOINTS', 'r').read()
     assert result == '''\

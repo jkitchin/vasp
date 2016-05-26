@@ -393,7 +393,6 @@ class Vasp(FileIOCalculator, object):
         #     # eg no outcar
         #     self.converged = False
 
-
         atoms = self.get_atoms()
         cell = atoms.get_cell()
 
@@ -403,9 +402,9 @@ class Vasp(FileIOCalculator, object):
 
         # # Not yet implemented, copied from jasp, but an
         # # error seems likely since alpha = gamma.
-        alpha = np.arccos(np.dot(B/b, C/c)) * 180/np.pi
-        beta = np.arccos(np.dot(A/a, C/c)) * 180/np.pi
-        gamma = np.arccos(np.dot(A/a, B/b)) * 180/np.pi
+        alpha = np.arccos(np.dot(B / b, C / c)) * 180 / np.pi
+        beta = np.arccos(np.dot(A / a, C / c)) * 180 / np.pi
+        gamma = np.arccos(np.dot(A / a, B / b)) * 180 / np.pi
 
         # Format unit cell output
         #########################
@@ -459,7 +458,7 @@ class Vasp(FileIOCalculator, object):
 
         forces = atoms.get_forces()
         for i, atom in enumerate(atoms):
-            rms_f = np.sum(forces[i]**2)**0.5
+            rms_f = np.sum(forces[i] ** 2) ** 0.5
             ts = ('  {:<4}{:<8}{:3}{:9.3f}{:9.3f}{:9.3f}'
                   '{:>8.2f}'.format(i, atom.tag, atom.symbol,
                                     atom.x, atom.y, atom.z,
@@ -571,11 +570,8 @@ class Vasp(FileIOCalculator, object):
             new_keys = set(self.parameters.keys()) - set(file_params.keys())
             missing_keys = (set(file_params.keys()) -
                             set(self.parameters.keys()))
-            #print('New keys: {}'.format(new_keys))
-            #print('Missing keys: {}'.format(missing_keys))
-            #print('self.parameters == file_params: ',self.parameters == file_params)
-            #print self.parameters
-            #print file_params
+            log.debug('New keys: {}'.format(new_keys))
+            log.debug('Missing keys: {}'.format(missing_keys))
             system_changes += ['params_on_file']
 
         return system_changes

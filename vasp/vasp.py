@@ -11,7 +11,8 @@ import logging
 import sys
 
 logging.basicConfig(stream=sys.stdout,
-                    format=('%(levelname)-8s [[%(pathname)s::%(lineno)d][%(funcName)s]]: %(message)s'),
+                    format=('%(levelname)-8s [[%(pathname)s::%(lineno)d]'
+                            '[%(funcName)s]]: %(message)s'),
                     level=logging.INFO)
 
 log = logging.getLogger('Vasp')
@@ -55,8 +56,9 @@ def tryit(func):
 
         Wrapped in vasp.tryit.
 
-        Defined at [[{0}::{1}]].'''.format(func.im_func.func_code.co_filename,
-                                           func.im_func.func_code.co_firstlineno)
+        Defined at [[{0}::{1}]].'''
+        template = template.format(func.im_func.func_code.co_filename,
+                                   func.im_func.func_code.co_firstlineno)
     else:
         template = '''
 
