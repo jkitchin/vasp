@@ -25,10 +25,10 @@ from vasp import log
 def VaspExceptionHandler(calc, exc_type, exc_value, exc_traceback):
     """Handle exceptions."""
     if exc_type == exceptions.VaspSubmitted:
-        print exc_value
+        print(exc_value)
         return None
     elif exc_type == exceptions.VaspQueued:
-        print exc_value
+        print(exc_value)
         return None
     elif exc_type == KeyError and exc_value.message == 'energy':
         return None
@@ -203,6 +203,8 @@ class Vasp(FileIOCalculator, object):
         # set first so self.directory is right
         self.set_label(label)
         self.debug = debug
+        if debug is not None:
+            log.setLevel(debug)
         self.exception_handler = exception_handler
 
         self.neb = None
@@ -429,7 +431,7 @@ class Vasp(FileIOCalculator, object):
 
         # Format stress output
         #########################
-        stress = atoms.get_stress()
+        stress = self.results.get('stress', [np.nan] * 6)
         if stress is not None:
             s += ['  Stress:{:>6}{:>7}{:>7}'
                   '{:>7}{:>7}{:>7}'.format('xx', 'yy', 'zz',
@@ -440,7 +442,6 @@ class Vasp(FileIOCalculator, object):
             s += ['  Stress was not computed\n']
 
         # Format atoms output
-        #########################
         s += ['  {:<4}{:<8}{:<3}{:^9}{:^9}{:^9}'
               '{:>8}{:>18}'.format('ID', 'tag', 'sym',
                                    'x', 'y', 'z', 'rmsF (eV/A)',
@@ -456,7 +457,8 @@ class Vasp(FileIOCalculator, object):
             elif isinstance(constraint, FixScaled):
                 constraints[constraint.a] = constraint.mask.tolist()
 
-        forces = atoms.get_forces()
+        forces = self.results.get('forces', np.array([[np.nan, np.nan, np.nan]
+                                                      for atom in self.atoms]))
         for i, atom in enumerate(atoms):
             rms_f = np.sum(forces[i] ** 2) ** 0.5
             ts = ('  {:<4}{:<8}{:3}{:9.3f}{:9.3f}{:9.3f}'
@@ -472,7 +474,7 @@ class Vasp(FileIOCalculator, object):
                                              is True else 'T')
 
             s += [ts]
-        energy = atoms.get_potential_energy()
+        energy = self.results.get('energy', np.nan)
         s += ['  Potential energy: {:.4f} eV'.format(energy)]
 
         # Format INPUT output
@@ -566,7 +568,8 @@ class Vasp(FileIOCalculator, object):
 
             file_params['ldau_luj'] = ldau_luj
 
-        if not self.parameters == file_params:
+        if not {k: v for k, v in self.parameters.iteritems()
+                if v is not None} == file_params:
             new_keys = set(self.parameters.keys()) - set(file_params.keys())
             missing_keys = (set(file_params.keys()) -
                             set(self.parameters.keys()))
@@ -826,10 +829,10 @@ class Vasp(FileIOCalculator, object):
     def ready(self):
         """Property for is calculator ready.
 
-        That means no calculation is required to get results.
+        That means no calculation is required to get results. Checking
+        this should not trigger a calculation.
 
         """
-        self.update()
         return not self.calculation_required()
 
     @classmethod
@@ -913,7 +916,6 @@ class Vasp(FileIOCalculator, object):
 
         else:
             while not Vasp.all():
-                print Vasp.all()
                 time.sleep(poll_interval)
 
     def _wait(self, poll_interval=5, timeout=None, abort=False):
