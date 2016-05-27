@@ -227,7 +227,7 @@ def read(self, restart=None):
     sets self.parameters and atoms.
 
     """
-
+    log.debug('Reading {}'.format(self.directory))
     self.neb = None
     # NEB is special and handled separately
     if self.get_state() == vasp.Vasp.NEB:
@@ -322,6 +322,8 @@ def read_results(self):
 
     """
     state = self.get_state()
+    log.debug('state: {}. Reading results in {}.'.format(state,
+                                                         self.directory))
     if state == vasp.Vasp.NEB:
         # This is handled in self.read()
         return
@@ -381,7 +383,7 @@ def read_results(self):
 
         self.results['magmom'] = magnetic_moment
         self.results['magmoms'] = np.array(magnetic_moments)[self.resort]
-
+        log.debug('Results at end: {}'.format(self.results))
 
 @monkeypatch_class(vasp.Vasp)
 def read_neb(self):
