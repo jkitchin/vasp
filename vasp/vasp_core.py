@@ -383,7 +383,6 @@ class Vasp(FileIOCalculator, object):
         s += ['Vasp calculation directory:']
         s += ['---------------------------']
         s += ['  [[{self.directory}]]']
-        s += ['  Converged: {}'.format(self.results == {})]
 
         atoms = self.get_atoms()
         cell = atoms.get_cell()
@@ -881,6 +880,7 @@ class Vasp(FileIOCalculator, object):
         up to timeout seconds later. If timeout is None, poll forever.
 
         """
+
         if abort:
             Vasp.abort()
 
@@ -907,6 +907,7 @@ class Vasp(FileIOCalculator, object):
         up to timeout seconds later. If timeout is None, poll forever.
 
         """
+        self.update()
         if abort:
             self.abort()
 
