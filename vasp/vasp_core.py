@@ -256,6 +256,12 @@ class Vasp(FileIOCalculator, object):
         else:
             rwigs = None
 
+        if 'ldau_luj' in kwargs:
+            ldau_luj = kwargs['ldau_luj']
+            del kwargs['ldau_luj']
+        else:
+            ldau_luj = None
+
         # Now update the parameters. If there are any new kwargs here,
         # it will reset the calculator and cause a calculation to be
         # run if needed.
@@ -274,6 +280,9 @@ class Vasp(FileIOCalculator, object):
 
         if rwigs is not None:
             self.set(**self.set_rwigs_dict(rwigs))
+
+        if ldau_luj is not None:
+            self.set(**self.set_ldau_luj_dict(ldau_luj))
 
         # Finally run validate functions
         if VASPRC['validate']:
