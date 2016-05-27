@@ -60,6 +60,20 @@ def ibrion(calc, val):
     assert val in [-1, 0, 1, 2, 3, 5, 6, 7, 8, 44]
 
 
+def icharg(calc, val):
+    """Determines how VASP constructs the initial charge density. (int)
+
+    0 - calculate from initial wave functions
+    1 - read from the CHGCAR
+    2 - (default) Superposition of atomic charge densities
+    11 - for band-structure plots
+
+    http://cms.mpi.univie.ac.at/wiki/index.php/ICHARG
+
+    """
+    assert isinstance(val, int)
+
+
 def images(calc, val):
     """The number of images not counting the end-points for an NEB. (int)
 
