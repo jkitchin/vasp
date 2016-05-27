@@ -30,7 +30,7 @@ import neb
 import serialize
 import runner
 import bader
-
+import bandstructure
 
 def tryit(func):
     """Decorator to wrap function in try block with Vasp exception handler."""
