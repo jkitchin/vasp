@@ -374,10 +374,7 @@ class Vasp(FileIOCalculator, object):
         """Pretty representation of a calculation.
 
         TODO: 1. Incorporate magmoms and vibrational frequencies.
-              2. Read constraints from POSCAR/CONTCAR to allow for
-              separation of vector constraints.
-              3. Fix alpha, beta, gamma code or remove completely.
-              4. Implement convergence check?
+              2. Implement convergence check?
 
         """
         s = ['\n*************** VASP CALCULATION SUMMARY ***************']
@@ -399,9 +396,6 @@ class Vasp(FileIOCalculator, object):
         A, B, C = [i for i in cell]
         l = map(np.linalg.norm, cell)
         a, b, c = l
-
-        # # Not yet implemented, copied from jasp, but an
-        # # error seems likely since alpha = gamma.
         alpha = np.arccos(np.dot(B / b, C / c)) * 180 / np.pi
         beta = np.arccos(np.dot(A / a, C / c)) * 180 / np.pi
         gamma = np.arccos(np.dot(A / a, B / b)) * 180 / np.pi
@@ -416,63 +410,54 @@ class Vasp(FileIOCalculator, object):
             s += ['  v{0}{2:>8.3f}{3:>8.3f}{4:>8.3f}'
                   '{1:>12.3f} Ang'.format(i, l[i], *v)]
 
-        s.append('  a,b,c,alpha,beta,gamma (deg): '
-                 '%1.3f %1.3f %1.3f %1.1f %1.1f %1.1f' % (a,
-                                                          b,
-                                                          c,
-                                                          alpha,
-                                                          beta,
-                                                          gamma))
+        s += ['  alpha, beta, gamma (deg):'
+              '{:>6.1f}{:>6.1f}{:>6.1f}'.format(alpha, beta, gamma)]
 
         volume = atoms.get_volume()
         s += ['  Total volume:{:>25.3f} Ang^3'.format(volume)]
 
         # Format stress output
         #########################
-        stress = atoms.get_stress()
-        if stress is not None:
-            s += ['  Stress:{:>6}{:>7}{:>7}'
-                  '{:>7}{:>7}{:>7}'.format('xx', 'yy', 'zz',
-                                           'yz', 'xz', 'xy')]
-            s += ['{:>15.3f}{:7.3f}{:7.3f}'
-                  '{:7.3f}{:7.3f}{:7.3f} GPa\n'.format(*stress)]
-        else:
-            s += ['  Stress was not computed\n']
+        stress = self.results.get('stress', [np.nan] * 6)
+        s += ['  Stress:{:>6}{:>7}{:>7}'
+              '{:>7}{:>7}{:>7}'.format('xx', 'yy', 'zz',
+                                       'yz', 'xz', 'xy')]
+        s += ['{:>15.3f}{:7.3f}{:7.3f}'
+              '{:7.3f}{:7.3f}{:7.3f} GPa\n'.format(*stress)]
 
         # Format atoms output
         #########################
-        s += ['  {:<4}{:<8}{:<3}{:^9}{:^9}{:^9}'
-              '{:>8}{:>18}'.format('ID', 'tag', 'sym',
-                                   'x', 'y', 'z', 'rmsF (eV/A)',
-                                   'constraints (F=Frozen)')]
+        s += ['  {:<4}{:<8}{:<3}{:^10}{:^10}{:^10}'
+              '{:>14}'.format('ID', 'tag', 'sym',
+                              'x', 'y', 'z', 'rmsF (eV/A)')]
 
         from ase.constraints import FixAtoms, FixScaled
         constraints = [[None, None, None] for atom in atoms]
         for constraint in atoms.constraints:
             if isinstance(constraint, FixAtoms):
-                for i, constrained in enumerate(constraint.index):
-                    if constrained:
-                        constraints[i] = [True, True, True]
+                for i in constraint.index:
+                    constraints[i] = [True, True, True]
             elif isinstance(constraint, FixScaled):
                 constraints[constraint.a] = constraint.mask.tolist()
 
-        forces = atoms.get_forces()
+        forces = self.results.get('forces', np.array([[np.nan, np.nan, np.nan]
+                                                      for atom in self.atoms]))
         for i, atom in enumerate(atoms):
             rms_f = np.sum(forces[i] ** 2) ** 0.5
-            ts = ('  {:<4}{:<8}{:3}{:9.3f}{:9.3f}{:9.3f}'
-                  '{:>8.2f}'.format(i, atom.tag, atom.symbol,
-                                    atom.x, atom.y, atom.z,
-                                    rms_f))
+            s += ['  {:<4}{:<8}{:3}{:9.3f}{}{:9.3f}{}{:9.3f}{}'
+                  '{:>10.2f}'.format(i, atom.tag, atom.symbol,
+                                     atom.x,
+                                     '*' if constraints[i][0]
+                                     is True else ' ',
+                                     atom.y,
+                                     '*' if constraints[i][1]
+                                     is True else ' ',
+                                     atom.z,
+                                     '*' if constraints[i][1]
+                                     is True else ' ',
+                                     rms_f)]
 
-            ts += '      {0} {1} {2}'.format('F' if constraints[i][0]
-                                             is True else 'T',
-                                             'F' if constraints[i][1]
-                                             is True else 'T',
-                                             'F' if constraints[i][2]
-                                             is True else 'T')
-
-            s += [ts]
-        energy = atoms.get_potential_energy()
+        energy = self.results.get('energy', np.nan)
         s += ['  Potential energy: {:.4f} eV'.format(energy)]
 
         # Format INPUT output
