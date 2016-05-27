@@ -192,8 +192,6 @@ def get_number_of_spins(self):
 def get_eigenvalues(self, kpt=0, spin=1):
     """Return array of eigenvalues for kpt and spin."""
     self.update()
-    log.debug('kpt={} spin={}'.format(kpt, spin))
-
     with open(os.path.join(self.directory,
                            'vasprun.xml')) as f:
         tree = ElementTree.parse(f)
@@ -204,7 +202,6 @@ def get_eigenvalues(self, kpt=0, spin=1):
                          "set[@comment='spin {}']",
                          "set[@comment='kpoint {}']"])
         path = path.format(spin + 1, kpt + 1)
-        log.debug('path={}'.format(path))
         # Vasp seems to start at 1 not 0
         fields = tree.find(path)
 
