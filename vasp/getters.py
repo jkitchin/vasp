@@ -606,7 +606,9 @@ def get_orbital_occupations(self):
 
 @monkeypatch_class(vasp.Vasp)
 def get_number_of_ionic_steps(self):
-    "Returns number of ionic steps from the OUTCAR."
+    """Returns number of ionic steps from the OUTCAR."""
+    self.update()
+
     nsteps = None
     for line in open(os.path.join(self.directory, 'OUTCAR')):
         # find the last iteration number
