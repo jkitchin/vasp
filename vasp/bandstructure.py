@@ -28,6 +28,7 @@ def get_bandstructure(self,
     returns (npoints, band_energies, fighandle)
 
     """
+    self.update()
     self.stop_if(self.potential_energy is None)
 
     kpts = [k[1] for k in kpts_path]

@@ -85,6 +85,10 @@ def read_incar(self, fname=None):
             if not isinstance(val, list):
                 val = [val]
 
+        if key == 'rwigs':
+            if not isinstance(val, list):
+                val = [val]
+
         params[key] = val
 
     return params
@@ -309,7 +313,9 @@ def read(self, restart=None):
     if atoms is not None:
         atoms = atoms[self.resort]
         self.sort_atoms(atoms)
-
+        imm = self.parameters.get('magmom',
+                                  [0 for atom in self.atoms])
+        self.atoms.set_initial_magnetic_moments(imm)
     self.read_results()
 
 
@@ -354,9 +360,6 @@ def read_results(self):
             # update the atoms
             self.atoms.positions = atoms.positions[resort]
             self.atoms.cell = atoms.cell
-            imm = self.parameters.get('magmom',
-                                      [0 for atom in self.atoms])
-            self.atoms.set_initial_magnetic_moments(imm)
 
         self.results['energy'] = energy
         self.results['forces'] = forces[self.resort]
@@ -374,6 +377,7 @@ def read_results(self):
                     try:
                         magnetic_moment = float(line.split()[-1])
                     except:
+                        print 'magmom read error'
                         print self.directory, line
 
                 if line.rfind('magnetization (x)') > -1:
@@ -384,6 +388,7 @@ def read_results(self):
         self.results['magmom'] = magnetic_moment
         self.results['magmoms'] = np.array(magnetic_moments)[self.resort]
         log.debug('Results at end: {}'.format(self.results))
+
 
 @monkeypatch_class(vasp.Vasp)
 def read_neb(self):

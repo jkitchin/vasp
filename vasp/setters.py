@@ -79,8 +79,8 @@ def set_ispin_dict(self, val):
         d = {'ispin': 2}
         if 'magmom' not in self.parameters:
             d['magmom'] = [atom.magmom for atom
-                            in self.atoms[self.resort]]
-        # set individual magnetic moments.
+                           in self.atoms[self.resort]]
+        # print out individual magnetic moments.
         if 'lorbit' not in self.parameters:
             d['lorbit'] = 11
 
