@@ -28,3 +28,4 @@ DB.db
 molecules
 /.doit.db
 bulk
+vasp.egg-info
