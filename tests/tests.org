@@ -34,11 +34,22 @@ calc = Vasp('molecules/simple-co', #output dir
 
 print calc.get_potential_energy()
 
+from ase.visualize import view
+view(co)
 #print a.get_magnetic_moments()
 #+END_SRC
 
 #+RESULTS:
-: -14.69111507
+
+#+BEGIN_SRC python
+from vasp import Vasp
+calc = Vasp('molecules/simple-co')
+
+from ase.visualize import view
+view(calc.get_atoms())
+#+END_SRC
+
+#+RESULTS:
 
 ** co2
 #+BEGIN_SRC python
