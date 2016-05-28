@@ -567,3 +567,49 @@ def get_memory(self):
             # Return memory estimate in GB
             required_mem = float(line.split()[-2]) / 1e6
             return required_mem
+
+
+@monkeypatch_class(vasp.Vasp)
+def get_orbital_occupations(self):
+    """Read occuations from OUTCAR.
+
+    Returns a numpy array of
+    [[s, p, d tot]] for each atom.
+
+    You probably need to have used LORBIT=11 for this function to
+    work.
+    """
+    self.update()
+
+    # this finds the last entry of occupations. Sometimes, this is
+    # printed multiple times in the OUTCAR.
+    with open(os.path.join(self.directory,
+                           'OUTCAR'), 'r') as f:
+        lines = f.readlines()
+        start = None
+        for i, line in enumerate(lines):
+            if line.startswith(" total charge "):
+                start = i
+
+    if not i:
+        raise Exception('Occupations not found')
+
+    atoms = self.get_atoms()
+    occupations = []
+    for j in range(len(atoms)):
+        line = lines[start + 4 + j]
+        fields = line.split()
+        s, p, d, tot = [float(x) for x in fields[1:]]
+        occupations.append(np.array((s, p, d, tot)))
+    return np.array(occupations)
+
+
+@monkeypatch_class(vasp.Vasp)
+def get_number_of_ionic_steps(self):
+    "Returns number of ionic steps from the OUTCAR."
+    nsteps = None
+    for line in open(os.path.join(self.directory, 'OUTCAR')):
+        # find the last iteration number
+        if line.find('- Iteration') != -1:
+            nsteps = int(line.split('(')[0].split()[-1].strip())
+    return nsteps
