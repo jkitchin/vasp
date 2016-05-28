@@ -917,7 +917,7 @@ class Vasp(FileIOCalculator, object):
 
         """
 
-        if abort:
+        if abort and not Vasp.all():
             Vasp.abort()
 
         import time
