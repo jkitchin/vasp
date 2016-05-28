@@ -128,6 +128,14 @@ def ispin(calc, val):
                    "len(magmom) != len(atoms)"
 
 
+def isym(calc, val):
+    """ISYM determines the way VASP treats symmetry.
+
+    http://cms.mpi.univie.ac.at/wiki/index.php/ISYM
+    """
+    assert val in [-1, 0, 1, 2, 3]
+
+
 def ldau(calc, val):
     """ LDAU switches on the L(S)DA+U. (bool)
 
@@ -146,6 +154,7 @@ def ldau_luj(calc, val):
     # this may not be the case for site-specific U. I think we need
     # setups for that.
     assert len(val.keys()) == len(set([a.symbol for a in calc.get_atoms()]))
+
 
 def ldauprint(calc, val):
     """LDAUPRINT controls the verbosity of the L(S)DA+U routines. (int)
