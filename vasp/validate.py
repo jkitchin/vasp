@@ -128,6 +128,68 @@ def ispin(calc, val):
                    "len(magmom) != len(atoms)"
 
 
+def ldau(calc, val):
+    """ LDAU switches on the L(S)DA+U. (bool)
+
+    http://cms.mpi.univie.ac.at/wiki/index.php/LDAU
+    """
+    assert ldau in [True, False, None]
+
+
+def ldau_luj(calc, val):
+    """Dictionary of DFT+U parameters.
+
+    ldau_luj={'Mn': {'L': 2, 'U': 0.0, 'J': 0.0},
+              'O': {'L': -1, 'U': 0.0, 'J': 0.0}},
+    """
+    assert isinstance(val, dict)
+    # this may not be the case for site-specific U. I think we need
+    # setups for that.
+    assert len(val.keys()) == len(set([a.symbol for a in calc.get_atoms()]))
+
+def ldauprint(calc, val):
+    """LDAUPRINT controls the verbosity of the L(S)DA+U routines. (int)
+
+    LDAUPRINT=0: silent.
+    LDAUPRINT=1: Write occupancy matrix to the OUTCAR file.
+    LDAUPRINT=2: same as LDAUPRINT=1, plus potential matrix dumped to stdout.
+
+    http://cms.mpi.univie.ac.at/wiki/index.php/LDAUPRINT
+    """
+    assert val in [0, 1, 2]
+
+
+def ldautype(calc, val):
+    """LDAUTYPE specifies which type of L(S)DA+U approach will be used. (int)
+
+    LDAUTYPE=1: The rotationally invariant LSDA+U introduced by
+    Liechtenstein et al.[1]
+
+    LDAUTYPE=2: The simplified (rotationally invariant) approach to
+    the LSDA+U, introduced by Dudarev et al.[2]
+
+    1. A. I. Liechtenstein, V. I. Anisimov and J. Zaane, Phys. Rev. B
+    52, R5467 (1995).
+
+    2. S. L. Dudarev, G. A. Botton, S. Y. Savrasov, C. J. Humphreys
+    and A. P. Sutton, Phys. Rev. B 57, 1505 (1998).
+
+    http://cms.mpi.univie.ac.at/wiki/index.php/LDAUTYPE
+
+    """
+
+
+def lmaxmix(calc, val):
+    """LMAXMIX the max l-quantum number the charge densities used. (int)
+
+    Mostly used for DFT+U.
+    4 for d-electrons (or 6 for f-elements)
+
+    http://cms.mpi.univie.ac.at/wiki/index.php/LMAXMIX
+    """
+    assert val in [2, 4, 6]
+
+
 def kpts(calc, val):
     """Sets k-points. Not a Vasp keyword. (list)"""
     assert isinstance(val, list), 'kpts should be a list.'
