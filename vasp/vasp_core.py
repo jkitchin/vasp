@@ -899,6 +899,14 @@ class Vasp(FileIOCalculator, object):
         Vasp.calculators = []
 
     @classmethod
+    def vasprc(cls, **kwargs):
+        """Convenience method to update VASPRC.
+
+        Vasp.vasprc(mode=None)
+        """
+        Vasp.VASPRC.update(kwargs)
+
+    @classmethod
     def wait(cls, poll_interval=5, timeout=None, abort=False):
         """Control function to wait until all calculators are ready.
 
