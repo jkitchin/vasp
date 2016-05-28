@@ -138,6 +138,9 @@ class Vasp(FileIOCalculator, object):
     NEB = 10
     UNKNOWN = 100
 
+    VASPRC = VASPRC
+    log = log
+
     def __init__(self, label,
                  restart=True, ignore_bad_restart_file=False,
                  atoms=None, scratch=None,
@@ -273,6 +276,12 @@ class Vasp(FileIOCalculator, object):
             self.sort_atoms(atoms)
         elif self.neb is not None:
             self.sort_atoms(self.neb[0])
+
+        # I don't know why this is necessary. but it seems like
+        # these get lost and it causes restart issues
+        if atoms is not None:
+            aimm = atoms.get_initial_magnetic_moments()
+            self.atoms.set_initial_magnetic_moments(aimm)
 
         # These depend on having atoms already.
         if ispin is not None:
@@ -509,11 +518,14 @@ class Vasp(FileIOCalculator, object):
         if atoms is None:
             atoms = self.get_atoms()
 
+        log.debug('atoms IMM: {}'.format(atoms.get_initial_magnetic_moments()))
         system_changes = FileIOCalculator.check_state(self, atoms)
         # Ignore boundary conditions:
         if 'pbc' in system_changes:
             system_changes.remove('pbc')
 
+        s = 'FileIOCalculator reports these changes: {}'
+        log.debug(s.format(system_changes))
         # if dir is empty, there is nothing to read here.
         if self.get_state() == Vasp.EMPTY:
             return system_changes
@@ -563,12 +575,19 @@ class Vasp(FileIOCalculator, object):
                             set(self.parameters.keys()))
             log.debug('New keys: {}'.format(new_keys))
             log.debug('Missing keys: {}'.format(missing_keys))
+            log.debug('params_on_file do not match.')
+            log.debug('file-params: {}'.format(file_params))
+            log.debug('compared to: {}'.format({k: v for k, v in
+                                                self.parameters.iteritems()
+                                                if v is not None}))
             system_changes += ['params_on_file']
 
+        log.debug('System changes: {}'.format(system_changes))
         return system_changes
 
     def reset(self):
         """overwrite to avoid killing self.atoms."""
+        log.debug('Resetting calculator.')
         self.results = {}
 
     def update(self, atoms=None):
@@ -917,7 +936,7 @@ class Vasp(FileIOCalculator, object):
 
         """
         self.update()
-        if abort:
+        if abort and not self.ready:
             self.abort()
 
         import time
