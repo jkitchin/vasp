@@ -1,5 +1,5 @@
 """Module to get elastic moduli from Vasp calculations."""
-
+import os
 import vasp
 import numpy as np
 from monkeypatch import monkeypatch_class
@@ -26,7 +26,7 @@ def get_elastic_moduli(self):
 
     self.update()
 
-    with open('OUTCAR') as f:
+    with open(os.path.join(self.directory, 'OUTCAR')) as f:
         lines = f.readlines()
 
     TEM = []
