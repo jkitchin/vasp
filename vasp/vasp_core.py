@@ -25,10 +25,10 @@ from vasp import log
 def VaspExceptionHandler(calc, exc_type, exc_value, exc_traceback):
     """Handle exceptions."""
     if exc_type == exceptions.VaspSubmitted:
-        print exc_value
+        print(exc_value)
         return None
     elif exc_type == exceptions.VaspQueued:
-        print exc_value
+        print(exc_value)
         return None
     elif exc_type == KeyError and exc_value.message == 'energy':
         return None
@@ -138,6 +138,9 @@ class Vasp(FileIOCalculator, object):
     NEB = 10
     UNKNOWN = 100
 
+    VASPRC = VASPRC
+    log = log
+
     def __init__(self, label,
                  restart=True, ignore_bad_restart_file=False,
                  atoms=None, scratch=None,
@@ -203,6 +206,8 @@ class Vasp(FileIOCalculator, object):
         # set first so self.directory is right
         self.set_label(label)
         self.debug = debug
+        if debug is not None:
+            log.setLevel(debug)
         self.exception_handler = exception_handler
 
         self.neb = None
@@ -254,6 +259,12 @@ class Vasp(FileIOCalculator, object):
         else:
             rwigs = None
 
+        if 'ldau_luj' in kwargs:
+            ldau_luj = kwargs['ldau_luj']
+            del kwargs['ldau_luj']
+        else:
+            ldau_luj = None
+
         # Now update the parameters. If there are any new kwargs here,
         # it will reset the calculator and cause a calculation to be
         # run if needed.
@@ -266,12 +277,21 @@ class Vasp(FileIOCalculator, object):
         elif self.neb is not None:
             self.sort_atoms(self.neb[0])
 
+        # I don't know why this is necessary. but it seems like
+        # these get lost and it causes restart issues
+        if atoms is not None:
+            aimm = atoms.get_initial_magnetic_moments()
+            self.atoms.set_initial_magnetic_moments(aimm)
+
         # These depend on having atoms already.
         if ispin is not None:
             self.set(**self.set_ispin_dict(ispin))
 
         if rwigs is not None:
             self.set(**self.set_rwigs_dict(rwigs))
+
+        if ldau_luj is not None:
+            self.set(**self.set_ldau_luj_dict(ldau_luj))
 
         # Finally run validate functions
         if VASPRC['validate']:
@@ -381,14 +401,6 @@ class Vasp(FileIOCalculator, object):
         s += ['Vasp calculation directory:']
         s += ['---------------------------']
         s += ['  [[{self.directory}]]']
-        # Not yet implemented
-        # if hasattr(self, 'converged'):
-        #     s += ['  Converged: {self.converged}']
-        # try:
-        #     self.converged = self.read_convergence()
-        # except IOError:
-        #     # eg no outcar
-        #     self.converged = False
 
         atoms = self.get_atoms()
         cell = atoms.get_cell()
@@ -419,6 +431,7 @@ class Vasp(FileIOCalculator, object):
         # Format stress output
         #########################
         stress = self.results.get('stress', [np.nan] * 6)
+
         s += ['  Stress:{:>6}{:>7}{:>7}'
               '{:>7}{:>7}{:>7}'.format('xx', 'yy', 'zz',
                                        'yz', 'xz', 'xy')]
@@ -444,6 +457,7 @@ class Vasp(FileIOCalculator, object):
                                                       for atom in self.atoms]))
         for i, atom in enumerate(atoms):
             rms_f = np.sum(forces[i] ** 2) ** 0.5
+
             s += ['  {:<4}{:<8}{:3}{:9.3f}{}{:9.3f}{}{:9.3f}{}'
                   '{:>10.2f}'.format(i, atom.tag, atom.symbol,
                                      atom.x,
@@ -504,11 +518,14 @@ class Vasp(FileIOCalculator, object):
         if atoms is None:
             atoms = self.get_atoms()
 
+        log.debug('atoms IMM: {}'.format(atoms.get_initial_magnetic_moments()))
         system_changes = FileIOCalculator.check_state(self, atoms)
         # Ignore boundary conditions:
         if 'pbc' in system_changes:
             system_changes.remove('pbc')
 
+        s = 'FileIOCalculator reports these changes: {}'
+        log.debug(s.format(system_changes))
         # if dir is empty, there is nothing to read here.
         if self.get_state() == Vasp.EMPTY:
             return system_changes
@@ -551,18 +568,26 @@ class Vasp(FileIOCalculator, object):
 
             file_params['ldau_luj'] = ldau_luj
 
-        if not self.parameters == file_params:
+        if not {k: v for k, v in self.parameters.iteritems()
+                if v is not None} == file_params:
             new_keys = set(self.parameters.keys()) - set(file_params.keys())
             missing_keys = (set(file_params.keys()) -
                             set(self.parameters.keys()))
             log.debug('New keys: {}'.format(new_keys))
             log.debug('Missing keys: {}'.format(missing_keys))
+            log.debug('params_on_file do not match.')
+            log.debug('file-params: {}'.format(file_params))
+            log.debug('compared to: {}'.format({k: v for k, v in
+                                                self.parameters.iteritems()
+                                                if v is not None}))
             system_changes += ['params_on_file']
 
+        log.debug('System changes: {}'.format(system_changes))
         return system_changes
 
     def reset(self):
         """overwrite to avoid killing self.atoms."""
+        log.debug('Resetting calculator.')
         self.results = {}
 
     def update(self, atoms=None):
@@ -805,10 +830,10 @@ class Vasp(FileIOCalculator, object):
     def ready(self):
         """Property for is calculator ready.
 
-        That means no calculation is required to get results.
+        That means no calculation is required to get results. Checking
+        this should not trigger a calculation.
 
         """
-        self.update()
         return not self.calculation_required()
 
     @classmethod
@@ -877,6 +902,7 @@ class Vasp(FileIOCalculator, object):
         up to timeout seconds later. If timeout is None, poll forever.
 
         """
+
         if abort:
             Vasp.abort()
 
@@ -892,7 +918,6 @@ class Vasp(FileIOCalculator, object):
 
         else:
             while not Vasp.all():
-                print Vasp.all()
                 time.sleep(poll_interval)
 
     def _wait(self, poll_interval=5, timeout=None, abort=False):
@@ -904,7 +929,8 @@ class Vasp(FileIOCalculator, object):
         up to timeout seconds later. If timeout is None, poll forever.
 
         """
-        if abort:
+        self.update()
+        if abort and not self.ready:
             self.abort()
 
         import time

@@ -1,20 +1,21 @@
-from nose import *
-from vasp import *
+from nose import with_setup
+from vasp import Vasp
 import os
 from ase import Atom, Atoms
 from ase.db import connect
+
+
 def setup_func():
     "set up test fixtures"
     if os.path.exists('DB.db'):
-        #os.unlink('DB.db')
-        pass
+        os.unlink('DB.db')
 
 
 def teardown_func():
     "tear down test fixtures"
     if os.path.exists('DB.db'):
-        #os.unlink('DB.db')
-        pass
+        os.unlink('DB.db')
+
 
 @with_setup(setup_func, teardown_func)
 def test0():

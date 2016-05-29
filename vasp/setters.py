@@ -10,6 +10,7 @@ is passed back to the set function.
 """
 import numpy as np
 import vasp
+from vasp import log
 from monkeypatch import monkeypatch_class
 from ase.calculators.calculator import FileIOCalculator
 
@@ -25,7 +26,7 @@ def set(self, **kwargs):
     set to track changes.
 
     """
-
+    log.debug('Setting {}'.format(kwargs))
     if 'xc' in kwargs:
         kwargs.update(self.set_xc_dict(kwargs['xc']))
 
@@ -38,8 +39,17 @@ def set(self, **kwargs):
     if 'nsw' in kwargs:
         kwargs.update(self.set_nsw_dict(kwargs['nsw']))
 
+    original_params = self.parameters
+
     changed_parameters = FileIOCalculator.set(self, **kwargs)
-    if changed_parameters:
+
+    # we don't consider None values to be changed if the keyword was
+    # not originally in the parameters.
+    cp = {k: v for k, v in changed_parameters.iteritems()
+          if v is not None and k not in original_params}
+
+    if cp != {}:
+        log.debug('resetting because {} changed.'.format(cp))
         self.reset()
     return changed_parameters
 
@@ -69,8 +79,8 @@ def set_ispin_dict(self, val):
         d = {'ispin': 2}
         if 'magmom' not in self.parameters:
             d['magmom'] = [atom.magmom for atom
-                            in self.atoms[self.resort]]
-        # set individual magnetic moments.
+                           in self.atoms[self.resort]]
+        # print out individual magnetic moments.
         if 'lorbit' not in self.parameters:
             d['lorbit'] = 11
 

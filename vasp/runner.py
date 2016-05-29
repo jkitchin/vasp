@@ -77,6 +77,10 @@ def calculate(self, atoms=None, properties=['energy'],
         raise VaspQueued('{} Queued: {}'.format(self.directory,
                                                 self.get_db('jobid')))
 
+    if VASPRC['mode'] is None:
+        log.debug('mode is None. not running')
+        return
+
     # not in queue. Delete the jobid
     if self.get_db('jobid') is not None:
         self.write_db(jobid=None)

@@ -4,6 +4,12 @@ from monkeypatch import monkeypatch_class
 
 import os
 import numpy as np
+
+# turn off if in the queue.
+if 'PBS_O_WORKDIR' in os.environ:
+    import matplotlib
+    matplotlib.use('Agg')
+
 import matplotlib.pyplot as plt
 from ase.dft import DOS
 
@@ -11,7 +17,8 @@ from ase.dft import DOS
 @monkeypatch_class(vasp.Vasp)
 def get_bandstructure(self,
                       kpts_path=None,
-                      kpts_nintersections=10):
+                      kpts_nintersections=10,
+                      show=False):
     """Calculate band structure along :param kpts_path:
     :param list kpts_path: list of tuples of (label, k-point) to
       calculate path on.
@@ -21,6 +28,7 @@ def get_bandstructure(self,
     returns (npoints, band_energies, fighandle)
 
     """
+    self.update()
     self.stop_if(self.potential_energy is None)
 
     kpts = [k[1] for k in kpts_path]
@@ -45,6 +53,7 @@ def get_bandstructure(self,
              isif=None,
              ibrion=None,
              icharg=11)
+
     calc.update()
 
     calc.stop_if(calc.get_potential_energy() is None)
@@ -101,5 +110,6 @@ def get_bandstructure(self,
     plt.xlabel('DOS')
 
     plt.subplots_adjust(wspace=0.26)
-    plt.show()
+    if show:
+        plt.show()
     return (npoints, band_energies, fig)
