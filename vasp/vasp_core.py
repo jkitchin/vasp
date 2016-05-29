@@ -772,16 +772,10 @@ class Vasp(FileIOCalculator, object):
             return tatoms
 
         LOA = []
-        i = 0
-        while True:
-            try:
-                atoms = read_vasp_xml(os.path.join(self.directory,
-                                                   'vasprun.xml'),
-                                      index=i).next()
-                LOA += [atoms]
-                i += 1
-            except IndexError:
-                break
+        for atoms in read_vasp_xml(os.path.join(self.directory,
+                                                'vasprun.xml'),
+                                   index=None):
+            LOA += [atoms]
         return LOA
 
     def view(self, index=None):

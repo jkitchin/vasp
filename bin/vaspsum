@@ -32,6 +32,12 @@ parser.add_argument('dirs', nargs='*',
                     default = ['.'],
                     help='directories to summarize')
 
+parser.add_argument('-t', '--plot-trajectory', action='store_true',
+                    help = 'plot trajectory')
+
+parser.add_argument('-p', '--plot', action='store_true',
+                    help = 'plot in ag')
+
 args = parser.parse_args()
 
 if args.debug:
@@ -39,13 +45,20 @@ if args.debug:
 else:
     debug = None
 
-
 for d in args.dirs:
     if not os.path.isdir(d):
         raise Exception('{0} does not exist!'.format(d))
 
     calc = Vasp(d, debug=debug)
 
+    # plot trajectory
+    if args.plot_trajectory:
+        calc.view(index=None)
+
+    # plot final atoms image
+    if args.plot:
+        calc.view(index=-1)
+        
     if args.vasp:
         print(calc.vasp)
     elif args.json:
