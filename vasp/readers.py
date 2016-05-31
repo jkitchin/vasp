@@ -232,11 +232,15 @@ def read_atoms(self):
         self.resort = list(self.resort)
 
     db = os.path.join(self.directory, 'DB.db')
-    if os.path.exists(db):
-        from ase.db import connect
-        with connect(db) as con:
-            atoms = con.get_atoms(id=1)
-    else:
+    try:
+        if os.path.exists(db):
+            from ase.db import connect
+            with connect(db) as con:
+                atoms = con.get_atoms(id=1)
+        else:
+            atoms = None
+    # This exception means no entry found
+    except KeyError:
         atoms = None
     return atoms
 
