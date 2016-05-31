@@ -286,6 +286,17 @@ def read(self, restart=None):
 
         self.parameters['ldau_luj'] = ldau_luj
 
+    self.sort_atoms(self.read_atoms())
+    imm = self.parameters.get('magmom',
+                              [0 for atom in self.atoms])
+    self.atoms.set_initial_magnetic_moments(imm)
+
+    self.read_results()
+
+
+@monkeypatch_class(vasp.Vasp)
+def read_atoms(self):
+    """Read the atoms and resort if able."""
     # Now for the atoms. This does depend on the state. self.resort
     # needs to be a list for shuffling constraints if they exist.
     self.resort = self.get_db('resort')
@@ -312,11 +323,8 @@ def read(self, restart=None):
 
     if atoms is not None:
         atoms = atoms[self.resort]
-        self.sort_atoms(atoms)
-        imm = self.parameters.get('magmom',
-                                  [0 for atom in self.atoms])
-        self.atoms.set_initial_magnetic_moments(imm)
-    self.read_results()
+
+    return atoms
 
 
 @monkeypatch_class(vasp.Vasp)
