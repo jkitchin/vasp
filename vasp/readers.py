@@ -222,15 +222,36 @@ def read_potcar(self, fname=None):
 
 
 @monkeypatch_class(vasp.Vasp)
+def read_atoms(self):
+    """Read the atoms and resort if able."""
+    # Now for the atoms. This does depend on the state. self.resort
+    # needs to be a list for shuffling constraints if they exist. We
+    # get an array when reading from the db.
+    self.resort = self.get_db('resort')
+    if self.resort is not None:
+        self.resort = list(self.resort)
+
+    db = os.path.join(self.directory, 'DB.db')
+    if os.path.exists(db):
+        from ase.db import connect
+        with connect(db) as con:
+            atoms = con.get_atoms(id=1)
+    else:
+        atoms = None
+    return atoms
+
+
+@monkeypatch_class(vasp.Vasp)
 def read(self, restart=None):
     """Read the files in a calculation if they exist.
 
     restart is ignored, but part of the signature for ase. I am not
     sure what we could use it for.
 
-    sets self.parameters and atoms.
+    This function reads self.parameters and atoms.
 
     """
+
     log.debug('Reading {}'.format(self.directory))
     self.neb = None
     # NEB is special and handled separately
@@ -286,45 +307,18 @@ def read(self, restart=None):
 
         self.parameters['ldau_luj'] = ldau_luj
 
-    self.sort_atoms(self.read_atoms())
-    imm = self.parameters.get('magmom',
-                              [0 for atom in self.atoms])
-    self.atoms.set_initial_magnetic_moments(imm)
+    # Now get the atoms
+    atoms = self.read_atoms()
+    self.atoms = atoms
+    if atoms is not None and self.atoms is not None:
+        # Update the self.atoms
+        self.atoms.arrays['numbers'] = atoms.arrays['numbers']
+        self.sort_atoms(atoms)
+        imm = self.parameters.get('magmom',
+                                  [0 for atom in self.atoms])
+        self.atoms.set_initial_magnetic_moments(imm)
 
     self.read_results()
-
-
-@monkeypatch_class(vasp.Vasp)
-def read_atoms(self):
-    """Read the atoms and resort if able."""
-    # Now for the atoms. This does depend on the state. self.resort
-    # needs to be a list for shuffling constraints if they exist.
-    self.resort = self.get_db('resort')
-    if self.resort is not None:
-        self.resort = list(self.resort)
-
-    import ase.io
-    contcar = os.path.join(self.directory, 'CONTCAR')
-    empty_contcar = False
-    if os.path.exists(contcar):
-        # make sure the contcar is not empty
-        with open(contcar) as f:
-            if f.read() == '':
-                empty_contcar = True
-
-    poscar = os.path.join(self.directory, 'POSCAR')
-
-    if os.path.exists(contcar) and not empty_contcar:
-        atoms = ase.io.read(contcar)
-    elif os.path.exists(poscar):
-        atoms = ase.io.read(poscar)
-    else:
-        atoms = None
-
-    if atoms is not None:
-        atoms = atoms[self.resort]
-
-    return atoms
 
 
 @monkeypatch_class(vasp.Vasp)

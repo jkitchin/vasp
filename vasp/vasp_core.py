@@ -224,23 +224,19 @@ class Vasp(FileIOCalculator, object):
 
         if self.neb is not None:
             self.neb = atoms
+
+        self.atoms = atoms
         # We do not pass kwargs here. Some of the special kwargs
         # cannot be set at this point since they need to know about
         # the atoms and parameters. This reads params and results from
         # existing files if they are there. It calls self.read().
 
-        # We have to update the atoms first, because the atoms may be
-        # resorted and FileIOCalculator cannot handle that.
-
-        fileatoms = self.read_atoms()
-        if fileatoms:
-            atoms.positions = fileatoms.positions
-            atoms.numbers = fileatoms.numbers
-            atoms.cell = fileatoms.cell
-            # magmoms? charges?
-
-        FileIOCalculator.__init__(self, restart, ignore_bad_restart_file,
-                                  str(label), atoms)
+        if self.neb:
+            FileIOCalculator.__init__(self, restart, ignore_bad_restart_file,
+                                      str(label))
+        else:
+            FileIOCalculator.__init__(self, restart, ignore_bad_restart_file,
+                                      str(label), atoms)
 
         # The calculator should be up to date with the file
         # system here.
