@@ -33,6 +33,7 @@ import bader
 import bandstructure
 import elastic_moduli
 
+
 def tryit(func):
     """Decorator to wrap function in try block with Vasp exception handler."""
     def inner(self, *args, **kwargs):
