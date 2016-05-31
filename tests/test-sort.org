@@ -1,0 +1,25 @@
+
+
+#+BEGIN_SRC python
+from vasp import Vasp
+from ase.lattice.surface import fcc111
+import logging
+log = logging.getLogger('Vasp')
+#log.setLevel(logging.DEBUG)
+
+# Create surface image
+atoms = fcc111('Cu', size=(3, 3, 5), vacuum=6.0, a=3.628)
+atoms[40].symbol = 'Pd'
+
+calc = Vasp('impurity-calc',
+	    xc='PBE',
+	    kpts=[2, 2, 1],
+	    encut=250,
+	    atoms=atoms)
+calc.write_input()
+
+print(atoms[40])
+#+END_SRC
+
+#+RESULTS:
+: Atom('Pd', [3.8480751032171918, 2.2216871967043419, 14.378507106479852], tag=1, index=40)
