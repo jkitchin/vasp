@@ -10,6 +10,7 @@ import exceptions
 from monkeypatch import monkeypatch_class
 from ase.io.vasp import read_vasp_xml
 
+
 def isfloat(s):
     """Return if s is a float.
 
