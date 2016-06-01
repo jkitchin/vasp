@@ -225,7 +225,8 @@ class Vasp(FileIOCalculator, object):
         if self.neb is not None:
             self.neb = atoms
 
-        self.atoms = atoms
+        if atoms is not None:
+            self.atoms = atoms
         # We do not pass kwargs here. Some of the special kwargs
         # cannot be set at this point since they need to know about
         # the atoms and parameters. This reads params and results from
@@ -690,8 +691,10 @@ class Vasp(FileIOCalculator, object):
                 os.unlink(os.path.join(newdir, 'vasprun.xml'))
                 os.unlink(os.path.join(newdir, 'CONTCAR'))
 
+            # eliminate jobid on copying.
+            self.write_db(jobid=None, path=newdir)
+
         self.__init__(newdir)
-        self.write_db(jobid=None, path=newdir)
 
     def get_state(self):
         """Determine calculation state based on directory contents.
