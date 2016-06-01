@@ -8,7 +8,7 @@ from vasp import log
 from ase.calculators.calculator import Parameters
 import exceptions
 from monkeypatch import monkeypatch_class
-
+from ase.io.vasp import read_vasp_xml
 
 def isfloat(s):
     """Return if s is a float.
@@ -224,12 +224,6 @@ def read_potcar(self, fname=None):
 @monkeypatch_class(vasp.Vasp)
 def read_atoms(self):
     """Read the atoms and resort if able."""
-    # Now for the atoms. This does depend on the state. self.resort
-    # needs to be a list for shuffling constraints if they exist. We
-    # get an array when reading from the db.
-    self.resort = self.get_db('resort')
-    if self.resort is not None:
-        self.resort = list(self.resort)
 
     db = os.path.join(self.directory, 'DB.db')
     try:
@@ -242,6 +236,18 @@ def read_atoms(self):
     # This exception means no entry found
     except KeyError:
         atoms = None
+
+    # update these from vasprun if finished. just in case.
+    if self.get_state() == 3:
+        log.debug('Reading final positions')
+        xatoms = read_vasp_xml(os.path.join(self.directory,
+                                            'vasprun.xml')).next()
+
+        resort = self.get_db('resort')
+        # update the atoms
+        atoms.positions = xatoms.positions[resort]
+        atoms.cell = xatoms.cell
+
     return atoms
 
 
@@ -344,7 +350,6 @@ def read_results(self):
         self.results = {}
     else:
         # regular calculation that is finished
-        from ase.io.vasp import read_vasp_xml
         if not os.path.exists(os.path.join(self.directory,
                                            'vasprun.xml')):
             exc = 'No vasprun.xml in {}'.format(self.directory)
