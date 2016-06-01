@@ -141,7 +141,7 @@ def ldau(calc, val):
 
     http://cms.mpi.univie.ac.at/wiki/index.php/LDAU
     """
-    assert ldau in [True, False, None]
+    assert val in [True, False, None]
 
 
 def ldau_luj(calc, val):
