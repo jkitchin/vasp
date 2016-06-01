@@ -56,7 +56,8 @@ def get_bandstructure(self,
 
     calc.update()
 
-    calc.stop_if(calc.get_potential_energy() is None)
+    if calc.potential_energy is None:
+        return None, None, None
 
     fig = plt.figure()
     with open(os.path.join(wd, 'EIGENVAL')) as f:
