@@ -264,7 +264,7 @@ def read(self, restart=None):
     """
 
     log.debug('Reading {}'.format(self.directory))
-    self.neb = None
+
     # NEB is special and handled separately
     if self.get_state() == vasp.Vasp.NEB:
         self.read_neb()
