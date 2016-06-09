@@ -561,3 +561,33 @@ def get_number_of_ionic_steps(self):
         if line.find('- Iteration') != -1:
             nsteps = int(line.split('(')[0].split()[-1].strip())
     return nsteps
+
+
+@monkeypatch_class(vasp.Vasp)
+def get_composition(self, basis=None):
+    ''' Acquire the chemical composition of an atoms object
+
+    Returns: a dictionary of atoms and their compositions
+    dictionary sorted by atomic number
+
+    basis: string
+    allows the user to define the basis element for determining
+    the composition. If a basis element is specified, the
+    composition of that element is returned.
+    '''
+
+    atoms = self.get_atoms()
+    symbols = atoms.get_chemical_symbols()
+
+    # Collect compositions
+    S = {}
+    for symbol in set(symbols):
+        S[symbol] = float(symbols.count(symbol)) / len(atoms)
+
+    if basis:
+        if basis in S.keys():
+            return S[basis]
+        else:
+            return 0.0
+    else:
+        return S
