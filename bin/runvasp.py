@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 import os
-import sys
-# sys.path.insert(0, '/home-research/jkitchin/kitchin-python/vasp')
-
 from vasp.vasprc import VASPRC
 
 # this command works for both serial and MPI
