@@ -225,8 +225,9 @@ class Vasp(FileIOCalculator, object):
         if self.neb is not None:
             self.neb = atoms
 
-        if atoms is not None:
+        if atoms is not None and self.neb is None:
             self.atoms = atoms
+
         # We do not pass kwargs here. Some of the special kwargs
         # cannot be set at this point since they need to know about
         # the atoms and parameters. This reads params and results from
@@ -275,6 +276,7 @@ class Vasp(FileIOCalculator, object):
 
         # In case no atoms was on file, and one is passed in, we set
         # it here.
+
         if self.atoms is None and atoms is not None and self.neb is None:
             self.sort_atoms(atoms)
         elif self.neb is not None:
@@ -282,7 +284,7 @@ class Vasp(FileIOCalculator, object):
 
         # I don't know why this is necessary. but it seems like
         # these get lost and it causes restart issues
-        if atoms is not None:
+        if atoms is not None and self.neb is None:
             aimm = atoms.get_initial_magnetic_moments()
             self.atoms.set_initial_magnetic_moments(aimm)
 
@@ -392,6 +394,28 @@ class Vasp(FileIOCalculator, object):
                               x[2]) for x in ppp]
 
         return atoms[self.resort]
+
+    def _repr_html_(self):
+        """Output function for Jupyter notebooks."""
+        from ase.io import write
+        atoms = self.get_atoms()
+        atoms_image = os.path.join(self.directory, '_repr_html.png')
+        path = os.path.relpath(atoms_image, os.getcwd())
+        write(atoms_image,
+              atoms, show_unit_cell=2)
+        formula = atoms.get_chemical_formula()
+        energy = self.results.get('energy', None)
+        template = """
+        <table><tr>
+        <td><img src="{path}"></td>
+        <td>
+        Formula = {formula} <br>
+        Energy = {energy} eV   </td>
+        </tr>
+        </table>
+        """
+
+        return template.format(**locals())
 
     def __str__(self):
         """Pretty representation of a calculation.
