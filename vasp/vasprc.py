@@ -16,7 +16,7 @@ also be used to identify the vasp executables used by runvasp.py.
 """
 import os
 
-vs = '/home-research/zhongnanxu/opt/vasp-5.3.5/bin/vasp-vtst-beef-serial'
+vs = '/opt/kitchingroup/vasp-5.3.5/bin/vasp-vtst-serial-beef'
 vp = '/home-research/zhongnanxu/opt/vasp-5.3.5/bin/vasp-vtst-beef-parallel'
 
 # default settings
