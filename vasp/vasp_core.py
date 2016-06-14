@@ -13,7 +13,7 @@ import numpy as np
 import ase
 from ase.calculators.calculator import Calculator
 from ase.calculators.calculator import FileIOCalculator
-from ase.io.vasp import read_vasp_xml
+from ase.io import read
 
 # internal modules
 import exceptions
@@ -826,9 +826,7 @@ class Vasp(FileIOCalculator, object):
             return tatoms
 
         LOA = []
-        for atoms in read_vasp_xml(os.path.join(self.directory,
-                                                'vasprun.xml'),
-                                   index=None):
+        for atoms in read(os.path.join(self.directory, 'vasprun.xml'), ':'):
             LOA += [atoms]
         return LOA
 
