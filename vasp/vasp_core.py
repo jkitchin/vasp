@@ -73,6 +73,7 @@ class Vasp(FileIOCalculator, object):
     # set the relevant vasp tags.
     xc_defaults = {'lda': {'pp': 'LDA'},
                    # GGAs
+                   'gga': {'pp': 'GGA'},
                    'pbe': {'pp': 'PBE'},
                    'revpbe': {'pp': 'LDA', 'gga': 'RE'},
                    'rpbe': {'pp': 'LDA', 'gga': 'RP'},
