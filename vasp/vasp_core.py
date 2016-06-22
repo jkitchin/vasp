@@ -388,6 +388,8 @@ class Vasp(FileIOCalculator, object):
         assert sum([x[2] for x in ppp]) == len(atoms)
 
         self.resort = resort_indices
+        self.unsort = [k[1] for k in
+                       sorted([[j, i] for i, j in enumerate(self.resort)])]
         self.ppp_list = ppp
         self.atoms_sorted = atoms[self.resort]
         self.symbol_count = [(x[0] if isinstance(x[0], str)
@@ -828,6 +830,12 @@ class Vasp(FileIOCalculator, object):
 
         LOA = []
         for atoms in read(os.path.join(self.directory, 'vasprun.xml'), ':'):
+            # traj does not currently report the atoms objects in the unsorted
+            # order as vaspsum does. This can be fixed with the final commented
+            # line, however, this also seems to erase the energy curve reported
+            # I'm unsure how to fix this.
+
+            # atoms = atoms[self.unsort]
             LOA += [atoms]
         return LOA
 
