@@ -8,7 +8,7 @@ from vasp import log
 from ase.calculators.calculator import Parameters
 import exceptions
 from monkeypatch import monkeypatch_class
-from ase.io.vasp import read_vasp_xml
+import ase
 
 
 def isfloat(s):
@@ -224,30 +224,21 @@ def read_potcar(self, fname=None):
 
 @monkeypatch_class(vasp.Vasp)
 def read_atoms(self):
-    """Read the atoms and resort if able."""
+    """Read the final atoms object from vasprun.xml
+    and return the user defined order (unsort) if able.
 
-    db = os.path.join(self.directory, 'DB.db')
+    """
+
     try:
-        if os.path.exists(db):
-            from ase.db import connect
-            with connect(db) as con:
-                atoms = con.get_atoms(id=1)
-        else:
-            atoms = None
-    # This exception means no entry found
-    except KeyError:
-        atoms = None
-
-    # update these from vasprun if finished. just in case.
-    if self.get_state() == 3:
-        log.debug('Reading final positions')
-        xatoms = read_vasp_xml(os.path.join(self.directory,
-                                            'vasprun.xml')).next()
-
+        atoms = ase.io.read(os.path.join(self.directory,
+                                         'vasprun.xml'))
         resort = self.get_db('resort')
-        # update the atoms
-        atoms.positions = xatoms.positions[resort]
-        atoms.cell = xatoms.cell
+        unsort = [k[1] for k in
+                  sorted([[j, i] for i, j in enumerate(resort)])]
+        atoms = atoms[unsort]
+    # No vasprun.xml file found
+    except(IOError):
+        atoms = None
 
     return atoms
 
@@ -321,6 +312,7 @@ def read(self, restart=None):
     # Now get the atoms
     atoms = self.read_atoms()
     self.atoms = atoms
+
     if atoms is not None and self.atoms is not None:
         # Update the self.atoms
         self.atoms.arrays['numbers'] = atoms.arrays['numbers']
@@ -356,25 +348,25 @@ def read_results(self):
             exc = 'No vasprun.xml in {}'.format(self.directory)
             raise exceptions.VaspNotFinished(exc)
 
-        atoms = read_vasp_xml(os.path.join(self.directory,
-                                           'vasprun.xml')).next()
+        atoms = ase.io.read(os.path.join(self.directory,
+                                         'vasprun.xml'))
 
         energy = atoms.get_potential_energy()
         forces = atoms.get_forces()  # needs to be resorted
         stress = atoms.get_stress()
 
-        resort = self.get_db('resort')
+        # not sure which case this handles. It may not return
+        # correctly sorted atoms.
         if self.atoms is None:
-            atoms = atoms[resort]
             self.sort_atoms(atoms)
+            self.atoms = atoms[self.unsort]
             self.atoms.set_calculator(self)
         else:
-            # update the atoms
-            self.atoms.positions = atoms.positions[resort]
-            self.atoms.cell = atoms.cell
+            self.atoms = atoms[self.unsort]
+            self.atoms.set_calculator(self)
 
         self.results['energy'] = energy
-        self.results['forces'] = forces[self.resort]
+        self.results['forces'] = forces[self.unsort]
         self.results['stress'] = stress
         self.results['dipole'] = None
         self.results['charges'] = [None for atom in self.atoms]
@@ -398,14 +390,13 @@ def read_results(self):
                         magnetic_moments[m] = val
 
         self.results['magmom'] = magnetic_moment
-        self.results['magmoms'] = np.array(magnetic_moments)[self.resort]
+        self.results['magmoms'] = np.array(magnetic_moments)[self.unsort]
         log.debug('Results at end: {}'.format(self.results))
 
 
 @monkeypatch_class(vasp.Vasp)
 def read_neb(self):
     """Read an NEB calculator."""
-    import ase
     import glob
     atoms = []
     atoms += [ase.io.read('{}/00/POSCAR'.format(self.directory))]
