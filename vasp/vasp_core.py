@@ -341,7 +341,7 @@ class Vasp(FileIOCalculator, object):
         ppp = []  # [(index_or_symbol, potcar_file, count)]
 
         # indices of original atoms needed to make sorted atoms list
-        resort_indices = []
+        sort_indices = []
 
         # First the numeric index setups
         for setup in [x for x in setups if isinstance(x[0], int)]:
@@ -349,16 +349,16 @@ class Vasp(FileIOCalculator, object):
                      'potpaw_{}/{}{}/POTCAR'.format(pp, atoms[setup[0]].symbol,
                                                     setup[1]),
                      1]]
-            resort_indices += [setup[0]]
+            sort_indices += [setup[0]]
 
         # now the rest of the setups. These are atom symbols
         for setup in [x for x in setups if not isinstance(x[0], int)]:
             symbol = setup[0]
             count = 0
             for i, atom in enumerate(atoms):
-                if atom.symbol == symbol and i not in resort_indices:
+                if atom.symbol == symbol and i not in sort_indices:
                     count += 1
-                    resort_indices += [i]
+                    sort_indices += [i]
 
             ppp += [[symbol,
                      'potpaw_{}/{}{}/POTCAR'.format(pp, symbol, setup[1]),
@@ -374,29 +374,56 @@ class Vasp(FileIOCalculator, object):
         for symbol in symbols:
             count = 0
             for i, atom in enumerate(atoms):
-                if atom.symbol == symbol and i not in resort_indices:
-                    resort_indices += [i]
+                if atom.symbol == symbol and i not in sort_indices:
+                    sort_indices += [i]
                     count += 1
             if count > 0:
                 ppp += [[symbol,
                          'potpaw_{}/{}/POTCAR'.format(pp, symbol),
                          count]]
 
-        assert len(resort_indices) == len(atoms), \
-            'Sorting error. sort_indices={}'.format(resort_indices)
+        assert len(sort_indices) == len(atoms), \
+            'Sorting error. sort_indices={}'.format(sort_indices)
 
         assert sum([x[2] for x in ppp]) == len(atoms)
+        self.sort = sort_indices
 
-        self.resort = resort_indices
-        self.unsort = [k[1] for k in
-                       sorted([[j, i] for i, j in enumerate(self.resort)])]
+        # This list is used to convert Vasp ordering back to the
+        # user-defined order.
+        self.resort = [k[1] for k in
+                       sorted([[j, i] for i, j in enumerate(sort_indices)])]
+
+        # June 23, 2016. Jake Boes found a bug in how sorting is
+        # done. We fixed it, but the fix is not backwards compatible
+        # with the old resort we stored in DB.db. It appears we can
+        # detect an old case if there is inconsistency with what is
+        # stored and calculated here.  We check here to see if we are
+        # consistent, and if not fix the issue. This should only occur
+        # once.
+        if (self.resort is not None
+            and self.get_db('resort') is not None
+            and self.resort != list(self.get_db('resort'))):
+            ns =  [k[1] for k in
+                   sorted([[j, i]
+                           for i, j in enumerate(self.get_db('resort'))])]
+            from ase.db import connect
+            with connect(os.path.join(self.directory, 'DB.db')) as con:
+                tatoms = con.get_atoms(id=1)
+            self.write_db(tatoms, data={'resort': ns})
+            print('Fixed resort issue in {}. '
+                  'You should not see this message again'.format(self.directory))
+            self.resort = ns
+            sort_indices = [k[1] for k in
+                            sorted([[j, i]
+                                    for i, j in enumerate(ns)])]
+
         self.ppp_list = ppp
-        self.atoms_sorted = atoms[self.resort]
+        self.atoms_sorted = atoms[sort_indices]
         self.symbol_count = [(x[0] if isinstance(x[0], str)
                               else atoms[x[0]].symbol,
                               x[2]) for x in ppp]
 
-        return atoms[self.resort]
+        #return atoms[sort_indices]
 
     def _repr_html_(self):
         """Output function for Jupyter notebooks."""
@@ -810,7 +837,7 @@ class Vasp(FileIOCalculator, object):
         This reads Atoms objects from vasprun.xml. By default returns
         all images.  If index is an integer, return that image.
 
-        Technically, this is just a list of atoms with
+        Technically, this is just a list of atoms with a
         SinglePointCalculator attached to them.
 
         This is usually only relevant if you have done a
@@ -830,13 +857,11 @@ class Vasp(FileIOCalculator, object):
 
         LOA = []
         for atoms in read(os.path.join(self.directory, 'vasprun.xml'), ':'):
-            # traj does not currently report the atoms objects in the unsorted
-            # order as vaspsum does. This can be fixed with the final commented
-            # line, however, this also seems to erase the energy curve reported
-            # I'm unsure how to fix this.
-
-            # atoms = atoms[self.unsort]
-            LOA += [atoms]
+            catoms = atoms.copy()
+            catoms = catoms[self.unsort]
+            catoms.set_calculator(SinglePointCalculator(catoms,
+                                                        atoms.get_potential_energy()))
+            LOA += [catoms]
         return LOA
 
     def view(self, index=None):
