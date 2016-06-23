@@ -22,4 +22,155 @@ print(atoms[40])
 #+END_SRC
 
 #+RESULTS:
-: Atom('Pd', [3.8480751032171918, 2.2216871967043419, 14.378507106479852], tag=1, index=40)
+: Atom('Pd', [3.8480751032171918, 2.2216871967043419, 14.378507106479852], tag=1, magmom=0.0, index=40)
+
+#+BEGIN_SRC python
+from vasp import Vasp
+calc = Vasp('impurity-calc')
+print calc.get_atoms()[40]
+#+END_SRC
+
+#+RESULTS:
+: Atom('Pd', [5.1307668042895891, 4.4433743934086838, 14.378507106479852], magmom=0.0, index=40)
+
+* Jakes test
+
+#+BEGIN_SRC sh
+cp -r aupd-order-test-2/* aupd-order-test
+#+END_SRC
+
+#+RESULTS:
+
+#+BEGIN_SRC python
+from vasp import Vasp
+import pprint
+from ase.visualize import view
+
+calc = Vasp('aupd-order-test')
+atoms =  calc.get_atoms()
+
+pprint.pprint(zip(atoms.get_chemical_symbols(), atoms.positions))
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+[('Au', array([ 2.47949597,  1.43153767,  6.16442523])),
+ ('Au', array([ 0.        ,  0.        ,  6.16442523])),
+ ('Pd', array([ 4.958992  ,  2.86307537,  6.16442523])),
+ ('Au', array([ 1.65299733,  2.86307537,  8.5021165 ])),
+ ('Pd', array([ 4.13249332,  1.43153767,  8.5021165 ])),
+ ('Pd', array([ 1.65299731,  0.        ,  8.5021165 ])),
+ ('Au', array([  3.30599465,   2.86307537,  10.83980777])),
+ ('Au', array([  0.82649866,   1.43153767,  10.83980777])),
+ ('Pd', array([  3.30599467,   0.        ,  10.83980777])),
+ ('Au', array([  2.47949597,   1.43153767,  13.17749904])),
+ ('Au', array([  0.        ,   0.        ,  13.17749904])),
+ ('Pd', array([  4.958992  ,   2.86307537,  13.17749904])),
+ ('H', array([  1.65299733,   2.86307537,  14.17749896]))]
+#+end_example
+
+
+#+BEGIN_SRC python
+import pprint
+from ase.db import connect
+with connect('aupd-order-test/DB.db') as con:
+    atoms = con.get_atoms(id=1)
+    pprint.pprint(zip(atoms.get_chemical_symbols(), atoms.positions))
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+[('Au', array([ 2.47949599,  1.43153768,  6.16442527])),
+ ('Au', array([ 2.47949599,  4.29461304,  6.16442527])),
+ ('Pd', array([ 4.95899198,  2.86307536,  6.16442527])),
+ ('Au', array([ 1.65299733,  2.86307536,  8.50211651])),
+ ('Pd', array([ 4.13249332,  1.43153768,  8.50211651])),
+ ('Pd', array([ 4.13249332,  4.29461304,  8.50211651])),
+ ('Au', array([  3.30599466,   2.86307536,  10.83980775])),
+ ('Au', array([  5.78549065,   1.43153768,  10.83980775])),
+ ('Pd', array([  5.78549065,   4.29461304,  10.83980775])),
+ ('Au', array([  2.47949599,   1.43153768,  13.17749899])),
+ ('Au', array([  2.47949599,   4.29461304,  13.17749899])),
+ ('Pd', array([  4.95899198,   2.86307536,  13.17749899])),
+ ('H', array([  1.65299733,   2.86307536,  14.17749899]))]
+#+end_example
+
+
+
+
+#+BEGIN_SRC python
+import pprint
+from ase.db import connect
+with connect('aupd-order-test/DB.db') as con:
+    atoms = con.get_atoms(id=1)
+
+pprint.pprint(zip(atoms.get_chemical_symbols(), atoms.positions))
+
+from vasp import Vasp
+
+calc = Vasp('sort-1', atoms=atoms)
+calc.write_input()
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+[('Au', array([ 2.47949599,  1.43153768,  6.16442527])),
+ ('Au', array([ 2.47949599,  4.29461304,  6.16442527])),
+ ('Pd', array([ 4.95899198,  2.86307536,  6.16442527])),
+ ('Au', array([ 1.65299733,  2.86307536,  8.50211651])),
+ ('Pd', array([ 4.13249332,  1.43153768,  8.50211651])),
+ ('Pd', array([ 4.13249332,  4.29461304,  8.50211651])),
+ ('Au', array([  3.30599466,   2.86307536,  10.83980775])),
+ ('Au', array([  5.78549065,   1.43153768,  10.83980775])),
+ ('Pd', array([  5.78549065,   4.29461304,  10.83980775])),
+ ('Au', array([  2.47949599,   1.43153768,  13.17749899])),
+ ('Au', array([  2.47949599,   4.29461304,  13.17749899])),
+ ('Pd', array([  4.95899198,   2.86307536,  13.17749899])),
+ ('H', array([  1.65299733,   2.86307536,  14.17749899]))]
+#+end_example
+
+#+BEGIN_SRC python
+from vasp import Vasp
+import pprint
+
+from ase.db import connect
+with connect('aupd-order-test/DB.db') as con:
+    atoms = con.get_atoms(id=1)
+
+pprint.pprint(zip(atoms.get_chemical_symbols(), atoms.positions))
+print ''
+calc = Vasp('sort-1')
+atoms =  calc.get_atoms()
+pprint.pprint(zip(atoms.get_chemical_symbols(), atoms.positions))
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+[('Au', array([ 2.47949599,  1.43153768,  6.16442527])),
+ ('Au', array([ 2.47949599,  4.29461304,  6.16442527])),
+ ('Pd', array([ 4.95899198,  2.86307536,  6.16442527])),
+ ('Au', array([ 1.65299733,  2.86307536,  8.50211651])),
+ ('Pd', array([ 4.13249332,  1.43153768,  8.50211651])),
+ ('Pd', array([ 4.13249332,  4.29461304,  8.50211651])),
+ ('Au', array([  3.30599466,   2.86307536,  10.83980775])),
+ ('Au', array([  5.78549065,   1.43153768,  10.83980775])),
+ ('Pd', array([  5.78549065,   4.29461304,  10.83980775])),
+ ('Au', array([  2.47949599,   1.43153768,  13.17749899])),
+ ('Au', array([  2.47949599,   4.29461304,  13.17749899])),
+ ('Pd', array([  4.95899198,   2.86307536,  13.17749899])),
+ ('H', array([  1.65299733,   2.86307536,  14.17749899]))]
+
+[('Au', array([ 2.47949599,  1.43153768,  6.16442527])),
+ ('Au', array([ 2.47949599,  4.29461304,  6.16442527])),
+ ('Pd', array([ 4.95899198,  2.86307536,  6.16442527])),
+ ('Au', array([ 1.65299733,  2.86307536,  8.50211651])),
+ ('Pd', array([ 4.13249332,  1.43153768,  8.50211651])),
+ ('Pd', array([ 4.13249332,  4.29461304,  8.50211651])),
+ ('Au', array([  3.30599466,   2.86307536,  10.83980775])),
+ ('Au', array([  5.78549065,   1.43153768,  10.83980775])),
+ ('Pd', array([  5.78549065,   4.29461304,  10.83980775])),
+ ('Au', array([  2.47949599,   1.43153768,  13.17749899])),
+ ('Au', array([  2.47949599,   4.29461304,  13.17749899])),
+ ('Pd', array([  4.95899198,   2.86307536,  13.17749899])),
+ ('H', array([  1.65299733,   2.86307536,  14.17749899]))]
+#+end_example
