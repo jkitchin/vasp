@@ -228,19 +228,22 @@ def read_atoms(self):
     and return the user defined order (unsort) if able.
 
     """
+    resort = self.get_db('resort')
+    # for a new calculation resort will be None
+    if resort is not None:
+        resort = list(resort)
 
-    try:
+    vasprun_xml = os.path.join(self.directory,
+                               'vasprun.xml')
+    if os.path.exists(vasprun_xml):
+        atoms = ase.io.read(vasprun_xml)
+        return atoms[resort]
+    elif os.path.exists(os.path.join(self.directory, 'POSCAR')):
         atoms = ase.io.read(os.path.join(self.directory,
-                                         'vasprun.xml'))
-        resort = self.get_db('resort')
-        unsort = [k[1] for k in
-                  sorted([[j, i] for i, j in enumerate(resort)])]
-        atoms = atoms[unsort]
-    # No vasprun.xml file found
-    except(IOError):
-        atoms = None
+                                         'POSCAR'))
+        return atoms[resort]
 
-    return atoms
+    return None
 
 
 @monkeypatch_class(vasp.Vasp)
@@ -355,18 +358,16 @@ def read_results(self):
         forces = atoms.get_forces()  # needs to be resorted
         stress = atoms.get_stress()
 
-        # not sure which case this handles. It may not return
-        # correctly sorted atoms.
         if self.atoms is None:
             self.sort_atoms(atoms)
-            self.atoms = atoms[self.unsort]
+            self.atoms = atoms[self.resort]
             self.atoms.set_calculator(self)
         else:
-            self.atoms = atoms[self.unsort]
+            self.atoms = atoms[self.resort]
             self.atoms.set_calculator(self)
 
         self.results['energy'] = energy
-        self.results['forces'] = forces[self.unsort]
+        self.results['forces'] = forces[self.resort]
         self.results['stress'] = stress
         self.results['dipole'] = None
         self.results['charges'] = [None for atom in self.atoms]
@@ -390,7 +391,7 @@ def read_results(self):
                         magnetic_moments[m] = val
 
         self.results['magmom'] = magnetic_moment
-        self.results['magmoms'] = np.array(magnetic_moments)[self.unsort]
+        self.results['magmoms'] = np.array(magnetic_moments)[self.resort]
         log.debug('Results at end: {}'.format(self.results))
 
 
