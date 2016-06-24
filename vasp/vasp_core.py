@@ -845,22 +845,22 @@ class Vasp(FileIOCalculator, object):
         returned.
 
         """
+        from ase.calculators.singlepoint import SinglePointCalculator as SPC
         self.update()
 
         if self.neb:
-            from ase.calculators.singlepoint import SinglePointCalculator
             images, energies = self.get_neb()
             tatoms = [x.copy() for x in images]
             for i, x in enumerate(tatoms):
-                x.set_calculator(SinglePointCalculator(x, energy=energies[i]))
+                x.set_calculator(SPC(x, energy=energies[i]))
             return tatoms
 
         LOA = []
         for atoms in read(os.path.join(self.directory, 'vasprun.xml'), ':'):
             catoms = atoms.copy()
-            catoms = catoms[self.unsort]
-            catoms.set_calculator(SinglePointCalculator(catoms,
-                                                        atoms.get_potential_energy()))
+            catoms = catoms[self.resort]
+            catoms.set_calculator(SPC(catoms,
+                                      energy=atoms.get_potential_energy()))
             LOA += [catoms]
         return LOA
 
