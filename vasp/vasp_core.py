@@ -56,7 +56,7 @@ class Vasp(FileIOCalculator, object):
     $VASP_PP_PATH/potpaw_GGA
 
     """
-
+    version = "0.9"
     name = 'VASP'
     command = None
     debug = None

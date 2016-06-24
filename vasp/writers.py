@@ -52,7 +52,8 @@ def write_db(self, atoms=None, fname=None, data=None, **kwargs):
 
     fdata = {'resort': self.resort,
              'parameters': self.parameters,
-             'ppp_list': self.ppp_list}
+             'ppp_list': self.ppp_list,
+             'version': self.version}
     fkv = {'path': self.directory}
 
     # get current data and keywords
