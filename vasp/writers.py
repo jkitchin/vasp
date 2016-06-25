@@ -255,3 +255,91 @@ def write_potcar(self, fname=None):
             pfile = os.path.join(os.environ['VASP_PP_PATH'], pfile)
             with open(pfile) as f:
                 potfile.write(f.read())
+
+
+@monkeypatch_class(vasp.Vasp)
+def write2db(self,
+             dbname='data.db',
+             atoms=None,
+             parser=None,
+             overwrite=False,
+             keys={},
+             data={},
+             **kwargs):
+    """Compile vasp calculation information into a database
+
+    :param dbname: The name of the database to collect calculator
+                   information in.
+    :type dbname: str
+
+    :param atoms: An ASE atoms object to write to the database. If
+                  None, the atoms object will be the image attached
+                  to the calculator.
+    :type atoms: object
+
+    :param parser: A tool for generating key-value-pairs from the
+                   calculators directory path. Pairs will be
+                   separated by directory and key-values will be
+                   separated by parser. If None, no key-value-pair
+                   information will be collected.
+    :type parser: str
+
+    :param overwrite: Whether the database file should be overwritten
+                      or not.
+    :type overwrite: bool
+
+    :param keys: Additional key-value-pairs to include in the database.
+    :type keys: dict
+
+    :param data: Additional data to include in the database.
+    :type data: dict
+
+    """
+    from ase.db import connect
+
+    # Do not run if database already exists
+    if os.path.exists(dbname) and overwrite:
+        os.unlink(dbname)
+
+    # Get the atoms object from the calculator
+    if atoms is None:
+        atoms = self.get_atoms()
+
+    # Get keys-value-pairs from directory name.
+    # Collect only path names with 'parser' in them.
+    path = [x for x in self.directory.split('/') if parser in x]
+
+    for key_value in path:
+        key = key_value.split(parser)[0]
+        value = key_value.split(parser)[1]
+
+        # Try to recognize characters and convert to
+        # specific data types for easy access later.
+        if '.' in value:
+            value = float(value)
+        elif value.isdigit():
+            value = int(value)
+        elif value == 'False':
+            value = bool(False)
+        elif value == 'True':
+            value = bool(True)
+        else:
+            value = str(value)
+
+        # Add directory keys
+        keys[key] = value
+
+    data.update({'path': self.directory,
+                 'resort': self.resort,
+                 'parameters': self.parameters,
+                 'ppp_list': self.ppp_list})
+
+    # Add calculation time to key-value-pairs
+    try:
+        data['ctime'] = float(self.get_elapsed_time())
+    except(AttributeError, IOError):
+        data['ctime'] = float(0.0)
+
+    # Generate the db file
+    with connect(dbname) as db:
+        db.write(atoms=atoms, key_value_pairs=keys, data=data)
