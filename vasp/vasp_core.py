@@ -454,8 +454,7 @@ class Vasp(FileIOCalculator, object):
               2. Implement convergence check?
 
         """
-        s = ['\n*************** VASP CALCULATION SUMMARY ***************']
-        s += ['Vasp calculation directory:']
+        s = ['\n', 'Vasp calculation directory:']
         s += ['---------------------------']
         s += ['  [[{self.directory}]]']
 
