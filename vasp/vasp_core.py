@@ -745,7 +745,10 @@ class Vasp(FileIOCalculator, object):
                 os.unlink(os.path.join(newdir, 'CONTCAR'))
 
             # eliminate jobid on copying.
-            self.write_db(jobid=None, path=newdir)
+            newdb = os.path.join(newdir, 'DB.db')
+            self.write_db(fname=newdb,
+                          path=os.path.abspath(newdir),
+                          jobid=None)
 
         self.__init__(newdir)
 
