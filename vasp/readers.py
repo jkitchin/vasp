@@ -228,6 +228,7 @@ def read_atoms(self):
     and return the user defined order (unsort) if able.
 
     """
+    atoms = None
     resort = self.get_db('resort')
     # for a new calculation resort will be None
     if resort is not None:
@@ -244,14 +245,13 @@ def read_atoms(self):
     if os.path.exists(vasprun_xml):
         atoms = ase.io.read(vasprun_xml)
         atoms.set_tags(tags)
-        return atoms[resort]
+        atoms = atoms[resort]
     elif os.path.exists(os.path.join(self.directory, 'POSCAR')):
         atoms = ase.io.read(os.path.join(self.directory,
                                          'POSCAR'))
         atoms.set_tags(tags)
-        return atoms[resort]
-
-    return None
+        atoms = atoms[resort]
+    return atoms
 
 
 @monkeypatch_class(vasp.Vasp)
@@ -359,6 +359,7 @@ def read_results(self):
             exc = 'No vasprun.xml in {}'.format(self.directory)
             raise exceptions.VaspNotFinished(exc)
 
+        # this has a single-point calculator on it. but no tags.
         atoms = ase.io.read(os.path.join(self.directory,
                                          'vasprun.xml'))
 
@@ -368,17 +369,16 @@ def read_results(self):
 
         if self.atoms is None:
             self.sort_atoms(atoms)
-            self.atoms = atoms[self.resort]
-            self.atoms.set_calculator(self)
-        else:
-            self.atoms = atoms[self.resort]
-            self.atoms.set_calculator(self)
+
+        # Now we read the atoms, so that the tags are set.
+        self.atoms = self.read_atoms()
+        self.atoms.set_calculator(self)
 
         self.results['energy'] = energy
         self.results['forces'] = forces[self.resort]
         self.results['stress'] = stress
         self.results['dipole'] = None
-        self.results['charges'] = [None for atom in self.atoms]
+        self.results['charges'] = np.array([0 for atom in self.atoms])
 
         magnetic_moment = 0
         magnetic_moments = np.zeros(len(atoms))
