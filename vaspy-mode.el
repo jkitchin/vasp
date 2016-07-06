@@ -9,29 +9,35 @@
 
 ;;; Code:
 
+
 (defun vasp-keywords ()
   "Return a list of vasp keywords."
   (read
    (shell-command-to-string
     "python -c \"from vasp.validate import keywords; print keywords()\"")))
 
+
 (defvar *vasp-keywords-regex*
   ;; in hy keywords start with : and in Python they sometimes end in =
   (concat "\\(?1::?\\<" (regexp-opt (vasp-keywords)) "\\)=?")
   "Regexp for vasp keywords.")
 
-(defun vaspdoc (keyword)
-  "Get docstring for KEYWORD."
-  (shell-command-to-string
-   (format
-    "python -c \"from vasp.validate import %s; print(%s.__doc__)\""
-    keyword keyword)))
+(defun vasp-keyword-alist ()
+  "Return a list of vasp keywords."
+  (read
+   (shell-command-to-string
+    "python -c \"from vasp.validate import keyword_alist; print keyword_alist()\"")))
 
-(defun vasp-tooltip-1 (_ _ position)
+(defvar *vasp-keyword-alist*
+  (vasp-keywords-alist)
+  "A-list of docstrings for vaspy keywords.
+Computed on startup.")
+
+(defun vasp-tooltip-1 (_win _obj position)
   "Get the one line tooltip for the keyword under POSITION."
   (save-excursion
     (goto-char position)
-    (car (s-split "\n" (vaspdoc (thing-at-point 'word))))))
+    (cadr (assoc (thing-at-point 'word) *vasp-keyword-alist*))))
 
 (defun next-vasp-keyword (&optional limit)
   "Find vasp keywords up to LIMIT."

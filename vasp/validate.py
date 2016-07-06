@@ -376,3 +376,25 @@ def keywords():
     names.remove('keywords')
 
     return "(" + ' '.join(['"{}"'.format(x) for x in names]) + ")"
+
+
+def keyword_alist():
+    """Returns an alist of (keyword . "first doc string").
+
+    Returns the alist for use in Emacs.
+
+    """
+    import validate
+    f = [validate.__dict__.get(a) for a in dir(validate)
+         if isinstance(validate.__dict__.get(a), types.FunctionType)]
+
+    names = [x.__name__ for x in f]
+    names.remove('keywords')
+    names.remove('keyword_alist')
+
+    docstrings = [validate.__dict__[name].__doc__.split('\n')[0]
+                  for name in names]
+
+    cons_cells = ["(\"{}\"  \"{}\")".format(key, doc)
+                  for key, doc in zip(names, docstrings)]
+    return "(" + "".join(cons_cells) + ")"
