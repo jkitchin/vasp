@@ -29,21 +29,48 @@ def write_input(self, atoms=None, properties=None, system_changes=None):
 
 
 @monkeypatch_class(vasp.Vasp)
-def write_db(self, atoms=None, fname=None, data=None, **kwargs):
-    """Write the DB file.
+def write_db(self,
+             fname=None,
+             atoms=None,
+             parser=None,
+             overwrite=True,
+             keys={},
+             data={},
+             del_info=[],
+             **kwargs):
+    """Compile vasp calculation information into a database.
+    primarily used to write the DB file. Only row 1 should be in
+    the current DB database.
 
-    atoms can be any atoms object, defaults to self.get_atoms().
-    fname can be anything, defaults to self.directory/DB.db
+    :param fname: The name of the database to collect calculator
+                  information in. Defaults to DB.db in vasp dir.
+    :type fname: str
 
-    data is a dictionary of data to store.
+    :param atoms: An ASE atoms object to write to the database. If
+                  None, the atoms object will be the image attached
+                  to the calculator.
+    :type atoms: object
 
-    kwargs is key=value pairs to store with the atoms.
+    :param parser: A tool for generating key-value-pairs from the
+                   calculators directory path. Pairs will be
+                   separated by directory and key-values will be
+                   separated by parser. If None, no key-value-pair
+                   information will be collected.
+    :type parser: str
 
-    Existing data and kwargs are preserved. You can delete kwargs by
-    setting them to None. You can delete data by setting the key to
-    None in the data dictionary.
+    :param overwrite: Whether the database file should be overwritten
+                      or not.
+    :type overwrite: bool
 
-    Only row 1 should be in this database.
+    :param keys: Additional key-value-pairs to include in the database.
+    :type keys: dict
+
+    :param data: Additional data to include in the database.
+    :type data: dict
+
+    :param del_info: Keys to be removed from the data of key_value_pairs
+                     of the DB file.
+    :type del_info: list
 
     """
     from ase.db import connect
@@ -51,50 +78,71 @@ def write_db(self, atoms=None, fname=None, data=None, **kwargs):
     if fname is None:
         fname = os.path.join(self.directory, 'DB.db')
 
-    fdata = {'resort': self.resort,
-             'parameters': self.parameters,
-             'ppp_list': self.ppp_list,
-             'version': self.version}
-    fkv = {'path': self.directory}
-
-    # get current data and keywords
-    if os.path.exists(fname):
-
-        with connect(fname) as con:
-            try:
-                temp_atoms = con.get_atoms(id=1,
-                                           add_additional_information=True)
-                fdata.update(temp_atoms.info['data'])
-                fkv.update(temp_atoms.info['key_value_pairs'])
-            except KeyError:
-                pass
-
-    # Update fdata from input args. None removes keywords and data
-    # elements
-    if data is not None:
-        for key, val in data.iteritems():
-            if val is None and key in fdata:
-                del fdata[key]
-            else:
-                fdata.update({key: val})
-
-    # update key-value pairs from input args
-    for key, val in kwargs.iteritems():
-        # we use None to delete keys
-        if val is None and key in fkv:
-            del fkv[key]
-        elif val is not None:
-            fkv.update({key: val})
-
+    # Get the atoms object from the calculator
     if atoms is None:
         atoms = self.get_atoms()
 
-    # TODO: NEB? should contain images?
-    # write out in non-append mode.
-    with connect(fname, append=False) as con:
-        con.write(atoms,
-                  data=fdata,
-                  **fkv)
+    # Get keys-value-pairs from directory name.
+    # Collect only path names with 'parser' in them.
+    if parser is not None:
+        path = [x for x in self.directory.split('/') if parser in x]
+
+        for key_value in path:
+            key = key_value.split(parser)[0]
+            value = key_value.split(parser)[1]
+
+            # Try to recognize characters and convert to
+            # specific data types for easy access later.
+            if '.' in value:
+                value = float(value)
+            elif value.isdigit():
+                value = int(value)
+            elif value == 'False':
+                value = bool(False)
+            elif value == 'True':
+                value = bool(True)
+            else:
+                value = str(value)
+
+            # Add directory keys
+            keys[key] = value
+
+    data.update({'path': self.directory,
+                 'version': self.version,
+                 'resort': self.resort,
+                 'parameters': self.parameters,
+                 'ppp_list': self.ppp_list})
+
+    # Add calculation time to key-value-pairs
+    try:
+        data['ctime'] = float(self.get_elapsed_time())
+    except(AttributeError, IOError):
+        data['ctime'] = float(0.0)
+
+    # Only relevant for writing single entry DB file.
+    if overwrite:
+
+        if os.path.exists(fname):
+            # Get any current data and keywords.
+            with connect(fname) as db:
+                try:
+                    dbatoms = db.get_atoms(id=1)
+                    data.update(dbatoms.data)
+                    keys.update(dbatoms.key_value_pairs)
+                except KeyError:
+                    pass
+            os.unlink(fname)
+
+        # Remove keys and data in del_info.
+        for k in del_info:
+            if k in keys:
+                del keys[k]
+            if k in data:
+                del data[k]
+
+    # Generate the db file
+    with connect(fname) as db:
+        db.write(atoms, key_value_pairs=keys, data=data)
 
 
 @monkeypatch_class(vasp.Vasp)
@@ -255,91 +303,3 @@ def write_potcar(self, fname=None):
             pfile = os.path.join(os.environ['VASP_PP_PATH'], pfile)
             with open(pfile) as f:
                 potfile.write(f.read())
-
-
-@monkeypatch_class(vasp.Vasp)
-def write2db(self,
-             dbname='data.db',
-             atoms=None,
-             parser=None,
-             overwrite=False,
-             keys={},
-             data={},
-             **kwargs):
-    """Compile vasp calculation information into a database
-
-    :param dbname: The name of the database to collect calculator
-                   information in.
-    :type dbname: str
-
-    :param atoms: An ASE atoms object to write to the database. If
-                  None, the atoms object will be the image attached
-                  to the calculator.
-    :type atoms: object
-
-    :param parser: A tool for generating key-value-pairs from the
-                   calculators directory path. Pairs will be
-                   separated by directory and key-values will be
-                   separated by parser. If None, no key-value-pair
-                   information will be collected.
-    :type parser: str
-
-    :param overwrite: Whether the database file should be overwritten
-                      or not.
-    :type overwrite: bool
-
-    :param keys: Additional key-value-pairs to include in the database.
-    :type keys: dict
-
-    :param data: Additional data to include in the database.
-    :type data: dict
-
-    """
-    from ase.db import connect
-
-    # Do not run if database already exists
-    if os.path.exists(dbname) and overwrite:
-        os.unlink(dbname)
-
-    # Get the atoms object from the calculator
-    if atoms is None:
-        atoms = self.get_atoms()
-
-    # Get keys-value-pairs from directory name.
-    # Collect only path names with 'parser' in them.
-    path = [x for x in self.directory.split('/') if parser in x]
-
-    for key_value in path:
-        key = key_value.split(parser)[0]
-        value = key_value.split(parser)[1]
-
-        # Try to recognize characters and convert to
-        # specific data types for easy access later.
-        if '.' in value:
-            value = float(value)
-        elif value.isdigit():
-            value = int(value)
-        elif value == 'False':
-            value = bool(False)
-        elif value == 'True':
-            value = bool(True)
-        else:
-            value = str(value)
-
-        # Add directory keys
-        keys[key] = value
-
-    data.update({'path': self.directory,
-                 'resort': self.resort,
-                 'parameters': self.parameters,
-                 'ppp_list': self.ppp_list})
-
-    # Add calculation time to key-value-pairs
-    try:
-        data['ctime'] = float(self.get_elapsed_time())
-    except(AttributeError, IOError):
-        data['ctime'] = float(0.0)
-
-    # Generate the db file
-    with connect(dbname) as db:
-        db.write(atoms=atoms, key_value_pairs=keys, data=data)
