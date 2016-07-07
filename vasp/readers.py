@@ -244,13 +244,13 @@ def read_atoms(self):
                                'vasprun.xml')
     if os.path.exists(vasprun_xml):
         atoms = ase.io.read(vasprun_xml)
-        atoms.set_tags(tags)
         atoms = atoms[resort]
+        atoms.set_tags(tags)
     elif os.path.exists(os.path.join(self.directory, 'POSCAR')):
         atoms = ase.io.read(os.path.join(self.directory,
                                          'POSCAR'))
-        atoms.set_tags(tags)
         atoms = atoms[resort]
+        atoms.set_tags(tags)
     return atoms
 
 
