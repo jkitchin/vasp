@@ -113,12 +113,6 @@ def write_db(self,
                  'parameters': self.parameters,
                  'ppp_list': self.ppp_list})
 
-    # Add calculation time to key-value-pairs
-    try:
-        data['ctime'] = float(self.get_elapsed_time())
-    except(AttributeError, IOError):
-        data['ctime'] = float(0.0)
-
     # Only relevant for writing single entry DB file.
     if overwrite:
 
@@ -129,7 +123,7 @@ def write_db(self,
                     dbatoms = db.get_atoms(id=1)
                     data.update(dbatoms.data)
                     keys.update(dbatoms.key_value_pairs)
-                except KeyError:
+                except AttributeError:
                     pass
             os.unlink(fname)
 
