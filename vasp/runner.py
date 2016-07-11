@@ -83,7 +83,7 @@ def calculate(self, atoms=None, properties=['energy'],
 
     # not in queue. Delete the jobid
     if self.get_db('jobid') is not None:
-        self.write_db(jobid=None)
+        self.write_db(del_info=['jobid'])
 
         # we should check for errors here.
         self.read_results()
@@ -208,7 +208,7 @@ runvasp.py     # this is the vasp command
     if out == '' or err != '':
         raise Exception('something went wrong in qsub:\n\n{0}'.format(err))
 
-    self.write_db(jobid=out.strip())
+    self.write_db(data={'jobid': out.strip()})
 
     raise VaspSubmitted('{} submitted: {}'.format(self.directory,
                                                   out.strip()))
