@@ -193,7 +193,12 @@ def get_ados(self, atom_index, orbital, spin=1, efermi=None):
                      'set[@comment="ion {}"]',
                      'set[@comment="spin {}"]',
                      "r"])
-    path = path.format(self.resort.index(atom_index) + 1, spin)
+
+    us = [k[1] for k in
+          sorted([[j, i]
+                  for i, j in enumerate(self.resort)])]
+
+    path = path.format(us.index(atom_index) + 1, spin)
     log.debug(path)
 
     results = [[float(x) for x in el.text.split()]

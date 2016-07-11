@@ -56,7 +56,7 @@ class Vasp(FileIOCalculator, object):
     $VASP_PP_PATH/potpaw_GGA
 
     """
-    version = "0.9.1"
+    version = "0.9.2"
     name = 'VASP'
     command = None
     debug = None
@@ -411,7 +411,8 @@ class Vasp(FileIOCalculator, object):
                 tatoms = con.get_atoms(id=1)
             self.write_db(tatoms, data={'resort': ns})
             print('Fixed resort issue in {}. '
-                  'You should not see this message again'.format(self.directory))
+                  'You should not see this message'
+                  ' again'.format(self.directory))
             self.resort = ns
             sort_indices = [k[1] for k in
                             sorted([[j, i]
@@ -423,7 +424,6 @@ class Vasp(FileIOCalculator, object):
                               else atoms[x[0]].symbol,
                               x[2]) for x in ppp]
 
-        #return atoms[sort_indices]
 
     def _repr_html_(self):
         """Output function for Jupyter notebooks."""
