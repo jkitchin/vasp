@@ -200,7 +200,7 @@ runvasp.py     # this is the vasp command
     if out == '' or err != '':
         raise Exception('something went wrong in qsub:\n\n{0}'.format(err))
 
-    self.write_db(jobid=out.strip())
+    self.write_db(data={'jobid': out.strip()})
 
     raise VaspSubmitted('{} submitted: {}'.format(self.directory,
                                                   out.strip()))
