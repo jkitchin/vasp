@@ -15,6 +15,18 @@ from ase.utils import basestring
 import warnings
 
 
+def algo(calc, val):
+    """ specify the electronic minimisation algorithm (as of VASP.4.5) (string)
+
+    http://cms.mpi.univie.ac.at/wiki/index.php/ALGO
+
+    """
+    assert isinstance(val, str)
+    assert val in ["Normal", "VeryFast", "Fast" , "Conjugate", "All", "Damped",
+                   "Subrot", "Eigenval", "None", "Nothing", "CHI", "GW0",
+                   "GW", "scGW0", "scGW"]
+
+
 def atoms(calc, val):
     """The Atoms object. (ase.atoms.Atoms or a list of them for an NEB)."""
     assert isinstance(val, ase.atoms.Atoms) or isinstance(val, list)
@@ -49,6 +61,22 @@ def encut(calc, val):
             or isinstance(val, float)),\
         ('encut should be an int or float.'
          ' You provided {} ({}).'.format(val, type(val)))
+
+
+def ialgo(calc, val):
+    """IALGO selects the algorithm used to optimize the orbitals. (int)
+
+    http://cms.mpi.univie.ac.at/wiki/index.php/IALGO
+
+    """
+    print('You are advised to use the algo key instead of ialgo.')
+    assert isinstance(val, int)
+    assert val in [-1, 2, 3, 4, 5, 6, 7, 8,
+                   15, 16, 17, 18,
+                   28,
+                   38,
+                   44, 45, 46, 47, 48,
+                   53, 54, 55, 56, 57, 58]
 
 
 def ibrion(calc, val):
@@ -212,6 +240,14 @@ def kpts_nintersections(calc, val):
     assert isinstance(val, int)
 
 
+def kspacing(calc, val):
+    """KSPACING determines the number of k-points if the KPOINTS file is not present (float).
+
+    http://cms.mpi.univie.ac.at/vasp/vasp/KSPACING_tag_KGAMMA_tag.html
+    """
+    assert(isinstance(val, float))
+
+
 def lcharg(calc, val):
     """LCHARG determines whether CHGCAR and CHG are written. (boolean)
 
@@ -230,6 +266,15 @@ def lorbit(calc, val):
     if val < 10:
         assert 'rwigs' in calc.parameters
     assert isinstance(val, int)
+
+
+def lreal(calc, val):
+    """LREAL determines whether the projection operators are evaluated in real-space or in reciprocal space. (boolean)
+
+    http://cms.mpi.univie.ac.at/wiki/index.php/LREAL
+
+    """
+    assert val in [True, False, 'On', 'Auto', 'O', 'A']
 
 
 def lwave(calc, val):
@@ -264,6 +309,15 @@ def nbands(calc, val):
     s = 'nbands = {} which is less than {}.'
     assert val > calc.get_valence_electrons() / 2, \
         s.format(val, calc.get_valence_electrons() / 2)
+
+
+def nelm(calc, val):
+    """NELM sets the maximum number of electronic SC (selfconsistency) steps which may be performed. (int)
+
+    http://cms.mpi.univie.ac.at/wiki/index.php/NELM
+    """
+
+    assert isinstance(val, int)
 
 
 def nupdown(calc, val):
