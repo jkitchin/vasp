@@ -257,7 +257,8 @@ def set_memory(self,
             FileIOCalculator.write_input(self, None, None, None)
             self.write_poscar()
             self.write_incar()
-            self.write_kpoints()
+            if 'kspacing' not in self.parameters:
+                self.write_kpoints()
             self.write_potcar()
 
             # Need to pass a function to Timer for delayed execution

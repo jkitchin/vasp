@@ -758,13 +758,14 @@ class Vasp(FileIOCalculator, object):
         Returns an integer for the state.
 
         """
-
+        # We do not check for KPOINTS here. That file may not exist if
+        # the kspacing incar parameter is used.
         base_input = [os.path.exists(os.path.join(self.directory, f))
-                      for f in ['INCAR', 'POSCAR', 'POTCAR', 'KPOINTS']]
+                       for f in ['INCAR', 'POSCAR', 'POTCAR']]
 
         # Check for NEB first.
         if (np.array([os.path.exists(os.path.join(self.directory, f))
-                      for f in ['INCAR', 'POTCAR', 'KPOINTS']]).all()
+                      for f in ['INCAR', 'POTCAR']]).all()
             and not os.path.exists(os.path.join(self.directory, 'POSCAR'))
             and os.path.isdir(os.path.join(self.directory, '00'))):
             return Vasp.NEB

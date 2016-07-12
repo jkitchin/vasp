@@ -22,7 +22,8 @@ def write_input(self, atoms=None, properties=None, system_changes=None):
     if 'spring' not in self.parameters:  # do not write if NEB
         self.write_poscar()
     self.write_incar()
-    self.write_kpoints()
+    if 'kspacing' not in self.parameters:
+        self.write_kpoints()
     self.write_potcar()
     self.write_db()
 
