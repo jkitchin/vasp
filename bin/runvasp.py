@@ -18,6 +18,7 @@ if 'PBS_NODEFILE' in os.environ:
         # supports MPI. It used to support multiprocessing, but it was
         # confusing, so I have taken it out for now.
         parcmd = 'mpirun -np %i %s' % (NPROCS, parallel_vasp)
+        print('Running "{}"'.format(parcmd))
         exitcode = os.system(parcmd)
 else:
     # probably running at cmd line, in serial.
