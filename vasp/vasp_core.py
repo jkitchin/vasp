@@ -409,7 +409,7 @@ class Vasp(FileIOCalculator, object):
             from ase.db import connect
             with connect(os.path.join(self.directory, 'DB.db')) as con:
                 tatoms = con.get_atoms(id=1)
-            self.write_db(tatoms, data={'resort': ns})
+            self.write_db(atoms=tatoms, data={'resort': ns})
             print('Fixed resort issue in {}. '
                   'You should not see this message'
                   ' again'.format(self.directory))
@@ -747,8 +747,8 @@ class Vasp(FileIOCalculator, object):
             # eliminate jobid on copying.
             newdb = os.path.join(newdir, 'DB.db')
             self.write_db(fname=newdb,
-                          path=os.path.abspath(newdir),
-                          jobid=None)
+                          data={'path': os.path.abspath(newdir),
+                                'jobid': None})
 
         self.__init__(newdir)
 
