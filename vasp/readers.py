@@ -378,7 +378,7 @@ def read_results(self):
         self.results['forces'] = forces[self.resort]
         self.results['stress'] = stress
         self.results['dipole'] = None
-        self.results['charges'] = np.array([0 for atom in self.atoms])
+        self.results['charges'] = np.array([None for atom in self.atoms])
 
         magnetic_moment = 0
         magnetic_moments = np.zeros(len(atoms))
