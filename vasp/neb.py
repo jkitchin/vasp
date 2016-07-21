@@ -256,13 +256,6 @@ def read_neb_calculator():
 
     log.debug('len(images) = %i', len(images))
 
-    f = open('00/energy')
-    calc.neb_initial_energy = float(f.readline().strip())
-    f.close()
-    f = open('{0}/energy'.format(str(len(images) - 1).zfill(2)))
-    calc.neb_final_energy = float(f.readline().strip())
-    f.close()
-
     calc.neb_images = images
     calc.neb_nimages = len(images) - 2
     calc.neb = True
