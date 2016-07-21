@@ -217,6 +217,10 @@ def read_neb_calculator():
     calc.read_incar()
     calc.read_kpoints()
 
+    if calc.in_queue():
+        return ([None for i in range(calc.int_params['images'] + 2)],
+                [None for i in range(calc.int_params['images'] + 2)])
+
     # set default functional
     # if both gga and xc are not specified
     if calc.string_params['gga'] is None:
