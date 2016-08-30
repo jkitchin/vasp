@@ -364,6 +364,7 @@ def read_results(self):
                                          'vasprun.xml'))
 
         energy = atoms.get_potential_energy()
+        free_energy = atoms.get_potential_energy(force_consistent=True)
         forces = atoms.get_forces()  # needs to be resorted
         stress = atoms.get_stress()
 
@@ -375,6 +376,7 @@ def read_results(self):
         self.atoms.set_calculator(self)
 
         self.results['energy'] = energy
+        self.results['free_energy'] = free_energy
         self.results['forces'] = forces[self.resort]
         self.results['stress'] = stress
         self.results['dipole'] = None

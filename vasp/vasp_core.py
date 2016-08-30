@@ -64,7 +64,7 @@ class Vasp(FileIOCalculator, object):
     # List of calculators created
     calculators = []
 
-    implemented_properties = ['energy', 'forces', 'stress',
+    implemented_properties = ['energy', 'free_energy', 'forces', 'stress',
                               'charges', 'dipole',
                               'magmom',  # the overall magnetic moment
                               'magmoms']  # the individual magnetic moments
