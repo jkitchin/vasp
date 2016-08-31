@@ -109,9 +109,12 @@ def get_neb(self, npi=1):
                                    '00/DB.db'),
                       self.neb[0])
 
+        # print(self.neb)
+        # import sys
+        # sys.exit()
         self.write_db(os.path.join(self.directory,
-                                   '0{}/DB.db'.format(len(self.neb) - 1)),
-                      self.neb[-1],)
+                                   '{:02}/DB.db'.format(len(self.neb) - 1)),
+                      self.neb[-1])
 
         VASPRC['queue.ppn'] = npi * (len(self.neb) - 2)
         log.debug('Running on %i cores', VASPRC['queue.ppn'])
