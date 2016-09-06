@@ -366,8 +366,12 @@ def read_results(self):
         energy = atoms.get_potential_energy()
         free_energy = atoms.get_potential_energy(force_consistent=True)
         forces = atoms.get_forces()  # needs to be resorted
-        stress = atoms.get_stress()
-
+        try:
+            stress = atoms.get_stress()
+        except NotImplementedError:
+            # e.g. ISIF=0, stress is not computed
+            stress = None
+            
         if self.atoms is None:
             self.sort_atoms(atoms)
 
