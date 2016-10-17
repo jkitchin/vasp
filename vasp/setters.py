@@ -36,9 +36,6 @@ def set(self, **kwargs):
     if 'ldau_luj' in kwargs:
         kwargs.update(self.set_ldau_luj_dict(kwargs['ldau_luj']))
 
-    if 'nsw' in kwargs:
-        kwargs.update(self.set_nsw_dict(kwargs['nsw']))
-
     original_params = self.parameters
 
     changed_parameters = FileIOCalculator.set(self, **kwargs)
@@ -150,26 +147,6 @@ def set_nbands(self, N=None, f=1.5):
     nelectrons = self.get_valence_electrons()
     nbands = int(np.ceil(nelectrons / 2.) + len(atoms) * f)
     self.set(nbands=nbands)
-
-
-@monkeypatch_class(vasp.Vasp)
-def set_nsw_dict(self, val):
-    """Set nsw parameter.
-
-    The default lwave behavior is False, but if nsw > 0 it makes sense
-    to turn it on in case of restarts.
-
-    """
-
-    d = {'nsw': val}
-
-    if val > 0:
-        d['lwave'] = True
-    elif val == 0:
-        d['lwave'] = False
-    else:
-        d['lwave'] = False
-    return d
 
 
 @monkeypatch_class(vasp.Vasp)
