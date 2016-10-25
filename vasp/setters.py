@@ -69,8 +69,7 @@ def set_ispin_dict(self, val):
         d = {'ispin': 1}
         if 'magmom' in self.parameters:
             d['magmom'] = None
-        if 'lorbit' in self.parameters:
-            d['lorbit'] = None
+
         return d
     elif val == 2:
         d = {'ispin': 2}
