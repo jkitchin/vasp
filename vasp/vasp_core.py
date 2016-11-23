@@ -863,7 +863,7 @@ class Vasp(FileIOCalculator, object):
             catoms = atoms.copy()
             catoms = catoms[self.resort]
             catoms.set_calculator(SPC(catoms,
-                                      energy=atoms.get_potential_energy()
+                                      energy=atoms.get_potential_energy(),
                                       forces=atoms.get_forces()[self.resort]))
             LOA += [catoms]
         return LOA
