@@ -345,9 +345,8 @@ class Vasp(FileIOCalculator, object):
 
         # First the numeric index setups
         for setup in [x for x in setups if isinstance(x[0], int)]:
-            ppp += [[setup[0],
-                     'potpaw_{}/{}{}/POTCAR'.format(pp, atoms[setup[0]].symbol,
-                                                    setup[1]),
+            ppp += [[setup[1],
+                     'potpaw_{}/{}/POTCAR'.format(pp, setup[1]),
                      1]]
             sort_indices += [setup[0]]
 
@@ -367,8 +366,7 @@ class Vasp(FileIOCalculator, object):
         # First get the chemical symbols that remain
         symbols = []
         for atom in atoms or []:
-            if (atom.symbol not in symbols and
-                atom.symbol not in [x[0] for x in ppp]):
+            if atom.symbol not in symbols:
                 symbols += [atom.symbol]
 
         for symbol in symbols:
