@@ -685,39 +685,6 @@ class Vasp(FileIOCalculator, object):
                 if 'Voluntary context switches:' in lines[-1]:
                     return False
 
-    def calculate(self, atoms=None, properties=['energy'],
-                  system_changes=None):
-        """Runs a calculation, only if necessary."""
-        if self.calculation_required(atoms, properties):
-
-            # The subclass implementation should first call this
-            # implementation to set the atoms attribute.
-            Calculator.calculate(self, atoms, properties, system_changes)
-
-            self.write_input(atoms, properties, system_changes)
-
-            if self.command is None:
-                raise RuntimeError('Please set $%s environment variable ' %
-                                   ('ASE_' + self.name.upper() + '_COMMAND') +
-                                   'or supply the command keyword')
-
-            olddir = os.getcwd()
-            try:
-                os.chdir(self.directory)
-                errorcode = subprocess.call(self.command,
-                                            stdout=subprocess.PIPE,
-                                            shell=True)
-
-            finally:
-                os.chdir(olddir)
-
-            if errorcode:
-                s = '{} returned an error: {}'
-                raise RuntimeError(s.format(self.name, errorcode))
-
-        # This sets self.results, and updates the atoms
-        self.read_results()
-
     def clone(self, newdir):
         """Copy the calculation directory to newdir and set label to
         newdir.
