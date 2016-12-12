@@ -422,7 +422,6 @@ class Vasp(FileIOCalculator, object):
                               else atoms[x[0]].symbol,
                               x[2]) for x in ppp]
 
-
     def _repr_html_(self):
         """Output function for Jupyter notebooks."""
         from ase.io import write
