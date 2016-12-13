@@ -40,6 +40,11 @@ def set(self, **kwargs):
 
     changed_parameters = FileIOCalculator.set(self, **kwargs)
 
+    # If we are implementing special setups, the ppp_list needs
+    # to be updated so the POSCAR and POTCAR can be written correctly.
+    if 'setups' in changed_parameters.keys():
+        self.sort_atoms(self.atoms)
+
     # we don't consider None values to be changed if the keyword was
     # not originally in the parameters.
     cp = {k: v for k, v in changed_parameters.iteritems()

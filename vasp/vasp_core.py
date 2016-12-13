@@ -345,9 +345,8 @@ class Vasp(FileIOCalculator, object):
 
         # First the numeric index setups
         for setup in [x for x in setups if isinstance(x[0], int)]:
-            ppp += [[setup[0],
-                     'potpaw_{}/{}{}/POTCAR'.format(pp, atoms[setup[0]].symbol,
-                                                    setup[1]),
+            ppp += [[setup[1],
+                     'potpaw_{}/{}/POTCAR'.format(pp, setup[1]),
                      1]]
             sort_indices += [setup[0]]
 
@@ -367,8 +366,7 @@ class Vasp(FileIOCalculator, object):
         # First get the chemical symbols that remain
         symbols = []
         for atom in atoms or []:
-            if (atom.symbol not in symbols and
-                atom.symbol not in [x[0] for x in ppp]):
+            if atom.symbol not in symbols:
                 symbols += [atom.symbol]
 
         for symbol in symbols:
@@ -423,7 +421,6 @@ class Vasp(FileIOCalculator, object):
         self.symbol_count = [(x[0] if isinstance(x[0], str)
                               else atoms[x[0]].symbol,
                               x[2]) for x in ppp]
-
 
     def _repr_html_(self):
         """Output function for Jupyter notebooks."""
@@ -687,39 +684,6 @@ class Vasp(FileIOCalculator, object):
                 lines = f.readlines()
                 if 'Voluntary context switches:' in lines[-1]:
                     return False
-
-    def calculate(self, atoms=None, properties=['energy'],
-                  system_changes=None):
-        """Runs a calculation, only if necessary."""
-        if self.calculation_required(atoms, properties):
-
-            # The subclass implementation should first call this
-            # implementation to set the atoms attribute.
-            Calculator.calculate(self, atoms, properties, system_changes)
-
-            self.write_input(atoms, properties, system_changes)
-
-            if self.command is None:
-                raise RuntimeError('Please set $%s environment variable ' %
-                                   ('ASE_' + self.name.upper() + '_COMMAND') +
-                                   'or supply the command keyword')
-
-            olddir = os.getcwd()
-            try:
-                os.chdir(self.directory)
-                errorcode = subprocess.call(self.command,
-                                            stdout=subprocess.PIPE,
-                                            shell=True)
-
-            finally:
-                os.chdir(olddir)
-
-            if errorcode:
-                s = '{} returned an error: {}'
-                raise RuntimeError(s.format(self.name, errorcode))
-
-        # This sets self.results, and updates the atoms
-        self.read_results()
 
     def clone(self, newdir):
         """Copy the calculation directory to newdir and set label to
