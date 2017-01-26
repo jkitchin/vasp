@@ -147,7 +147,8 @@ def _get_calculated_charges(self,
             if displacement is not None:
                 # check if the atom positions match
                 xyz = np.array([float(w) for w in words[1:4]])
-                assert np.linalg.norm(positions[int(words[0]) - 1] - xyz) < displacement
+                assert (np.linalg.norm(positions[int(words[0]) - 1] - xyz)
+                        < displacement)
         i += 1
 
     if f_open:
