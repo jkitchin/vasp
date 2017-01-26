@@ -129,7 +129,7 @@ def get_number_of_spins(self):
 
     """
     if 'ispin' in self.parameters:
-        return 2
+        return self.parameters['ispin']
     else:
         return 1
 
@@ -596,3 +596,20 @@ def get_composition(self, basis=None):
             return 0.0
     else:
         return S
+
+
+@monkeypatch_class(vasp.Vasp)
+def get_charges(self, atoms=None):
+    '''
+    Returns a list of cached charges from a previous
+    call to bader(). Useful for storing the charges to
+    a database.
+    '''
+
+    if atoms is None:
+        atoms = self.get_atoms()
+
+    if hasattr(self, '_calculated_charges'):
+        return self._calculated_charges
+    else:
+        return None
