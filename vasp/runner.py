@@ -183,10 +183,10 @@ runvasp.py     # this is the vasp command
     cmdlist += ['-o', VASPDIR]
     cmdlist += [option for option in VASPRC['queue.options'].split()]
     cmdlist += ['-N', '{0}'.format(jobname),
-                '-l walltime={0}'.format(VASPRC['queue.walltime']),
-                '-l nodes={0}:ppn={1}'.format(VASPRC['queue.nodes'],
+                '-l', 'walltime={0}'.format(VASPRC['queue.walltime']),
+                '-l', 'nodes={0}:ppn={1}'.format(VASPRC['queue.nodes'],
                                               VASPRC['queue.ppn']),
-                '-l mem={0}'.format(VASPRC['queue.mem'])]
+                '-l', 'mem={0}'.format(VASPRC['queue.mem'])]
     log.debug('{0}'.format(' '.join(cmdlist)))
     p = subprocess.Popen(cmdlist,
                          stdin=subprocess.PIPE,

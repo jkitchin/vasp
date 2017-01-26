@@ -32,6 +32,14 @@ def atoms(calc, val):
     assert isinstance(val, ase.atoms.Atoms) or isinstance(val, list)
 
 
+def eb_k(calc, val):
+    """The relative permittivity of the solvent used in the VASPsol code. (float)
+
+    https://github.com/henniggroup/VASPsol/blob/master/docs/USAGE.md
+    """
+    assert isinstance(val, float)
+
+
 def ediff(calc, val):
     """EDIFF specifies the global break condition for the electronic loop. (float)
 
@@ -164,6 +172,23 @@ def isym(calc, val):
     assert val in [-1, 0, 1, 2, 3]
 
 
+def ivdw(calc, val):
+    """ IVDW determines the approximate vdW correction methods used. (int)
+
+    0    - no correction
+    1|10 - DFT-D2 method of Grimme (available as of VASP.5.2.11)
+    11   - zero damping DFT-D3 method of Grimme (available as of VASP.5.3.4)
+    12   - DFT-D3 method with Becke-Jonson damping (available as of VASP.5.3.4)
+    2    - Tkatchenko-Scheffler method (available as of VASP.5.3.3)
+    21   - Tkatchenko-Scheffler method with iterative Hirshfeld partitioning (available as of VASP.5.3.5)
+    202  - Many-body dispersion energy method (MBD@rSC) (available as of VASP.5.4.1)
+    4    - dDsC dispersion correction method (available as of VASP.5.4.1)
+
+    http://cms.mpi.univie.ac.at/vasp/vasp/IVDW_approximate_vdW_correction_methods.html
+    """
+    assert val in [0, 1, 10, 11, 12, 2, 21, 202, 4]
+
+
 def ldau(calc, val):
     """ LDAU switches on the L(S)DA+U. (bool)
 
@@ -268,6 +293,14 @@ def lorbit(calc, val):
     assert isinstance(val, int)
 
 
+def lsol(calc, val):
+    """LSOL determines whether the VASPsol is activated. (boolean)
+
+    https://github.com/henniggroup/VASPsol/blob/master/docs/USAGE.md
+    """
+    assert val in [True, False]
+
+
 def lreal(calc, val):
     """LREAL determines whether the projection operators are evaluated in real-space or in reciprocal space. (boolean)
 
@@ -298,6 +331,15 @@ def magmom(calc, val):
     assert len(val) == len(calc.atoms)
 
 
+def maxmix(calc, val):
+    """MAXMIX specifies the maximum number steps stored in Broyden mixer (IMIX=4). (int)
+
+    http://cms.mpi.univie.ac.at/wiki/index.php/MAXMIX
+    """
+
+    assert isinstance(val, int)
+
+
 def nbands(calc, val):
     """NBANDS determines the actual number of bands in the calculation. (int)
 
@@ -309,6 +351,14 @@ def nbands(calc, val):
     s = 'nbands = {} which is less than {}.'
     assert val > calc.get_valence_electrons() / 2, \
         s.format(val, calc.get_valence_electrons() / 2)
+
+
+def ncore(calc, val):
+    """NCORE determines the number of compute cores that work on an individual orbital. (int)
+
+    http://cms.mpi.univie.ac.at/wiki/index.php/NCORE
+    """
+    assert isinstance(val, int)
 
 
 def nelm(calc, val):
@@ -340,6 +390,14 @@ def nsw(calc, val):
 
     """
     assert isinstance(val, int)
+
+
+def potim(calc, val):
+    """POTIM sets the time step (MD) or step width scaling (ionic relaxations). (float)
+
+    http://cms.mpi.univie.ac.at/wiki/index.php/POTIM
+    """
+    assert isinstance(val, float)
 
 
 def pp(calc, val):
