@@ -685,7 +685,7 @@ class Vasp(FileIOCalculator, object):
                 if 'Voluntary context switches:' in lines[-1]:
                     return False
 
-    def clone(self, newdir):
+    def clone(self, newdir, set_label=True):
         """Copy the calculation directory to newdir and set label to
         newdir.
 
@@ -713,8 +713,8 @@ class Vasp(FileIOCalculator, object):
             self.write_db(fname=newdb,
                           data={'path': os.path.abspath(newdir),
                                 'jobid': None})
-
-        self.__init__(newdir)
+        if set_label:
+            self.__init__(newdir)
 
     def get_state(self):
         """Determine calculation state based on directory contents.
