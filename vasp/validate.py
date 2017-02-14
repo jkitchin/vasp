@@ -71,6 +71,17 @@ def encut(calc, val):
          ' You provided {} ({}).'.format(val, type(val)))
 
 
+def gamma(calc, val):
+    """ GAMMA sets the k-points to be gamma centered. Possible values include True
+    or list of 3 values representing the shift from the gamma point.
+
+    k-points are Monkhorst-Packed by default
+    """
+    assert isinstance(val, (list, bool))
+    if isinstance(val, list):
+        assert len(val) == 3
+
+
 def ialgo(calc, val):
     """IALGO selects the algorithm used to optimize the orbitals. (int)
 
