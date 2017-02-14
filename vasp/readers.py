@@ -135,10 +135,7 @@ def read_kpoints(self, fname=None):
                                       'for restart.')
         if ktype == 'g':
             line5 = np.array([float(lines[4].split()[i]) for i in range(3)])
-            if (line5 == np.array([0.0, 0.0, 0.0])).all():
-                params['gamma'] = True
-            else:
-                params['gamma'] = line5
+            params['gamma'] = list(line5)
 
         kpts = [int(lines[3].split()[i]) for i in range(3)]
         params['kpts'] = kpts

@@ -228,9 +228,6 @@ def write_kpoints(self, fname=None):
     if NKPTS == 0 and not p.get('gamma', None):
         MODE = 'm'  # automatic monkhorst-pack
     elif NKPTS == 0 and p.get('gamma', None):
-        if (p.get('gamma') == np.array([0.0, 0.0, 0.0])).all():
-            # Need to set the parameter to TRUE in this case
-            
         MODE = 'g'  # automatic gamma monkhorst pack
     # we did not trigger automatic kpoints
     elif p.get('kpts_nintersections', None) is not None:
@@ -279,7 +276,7 @@ def write_kpoints(self, fname=None):
 
         # line 5 - only if we are in automatic mode
         if MODE in ['m', 'g']:
-            if isinstance(p.get('gamma', None), list):
+            if p.get('gamma', None):
                 f.write('{0} {1} {2}\n'.format(*p['gamma']))
             else:
                 f.write('0.0 0.0 0.0\n')

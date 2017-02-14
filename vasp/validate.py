@@ -72,14 +72,13 @@ def encut(calc, val):
 
 
 def gamma(calc, val):
-    """ GAMMA sets the k-points to be gamma centered. Possible values include True
-    or list of 3 values representing the shift from the gamma point.
+    """ GAMMA sets the k-points to be gamma centered.
+    Value must be a list of length 3 representing the shift from the gamma point.
 
-    k-points are Monkhorst-Packed by default
+    For no shift, use [0, 0, 0]
     """
-    assert isinstance(val, (list, bool))
-    if isinstance(val, list):
-        assert len(val) == 3
+    assert isinstance(val, list)
+    assert len(val) == 3
 
 
 def ialgo(calc, val):
