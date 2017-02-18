@@ -7,20 +7,93 @@ from monkeypatch import monkeypatch_class
 
 
 @monkeypatch_class(vasp.Vasp)
-def attach_charges(self, fileobj=None, displacement=1e-4):
-    """Attach the charges from the fileobj to the atoms on the calculator.
+def chgsum(self):
+    """Uses the chgsum.pl utility to sum over the AECCAR0 and AECCAR2 files."""
+    cwd = os.getcwd()
+    try:
+        os.chdir(self.directory)
+        cmdlist = ['chgsum.pl',
+                   'AECCAR0',
+                   'AECCAR2']
+        p = Popen(cmdlist, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        out, err = p.communicate()
+        if out == '' or err != '':
+            raise Exception('Cannot perform chgsum:\n\n{0}'.format(err))
+    finally:
+        os.chdir(cwd)
 
+
+@monkeypatch_class(vasp.Vasp)
+def bader(self, cmd=None, ref=False, verbose=False, overwrite=False):
+    """Performs bader analysis for a calculation.
+    Follows defaults unless full shell command is specified
+    Does not overwrite existing files if overwrite=False
+    If ref = True, tries to reference the charge density to
+    the sum of AECCAR0 and AECCAR2
+    Requires the bader.pl (and chgsum.pl) script to be in the system PATH
+    """
+    cwd = os.getcwd()
+    try:
+        os.chdir(self.directory)
+
+        if 'ACF.dat' in os.listdir(".") and not overwrite:
+            self._get_calculated_charges()
+            return
+
+        if cmd is None:
+            if ref:
+                self.chgsum()
+                cmdlist = ['bader',
+                           'CHGCAR',
+                           '-ref',
+                           'CHGCAR_sum']
+            else:
+                cmdlist = ['bader', 'CHGCAR']
+        elif type(cmd) is str:
+            cmdlist = cmd.split()
+        elif type(cmd) is list:
+            cmdlist = cmd
+
+        p = Popen(cmdlist, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        out, err = p.communicate()
+        if out == '' or err != '':
+            raise Exception('Cannot perform Bader:\n\n{0}'.format(err))
+        elif verbose:
+            print('Bader completed for {0}'.format(self.directory))
+
+        # Now store the calculated charges
+        self._get_calculated_charges()
+
+    finally:
+        os.chdir(cwd)
+
+
+@monkeypatch_class(vasp.Vasp)
+def _get_calculated_charges(self,
+                            atoms=None,
+                            fileobj='ACF.dat',
+                            displacement=1e-4):
+
+    """Calculate the charges from the fileobj.
     This is a modified version of the attach_charges function in
     ase.io.bader to work better with VASP.
     Does not require the atom positions to be in Bohr and references
     the charge to the ZVAL in the POTCAR
     """
+
     if fileobj is None:
         fileobj = os.path.join(self.directory, 'ACF.dat')
 
     if isinstance(fileobj, str):
-        fileobj = open(fileobj)
-        f_open = True
+            fileobj = open(fileobj)
+            f_open = True
+
+    if atoms is None:
+        atoms = self.get_atoms()
+
+    # Get the sorting and resorting lists
+    sort = self.sort
+    resort = self.resort
 
     # First get a dictionary of ZVALS from the pseudopotentials
     LOP = self.get_pseudopotentials()
@@ -28,14 +101,13 @@ def attach_charges(self, fileobj=None, displacement=1e-4):
 
     zval = {}
     for sym, ppath, hash in LOP:
-        fullpath = os.path.join(ppp, ppath)
+        fullpath = ppp + ppath
         z = get_ZVAL(fullpath)
         zval[sym] = z
 
-    atoms = self.atoms
     # Get sorted symbols and positions according to POSCAR and ACF.dat
-    symbols = np.array(atoms.get_chemical_symbols())[self.resort]
-    positions = atoms.get_positions()[self.resort]
+    symbols = np.array(atoms.get_chemical_symbols())[sort]
+    positions = atoms.get_positions()[sort]
 
     charges = []
     sep = '---------------'
@@ -83,66 +155,5 @@ def attach_charges(self, fileobj=None, displacement=1e-4):
         fileobj.close()
 
     # Now attach the resorted charges to the atom
-    charges = np.array(charges)[self.resort]
-    for atom in self.atoms:
-        atom.charge = charges[atom.index]
-
-
-@monkeypatch_class(vasp.Vasp)
-def chgsum(self):
-    """Uses the chgsum.pl utility to sum over the AECCAR0 and AECCAR2 files."""
-    cwd = os.getcwd()
-    try:
-        os.chdir(self.directory)
-        cmdlist = ['chgsum.pl',
-                   'AECCAR0',
-                   'AECCAR2']
-        p = Popen(cmdlist, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-        out, err = p.communicate()
-        if out == '' or err != '':
-            raise Exception('Cannot perform chgsum:\n\n{0}'.format(err))
-    finally:
-        os.chdir(cwd)
-
-
-@monkeypatch_class(vasp.Vasp)
-def bader(self, cmd=None, ref=False, verbose=False, overwrite=False):
-    """Performs bader analysis for a calculation.
-    Follows defaults unless full shell command is specified
-    Does not overwrite existing files if overwrite=False
-    If ref = True, tries to reference the charge density to
-    the sum of AECCAR0 and AECCAR2
-    Requires the bader.pl (and chgsum.pl) script to be in the system PATH
-    """
-    cwd = os.getcwd()
-    try:
-        os.chdir(self.directory)
-
-        if 'ACF.dat' in os.listdir(".") and not overwrite:
-            self.attach_charges()
-            return
-
-        if cmd is None:
-            if ref:
-                self.chgsum()
-                cmdlist = ['bader',
-                           'CHGCAR',
-                           '-ref',
-                           'CHGCAR_sum']
-            else:
-                cmdlist = ['bader', 'CHGCAR']
-        elif type(cmd) is str:
-            cmdlist = cmd.split()
-        elif type(cmd) is list:
-            cmdlist = cmd
-
-        p = Popen(cmdlist, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-        out, err = p.communicate()
-        if out == '' or err != '':
-            raise Exception('Cannot perform Bader:\n\n{0}'.format(err))
-        elif verbose:
-            print('Bader completed for {0}'.format(self.vaspdir))
-
-        self.attach_charges('ACF.dat')
-    finally:
-        os.chdir(cwd)
+    charges = np.array(charges)[resort]
+    self._calculated_charges = charges
