@@ -784,6 +784,41 @@ class Vasp(FileIOCalculator, object):
         return atoms.get_potential_energy()
 
     @property
+    def energy(self):
+        """Returns the potential energy"""
+        return self.potential_energy
+
+    @property
+    def free_energy(self):
+        self.update()
+        atoms = self.get_atoms()
+        return atoms.get_potential_energy(force_consistent=True)
+
+    @property
+    def magmom(self):
+        self.update()
+        atoms = self.get_atoms()
+        return atoms.get_magnetic_moment()
+
+    @property
+    def magmoms(self):
+        self.update()
+        atoms = self.get_atoms()
+        return atoms.get_magnetic_moments()
+
+    @property
+    def charge(self):
+        self.update()
+        atoms = self.get_atoms()
+        return sum(atoms.get_charges())
+
+    @property
+    def charges(self):
+        self.update()
+        atoms = self.get_atoms()
+        return atoms.get_charges()
+
+    @property
     def forces(self, apply_constraints=False):
         """Property to return forces."""
         self.update()
