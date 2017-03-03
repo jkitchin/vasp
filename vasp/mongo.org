@@ -1,0 +1,127 @@
+#+title: Examples of a Mongo database for ase calculations
+
+* Overview
+We assume a Mongo server is running on localhost at port 27017, with an "ase" database and "atoms" collection by default. You can set all of these with args to MongoDatabase().
+
+Then, you create atoms, and write them to the database. You can write arbitrary (anything that can be serialized to json) key-value pairs to the database.
+
+
+* A simple write
+
+The write function is a convenience to avoid rewriting the insert code. It makes some assumptions about the calculator, namely that it has attribute properties for all implemented properties. That is true in vaspy, but not true for other calculators.
+
+#+BEGIN_SRC python :results output org drawer
+from mongo import *
+
+db = MongoDatabase()
+
+from ase import Atoms
+from ase.calculators.emt import EMT
+h2 = Atoms('H2', [(0, 0, 0), (0, 0, 0.7)])
+h2.calc = EMT()
+
+id = db.write(h2, relaxed=False, tags=['first', 'second'])
+
+print(id)
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+Failed to add energy.
+Failed to add forces.
+58b9d3eb4c114fce76e7c209
+:END:
+
+* find a tagged entry
+
+There is nothing special written to facilitate searches. We just use pymongo directly to query. The find function here is the pymongo collection.find function and all the arguments get passed to it.
+
+#+BEGIN_SRC python :results output org drawer
+from mongo import *
+
+db = MongoDatabase()
+
+print(list(db.find({'tags': 'first'}, limit=1)))
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+[{'mass': 2.016, 'fmax': 9.802896414149222, 'atoms': [{'index': 0, 'magmom': 0.0, 'position': [0.0, 0.0, 0.0], 'charge': 0.0, 'momentum': [0.0, 0.0, 0.0], 'tag': 0, 'symbol': 'H'}, {'index': 1, 'magmom': 0.0, 'position': [0.0, 0.0, 0.7], 'charge': 0.0, 'momentum': [0.0, 0.0, 0.0], 'tag': 0, 'symbol': 'H'}], 'tags': ['first', 'second'], 'H': 2, 'cell': [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], 'info': {}, 'mtime': datetime.datetime(2017, 3, 3, 20, 3, 0, 230000), 'pbc': [False, False, False], 'constraints': [], 'user': 'jkitchin', 'calc': {}, 'ctime': datetime.datetime(2017, 3, 3, 20, 3, 0, 230000), '_id': ObjectId('58b9cbf44c114fcc3a1dce3d'), 'relaxed': False}]
+:END:
+
+* TODO Find H2 and get the atoms
+
+There is a convenience function for getting an Atoms object from the database. We still need to implement the calculator retrieval. The get_atoms function returns a generator.
+
+#+BEGIN_SRC python :results output org drawer
+from mongo import *
+
+db = MongoDatabase()
+
+for atoms in db.get_atoms({'H': 2}, limit=1): print(atoms)
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+Atoms(symbols='H2', pbc=False, charges=..., magmoms=..., momenta=..., tags=...)
+:END:
+
+* bond lengths
+
+Say we want to filter by a calculable property like bond length. First, we write a bunch of entries.
+#+BEGIN_SRC python :results output org drawer
+from mongo import *
+
+db = MongoDatabase()
+
+from ase import Atoms
+from ase.calculators.emt import EMT
+
+for d in np.linspace(0.5, 0.9, 10):
+    h2 = Atoms('H2', [(0, 0, 0), (0, 0, d)])
+    h2.calc = EMT()
+
+    db.write(h2, relaxed=False, tags=['first', 'second'])
+#+END_SRC
+
+
+
+Now we can query them to find bond lengths say between 0.6 and 0.8 ang. This query requires a calculation for each match. We do that in python. We restrict this to two atoms, i.e. H2 molecules by specifying natoms=2 also.
+
+#+BEGIN_SRC python :results output org drawer
+from mongo import *
+
+db = MongoDatabase()
+
+hits = [atoms for atoms in db.get_atoms({'H': 2, 'natoms': 2}) if atoms.get_distance(0, 1) >= 0.6 and atoms.get_distance(0, 1) <= 0.8 ]
+
+for hit in hits: print(hit.get_distance(0, 1))
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+0.633333333333
+0.677777777778
+0.722222222222
+0.766666666667
+:END:
+
+* Find an atom
+
+Can we find a H atom at (0, 0, 0.7)? Yes.
+
+#+BEGIN_SRC python :results output org drawer
+from mongo import *
+
+db = MongoDatabase()
+
+c = db.find({'atoms.symbol': 'H',
+             'atoms.position': [0.0, 0.0, 0.7]})
+
+for row in c: print(row)
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+{'fmax': 9.802896414149222, 'H': 2, 'pbc': [False, False, False], 'info': {}, 'tags': ['first', 'second'], '_id': ObjectId('58b9d3eb4c114fce76e7c209'), 'user': 'jkitchin', 'natoms': 2, 'mtime': datetime.datetime(2017, 3, 3, 20, 36, 59, 542000), 'relaxed': False, 'mass': 2.016, 'atoms': [{'symbol': 'H', 'tag': 0, 'momentum': [0.0, 0.0, 0.0], 'magmom': 0.0, 'position': [0.0, 0.0, 0.0], 'charge': 0.0, 'index': 0}, {'symbol': 'H', 'tag': 0, 'momentum': [0.0, 0.0, 0.0], 'magmom': 0.0, 'position': [0.0, 0.0, 0.7], 'charge': 0.0, 'index': 1}], 'calc': {}, 'cell': [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], 'constraints': [], 'ctime': datetime.datetime(2017, 3, 3, 20, 36, 59, 542000)}
+:END:
