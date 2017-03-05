@@ -204,6 +204,8 @@ class Vasp(FileIOCalculator, object):
                       'O':{'L':-1, 'U':0.0, 'J':0.0}},
 
         """
+        self.kwargs = kwargs
+
         # set first so self.directory is right
         self.set_label(label)
         self.debug = debug
@@ -1026,6 +1028,17 @@ class Vasp(FileIOCalculator, object):
                 time.sleep(poll_interval)
 
     def todict(self):
+        """Convert calculator to a dictionary. 
+
+        This is most useful for serializing or adding to a Mongo database. This
+        does not include the atoms object. It can fail on self.kwargs, if that
+        contains non-serializable data, usually those are np.arrays.
+
+        This should store the user, path, a list of directories in the path, the
+        kwargs, parameters, pseudopotentials, calculated properties, and some
+        convenience properties.
+
+        """
         from collections import OrderedDict
 
         import os
@@ -1035,19 +1048,20 @@ class Vasp(FileIOCalculator, object):
         while path != '/':
             if folder != '':
                 folders.append(folder)
-    
+
             path, folder = os.path.split(path)
 
         d = OrderedDict(name='Vasp',
                         path=self.directory,
-                        pathtags=folders)
+                        pathtags=folders,
+                        kwargs=self.kwargs)
         d.update(self.parameters)
         d.update(potcars=self.get_pseudopotentials(),)
         for prop in self.implemented_properties:
             val = getattr(self, prop)
             # we cannot serialize arrays to json, so we make them lists here.
             # It is not enough to do list(val), that will make a list of
-            # arrays for forces. 
+            # arrays for forces.
             if isinstance(val, np.ndarray):
                 val = val.tolist()
             d[prop] = val
@@ -1055,4 +1069,6 @@ class Vasp(FileIOCalculator, object):
         d['fmax'] = max(np.abs(self.forces).flatten())
         d['smax'] = max(np.abs(self.stress).flatten())
         d['elapsed-time'] = self.get_elapsed_time()
+        d['memory-used'] = self.get_memory()
+        d['nionic-steps'] = self.get_number_of_ionic_steps()
         return d
