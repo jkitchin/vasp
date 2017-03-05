@@ -11,7 +11,7 @@ import os
 import numpy as np
 from collections import OrderedDict
 import datetime
-
+import pickle
 from pymongo import MongoClient
 from ase import Atoms, Atom
 
@@ -53,26 +53,10 @@ class MongoDatabase(MongoClient):
                                 'magmom': atom.magmom} for atom in atoms],
                         pbc=atoms.pbc.tolist(),
                         info=atoms.info,
-                        constraints=atoms.constraints,
+                        constraints=pickle.dumps(atoms.constraints),
+                        # I would like this, but todict leaves arrays in which do not convert to json.
+                        # constraints=[c.todict() for c in atoms.constraints],
                         cell=atoms.cell.tolist())
-
-        # Calculated values
-        if atoms.get_calculator() is not None:
-            # Need some calculator data
-            calc = atoms.get_calculator()
-            d['calc'] = calc.todict()
-
-            for property in calc.implemented_properties:
-                try:
-                    d.update({property: getattr(calc, property)})
-                except:
-                    print('Failed to add {}.'.format(property))
-
-            if 'forces' in calc.implemented_properties:
-                d['fmax'] = max(np.abs(atoms.get_forces().flatten()))
-
-            if 'stress' in calc.implemented_properties:
-                d['smax'] = max(np.abs(atoms.get_stress().flatten()))
 
         # Convenience values
         cell = atoms.get_cell()
@@ -87,6 +71,12 @@ class MongoDatabase(MongoClient):
             d[sym] = syms.count(sym)
 
         d['natoms'] = len(atoms)
+
+        # Calculated values
+        if atoms.get_calculator() is not None:
+            # Need some calculator data
+            calc = atoms.get_calculator()
+            d['calc'] = calc.todict()
 
         # The rest of the data
         d.update(kwargs)
@@ -105,12 +95,12 @@ class MongoDatabase(MongoClient):
         cursor = self.collection.find(*args, **kwargs)
         for doc in cursor:
             atoms = Atoms([Atom(atom['symbol'],
-                              atom['position'],
-                              tag=atom['tag'],
-                              momentum=atom['momentum'],
-                              magmom=atom['magmom'],
-                              charge=atom['charge']) for atom in doc['atoms']],
-                        cell=doc['cell'])
+                                atom['position'],
+                                tag=atom['tag'],
+                                momentum=atom['momentum'],
+                                magmom=atom['magmom'],
+                                charge=atom['charge']) for atom in doc['atoms']],
+                          cell=doc['cell'])
 
             # TODO the calculator
             yield atoms
