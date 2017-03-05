@@ -819,6 +819,12 @@ class Vasp(FileIOCalculator, object):
         return atoms.get_charges()
 
     @property
+    def dipole(self):
+        self.update()
+        atoms = self.get_atoms()
+        return atoms.get_dipole_moment()
+
+    @property
     def forces(self, apply_constraints=False):
         """Property to return forces."""
         self.update()
@@ -1018,3 +1024,35 @@ class Vasp(FileIOCalculator, object):
         else:
             while not self.ready:
                 time.sleep(poll_interval)
+
+    def todict(self):
+        from collections import OrderedDict
+
+        import os
+
+        path, folder = self.directory, ''
+        folders = []
+        while path != '/':
+            if folder != '':
+                folders.append(folder)
+    
+            path, folder = os.path.split(path)
+
+        d = OrderedDict(name='Vasp',
+                        path=self.directory,
+                        pathtags=folders)
+        d.update(self.parameters)
+        d.update(potcars=self.get_pseudopotentials(),)
+        for prop in self.implemented_properties:
+            val = getattr(self, prop)
+            # we cannot serialize arrays to json, so we make them lists here.
+            # It is not enough to do list(val), that will make a list of
+            # arrays for forces. 
+            if isinstance(val, np.ndarray):
+                val = val.tolist()
+            d[prop] = val
+
+        d['fmax'] = max(np.abs(self.forces).flatten())
+        d['smax'] = max(np.abs(self.stress).flatten())
+        d['elapsed-time'] = self.get_elapsed_time()
+        return d
