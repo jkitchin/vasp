@@ -367,8 +367,8 @@ def read_results(self):
             stress = atoms.get_stress()
         except NotImplementedError:
             # e.g. ISIF=0, stress is not computed
-            stress = None
-            
+            stress = np.array([np.nan] * 6)
+
         if self.atoms is None:
             self.sort_atoms(atoms)
 
