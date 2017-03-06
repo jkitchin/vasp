@@ -22,9 +22,11 @@ def algo(calc, val):
 
     """
     assert isinstance(val, str)
-    assert val in ["Normal", "VeryFast", "Fast" , "Conjugate", "All", "Damped",
-                   "Subrot", "Eigenval", "None", "Nothing", "CHI", "GW0",
-                   "GW", "scGW0", "scGW"]
+    assert (val.lower() in
+    [x.lower() for x in ["Normal", "VeryFast", "Fast", "Conjugate", "All",
+                         "Damped",
+                         "Subrot", "Eigenval", "None", "Nothing", "CHI", "GW0",
+                         "GW", "scGW0", "scGW"]])
 
 
 def atoms(calc, val):
@@ -420,7 +422,8 @@ def prec(calc, val):
 
     http://cms.mpi.univie.ac.at/wiki/index.php/PREC
     """
-    assert val in ['Low', 'Medium', 'High', 'Normal', 'Accurate', 'Single']
+    assert val.lower() in ['low', 'medium', 'high', 'normal',
+                           'accurate', 'single']
 
 
 def reciprocal(calc, val):
