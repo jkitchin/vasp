@@ -227,7 +227,7 @@ def read_atoms(self):
     """
     atoms = None
     resort = self.get_db('resort')
-    # for a new calculation resort will be None
+    # for a new or pre-vasp calculation resort will be None
     if resort is not None:
         resort = list(resort)
         from ase.db import connect
@@ -237,16 +237,20 @@ def read_atoms(self):
     else:
         tags = None
 
+    log.debug('resort = {}'.format(resort))
+
     vasprun_xml = os.path.join(self.directory,
                                'vasprun.xml')
     if os.path.exists(vasprun_xml):
         atoms = ase.io.read(vasprun_xml)
-        atoms = atoms[resort]
+        if resort is not None:
+            atoms = atoms[resort]
         atoms.set_tags(tags)
     elif os.path.exists(os.path.join(self.directory, 'POSCAR')):
         atoms = ase.io.read(os.path.join(self.directory,
                                          'POSCAR'))
-        atoms = atoms[resort]
+        if resort is not None:
+            atoms = atoms[resort]
         atoms.set_tags(tags)
     return atoms
 
