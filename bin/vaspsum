@@ -17,7 +17,7 @@ parser.add_argument('--describe', action='store_true',
                     help='describe parameters')
 
 parser.add_argument('--vasp', action='store_true',
-                    help = 'prints vasp representation')
+                    help = 'prints vasp input files')
 
 parser.add_argument('-j', '--json', action='store_true',
                     help = 'prints json representation')
@@ -38,9 +38,13 @@ parser.add_argument('-t', '--plot-trajectory', action='store_true',
 parser.add_argument('-p', '--plot', action='store_true',
                     help = 'plot in ag')
 
+parser.add_argument('-m', '--mongo', action='store_true',
+                    help='Add to mongo db')
+
 args = parser.parse_args()
 
 if args.debug:
+    import logging
     debug = logging.DEBUG
 else:
     debug = None
@@ -49,6 +53,7 @@ for d in args.dirs:
     if not os.path.isdir(d):
         raise Exception('{0} does not exist!'.format(d))
 
+    print(d)
     calc = Vasp(d, debug=debug)
 
     # plot trajectory
@@ -69,3 +74,12 @@ for d in args.dirs:
         calc.describe(long=args.verbose)
     else:
         print(calc)
+
+
+        # add to mongo
+    if args.mongo:
+        from vasp.mongo import MongoDatabase
+        db = MongoDatabase()
+        if db.find({"calc.path": calc.directory}).count() == 0:
+            db.write(calc.atoms)
+            print('Added entry {}'.format(db.collection.count()))
