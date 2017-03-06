@@ -14,6 +14,8 @@ import ase
 from ase.calculators.calculator import Calculator
 from ase.calculators.calculator import FileIOCalculator
 from ase.io import read
+from ase.io.jsonio import encode
+import json
 
 # internal modules
 import exceptions
@@ -1028,15 +1030,18 @@ class Vasp(FileIOCalculator, object):
                 time.sleep(poll_interval)
 
     def todict(self):
-        """Convert calculator to a dictionary. 
+        """Convert calculator to a dictionary.
 
         This is most useful for serializing or adding to a Mongo database. This
         does not include the atoms object. It can fail on self.kwargs, if that
         contains non-serializable data, usually those are np.arrays.
 
-        This should store the user, path, a list of directories in the path, the
-        kwargs, parameters, pseudopotentials, calculated properties, and some
-        convenience properties.
+        This should store the user, path, a list of directories in the
+        path, the kwargs, parameters, pseudopotentials, calculated
+        properties, and some convenience properties.
+
+        Note: I use json.loads(encode(p)) from ase.io.jsonio to make sure
+        we get serializable dictionaries here.
 
         """
         from collections import OrderedDict
@@ -1053,21 +1058,21 @@ class Vasp(FileIOCalculator, object):
 
         d = OrderedDict(name='Vasp',
                         path=self.directory,
-                        pathtags=folders,
-                        kwargs=self.kwargs)
-        d.update(self.parameters)
-        d.update(potcars=self.get_pseudopotentials(),)
+                        pathtags=folders)
+        d.update(parameters=json.loads(encode(self.parameters)))
+        d.update(potcars=self.get_pseudopotentials())
         for prop in self.implemented_properties:
-            val = getattr(self, prop)
-            # we cannot serialize arrays to json, so we make them lists here.
-            # It is not enough to do list(val), that will make a list of
-            # arrays for forces.
-            if isinstance(val, np.ndarray):
-                val = val.tolist()
-            d[prop] = val
+            val = self.results.get(prop, None)
+            d[prop] = json.loads(encode(val))
 
-        d['fmax'] = max(np.abs(self.forces).flatten())
-        d['smax'] = max(np.abs(self.stress).flatten())
+        f = self.results.get('forces', None)
+        if f is not None:
+            d['fmax'] = max(np.abs(f.flatten()))
+
+        s = self.results.get('stress', None)
+        if s is not None:
+            d['smax'] = max(np.abs(s.flatten()))
+
         d['elapsed-time'] = self.get_elapsed_time()
         d['memory-used'] = self.get_memory()
         d['nionic-steps'] = self.get_number_of_ionic_steps()
