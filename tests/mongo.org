@@ -1,64 +1,24 @@
 #+title: Examples of a Mongo database for ase calculations
 
+
 * Overview
 We assume a Mongo server is running on localhost at port 27017, with an "ase" database and "atoms" collection by default. You can set all of these with args to MongoDatabase().
 
 Then, you create atoms, and write them to the database. You can write arbitrary (anything that can be serialized to json) key-value pairs to the database.
 
+Start here: https://docs.mongodb.com/manual/
 
-* An example to walk directory and add calculations.
-
-#+BEGIN_SRC python :results output org drawer
-import os
-from vasp import *
-
-from vasp.vasprc import VASPRC
-VASPRC['mode'] = None
-
-def vasp_p(directory):
-    'returns True if a finished OUTCAR file exists in the current directory, else False'
-    outcar = os.path.join(directory, 'OUTCAR')
-    incar = os.path.join(directory, 'INCAR')
-    if os.path.exists(outcar) and os.path.exists(incar):
-        with open(outcar, 'r') as f:
-            contents = f.read()
-            if 'General timing and accounting informations for this job:' in contents:
-                return True
-    return False
-
-from vasp.mongo import MongoDatabase
-db = MongoDatabase()
-
-for root, dirs, files in os.walk('/home-research/jkitchin/research'):
-    for d in dirs:
-        # compute absolute path to each directory in the current root
-        absd = os.path.join(root, d)
-
-        if (vasp_p(absd)
-            # the test dir had some problems.
-            and 'test' not in absd
-            # Don't add things already in
-            and db.find({"calculator.path": absd}).count() == 0):
-            # we found a vasp directory, so we can do something in it.
-            # here we add it to the ase mongdb
-            try:
-                calc = Vasp(absd)
-                atoms = calc.get_atoms()
-                db.write(atoms)
-                print('added {}'.format(absd))
-            except:
-                print('Exception in {}'.format(absd))
-        else:
-            print('{} already there.'.format(absd))
-#+END_SRC
-
-#+RESULTS:
-:RESULTS:
-:END:
+Query intro: https://docs.mongodb.com/manual/crud/#read-operations
 
 * Example queries
 ** path tags
-find by pathtags, which is just the path split by directories. The order is not important.
+
+Find by pathtags, which is just the path split by directories. The order is not important.
+
+The MongoDatabase initializer returns the database object. There is a db.collection attribute that is the actual collection you want to work on. There are a few thing wrappers for functions like find and count.
+
+The find function returns a pymongo cursor, which is a generator that returns documents. The documents are basically Python dictionaries.
+
 
 #+BEGIN_SRC python
 from vasp.mongo import MongoDatabase
@@ -73,9 +33,57 @@ print(next(c))
 : 1
 : {u'info': {}, u'volume': 1000.0000000000007, u'natoms': 2, u'ctime': datetime.datetime(2017, 3, 6, 14, 11, 32, 960000), u'arrays': {u'positions': [[4.9927693, 5.0, 5.0], [6.227230700000001, 5.0, 5.0]], u'numbers': [8, 8], u'tags': [0, 0]}, u'calculator': {u'magmom': 2.0000084, u'stress': [0.0012823514731940845, 0.0016375624234798473, 0.0016375624234798473, -0.0, -0.0, -0.0], u'elapsed-time': 96.775, u'name': u'Vasp', u'parameters': {u'magmom': [1.0, 1.0], u'pp': u'PBE', u'xc': u'pbe', u'kpts': [1, 1, 1], u'encut': 400, u'lcharg': False, u'ibrion': 2, u'ispin': 2, u'ismear': 0, u'lwave': True, u'sigma': 0.01, u'lorbit': 11, u'nsw': 10}, u'charges': [None, None], u'energy': -9.84832389, u'smax': 0.0016375624234798473, u'dipole': None, u'nionic-steps': 1, u'potcars': [[u'O', u'potpaw_PBE/O/POTCAR', u'592f34096943a6f30db8749d13efca516d75ec55']], u'magmoms': [0.815, 0.815], u'fmax': 0.02269834, u'pathtags': [u'O2-sp-triplet', u'molecules', u'dft-book', u'jkitchin'], u'forces': [[0.02269834, 0.0, 0.0], [-0.02269834, 0.0, 0.0]], u'path': u'/home-research/jkitchin/dft-book/molecules/O2-sp-triplet', u'memory-used': 0.121297, u'free_energy': -9.84832389}, u'O': 2, u'atoms': [{u'magmom': 0.0, u'index': 0, u'symbol': u'O', u'charge': 0.0, u'tag': 0, u'position': [4.9927693, 5.0, 5.0], u'momentum': [0.0, 0.0, 0.0]}, {u'magmom': 0.0, u'index': 1, u'symbol': u'O', u'charge': 0.0, u'tag': 0, u'position': [6.227230700000001, 5.0, 5.0], u'momentum': [0.0, 0.0, 0.0]}], u'cell': [[10.0, 0.0, 0.0], [0.0, 10.0, 0.0], [0.0, 0.0, 10.0]], u'mass': 31.9988, u'user': u'jkitchin', u'pbc': [True, True, True], u'mtime': datetime.datetime(2017, 3, 6, 14, 11, 32, 960000), u'_id': ObjectId('58bd6e16340e3bfc7f69cd7d'), u'constraints': []}
 
+What you can see here is the document contains:
+
+#+BEGIN_EXAMPLE
+{u'info': {},
+ u'volume': 1000.0000000000007,
+ u'natoms': 2,
+ u'ctime': datetime.datetime(2017, 3, 6, 14, 11, 32, 960000),
+ u'arrays': {u'positions': [[4.9927693, 5.0, 5.0], [6.227230700000001, 5.0, 5.0]], u'numbers': [8, 8],
+             u'tags': [0, 0]},
+ u'calculator': {u'magmom': 2.0000084,
+                 u'stress': [0.0012823514731940845, 0.0016375624234798473,
+		             0.0016375624234798473, -0.0, -0.0, -0.0],
+		 u'elapsed-time': 96.775,
+		 u'name': u'Vasp',
+		 u'parameters': {u'magmom': [1.0, 1.0], u'pp': u'PBE', u'xc': u'pbe',
+		                 u'kpts': [1, 1, 1], u'encut': 400, u'lcharg': False,
+				 u'ibrion': 2, u'ispin': 2, u'ismear': 0, u'lwave': True,
+				 u'sigma': 0.01, u'lorbit': 11, u'nsw': 10},
+		 u'charges': [None, None],
+		 u'energy': -9.84832389,
+		 u'smax': 0.0016375624234798473,
+		 u'dipole': None,
+		 u'nionic-steps': 1,
+		 u'potcars': [[u'O', u'potpaw_PBE/O/POTCAR', u'592f34096943a6f30db8749d13efca516d75ec55']],
+		 u'magmoms': [0.815, 0.815],
+		 u'fmax': 0.02269834,
+		 u'pathtags': [u'O2-sp-triplet', u'molecules', u'dft-book', u'jkitchin'],
+		 u'forces': [[0.02269834, 0.0, 0.0], [-0.02269834, 0.0, 0.0]],
+		 u'path': u'/home-research/jkitchin/dft-book/molecules/O2-sp-triplet',
+		 u'memory-used': 0.121297,
+		 u'free_energy': -9.84832389},
+ u'O': 2,
+ u'atoms': [{u'magmom': 0.0, u'index': 0, u'symbol': u'O', u'charge': 0.0, u'tag': 0,
+             u'position': [4.9927693, 5.0, 5.0],
+	     u'momentum': [0.0, 0.0, 0.0]},
+	     {u'magmom': 0.0, u'index': 1, u'symbol': u'O', u'charge': 0.0, u'tag': 0,
+	     u'position': [6.227230700000001, 5.0, 5.0], u'momentum': [0.0, 0.0, 0.0]}],
+ u'cell': [[10.0, 0.0, 0.0], [0.0, 10.0, 0.0], [0.0, 0.0, 10.0]],
+ u'mass': 31.9988,
+ u'user': u'jkitchin',
+ u'pbc': [True, True, True],
+ u'mtime': datetime.datetime(2017, 3, 6, 14, 11, 32, 960000),
+ u'_id': ObjectId('58bd6e16340e3bfc7f69cd7d'),
+ u'constraints': []}
+#+END_EXAMPLE
+
+There is some redundancy to make searching easier.
+
 ** formula
 
-By formula, Say NH3. We specify natoms too, to prevent getting slabs with adsorbates of this composition.
+By formula, Say NH3. We query by type and number, and we specify natoms too, to prevent getting slabs with adsorbates of this composition.
 
 #+BEGIN_SRC python :results output org drawer
 from vasp.mongo import MongoDatabase
@@ -94,7 +102,7 @@ print(next(c))
 
 ** By a bond length
 
-By C-O bond-length, say we want C-O bond lengths less than 1.2 angstroms.
+By C-O bond-length, say we want C-O bond lengths less than 1.2 angstroms. This would not be an easy query to do in the database. Instead we get all documents that match at least one C and one O, and use python externally to filter the matches.
 
 #+BEGIN_SRC python :results output org drawer
 import numpy as np
@@ -124,6 +132,8 @@ print(len(A))
 
 ** By a calc parameter
 
+You can use dot notation to search for fields in subdocuments.
+
 #+BEGIN_SRC python :results output org drawer
 import numpy as np
 from vasp.mongo import MongoDatabase
@@ -149,6 +159,8 @@ for doc in c: print(doc['calculator']['parameters']['setups'])
 
 ** List all the pathtags
 
+Here we have to use the db.collection to access the distinct command. You can always use this, it is just a little longer.
+
 #+BEGIN_SRC python :results output org drawer
 import numpy as np
 from vasp.mongo import MongoDatabase
@@ -164,6 +176,8 @@ print(c)
 :END:
 
 ** Check a calculator
+
+This shows we can rebuild a calculator from the database.
 
 #+BEGIN_SRC python :results output org drawer
 from vasp.mongo import MongoDatabase
@@ -243,4 +257,54 @@ print(next(c))
 :RESULTS:
 58bd6d8c340e3bfc7f69ccf8
 {u'info': {}, u'volume': 191.87240999273095, u'natoms': 4, u'special_tags': [u'bulk-modulus', u'Murnaghan'], u'ctime': datetime.datetime(2017, 3, 6, 14, 9, 16, 340000), u'arrays': {u'positions': [[0.0, 0.0, 9.999999873089783], [1.4318912156810875, 0.8267027783996388, 12.338268547696593], [2.863782474318912, 1.6534055816003612, 14.676537222303404], [0.0, 0.0, 17.014805896910214]], u'numbers': [13, 13, 13, 13], u'tags': [0, 0, 0, 0]}, u'calculator': {u'magmom': 0, u'stress': [0.006449951563292716, 0.006449951563292716, 0.0017486387353480974, -0.0, -0.0, -0.0], u'elapsed-time': 443.049, u'name': u'Vasp', u'parameters': {u'pp': u'PBE', u'xc': u'pbe', u'kpts': [6, 6, 6], u'encut': 300, u'lcharg': True, u'ismear': 1, u'lwave': True, u'sigma': 0.1}, u'charges': [None, None, None, None], u'energy': -14.17006237, u'smax': 0.006449951563292716, u'dipole': None, u'nionic-steps': 1, u'potcars': [[u'Al', u'potpaw_PBE/Al/POTCAR', u'ad7c649117f1490637e05717e30ab9a0dd8774f6']], u'magmoms': [0.0, 0.0, 0.0, 0.0], u'fmax': 0.18858625, u'pathtags': [u'Al-bandstructure', u'blog', u'dft-book', u'jkitchin'], u'forces': [[0.0, 0.0, -0.01914122], [0.0, 0.0, 0.18858625], [0.0, 0.0, -0.18858625], [0.0, 0.0, 0.01914122]], u'path': u'/home-research/jkitchin/dft-book/blog/Al-bandstructure', u'memory-used': 0.070486, u'free_energy': -14.17006237}, u'Al': 4, u'atoms': [{u'magmom': 0.0, u'index': 0, u'symbol': u'Al', u'charge': 0.0, u'tag': 0, u'position': [0.0, 0.0, 9.999999873089783], u'momentum': [0.0, 0.0, 0.0]}, {u'magmom': 0.0, u'index': 1, u'symbol': u'Al', u'charge': 0.0, u'tag': 0, u'position': [1.4318912156810875, 0.8267027783996388, 12.338268547696593], u'momentum': [0.0, 0.0, 0.0]}, {u'magmom': 0.0, u'index': 2, u'symbol': u'Al', u'charge': 0.0, u'tag': 0, u'position': [2.863782474318912, 1.6534055816003612, 14.676537222303404], u'momentum': [0.0, 0.0, 0.0]}, {u'magmom': 0.0, u'index': 3, u'symbol': u'Al', u'charge': 0.0, u'tag': 0, u'position': [0.0, 0.0, 17.014805896910214], u'momentum': [0.0, 0.0, 0.0]}], u'cell': [[2.86378246, 0.0, 0.0], [1.43189123, 2.48010836, 0.0], [0.0, 0.0, 27.01480577]], u'mass': 107.92616, u'user': u'jkitchin', u'pbc': [True, True, True], u'mtime': datetime.datetime(2017, 3, 6, 14, 9, 16, 341000), u'_id': ObjectId('58bd6d8c340e3bfc7f69ccf8'), u'constraints': []}
+:END:
+
+* An example to walk directory and add calculations.
+
+#+BEGIN_SRC python :results output org drawer
+import os
+from vasp import *
+
+from vasp.vasprc import VASPRC
+VASPRC['mode'] = None
+
+def vasp_p(directory):
+    'returns True if a finished OUTCAR file exists in the current directory, else False'
+    outcar = os.path.join(directory, 'OUTCAR')
+    incar = os.path.join(directory, 'INCAR')
+    if os.path.exists(outcar) and os.path.exists(incar):
+        with open(outcar, 'r') as f:
+            contents = f.read()
+            if 'General timing and accounting informations for this job:' in contents:
+                return True
+    return False
+
+from vasp.mongo import MongoDatabase
+db = MongoDatabase()
+
+for root, dirs, files in os.walk('/home-research/jkitchin/research'):
+    for d in dirs:
+        # compute absolute path to each directory in the current root
+        absd = os.path.join(root, d)
+
+        if (vasp_p(absd)
+            # the test dir had some problems.
+            and 'test' not in absd
+            # Don't add things already in
+            and db.find({"calculator.path": absd}).count() == 0):
+            # we found a vasp directory, so we can do something in it.
+            # here we add it to the ase mongdb
+            try:
+                calc = Vasp(absd)
+                atoms = calc.get_atoms()
+                db.write(atoms)
+                print('added {}'.format(absd))
+            except:
+                print('Exception in {}'.format(absd))
+        else:
+            print('{} already there.'.format(absd))
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
 :END:
