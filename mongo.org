@@ -1,46 +1,19 @@
 #+title: Examples of a Mongo database for ase calculations
+#+AUTHOR: John Kitchin
+#+DATE: March 7, 2017
 
+* Introduction
+This document describes a MongoDB for vaspy calculations. Each calculation is saved as a document in the database with the atomic geometry, calculation parameters, and calculation results. Some data is stored redundantly to facilitate queries.
 
-* Overview
-We assume a Mongo server is running on localhost at port 27017, with an "ase" database and "atoms" collection by default. You can set all of these with args to MongoDatabase().
-
-Then, you create atoms, and write them to the database. You can write arbitrary (anything that can be serialized to json) key-value pairs to the database.
-
-Start here: https://docs.mongodb.com/manual/
-
-Query intro: https://docs.mongodb.com/manual/crud/#read-operations
-
-* Example queries
-** path tags
-
-Find by pathtags, which is just the path split by directories. The order is not important.
-
-The MongoDatabase initializer returns the database object. There is a db.collection attribute that is the actual collection you want to work on. There are a few thing wrappers for functions like find and count.
-
-The find function returns a pymongo cursor, which is a generator that returns documents. The documents are basically Python dictionaries.
-
-
-#+BEGIN_SRC python
-from vasp.mongo import MongoDatabase
-db = MongoDatabase()
-
-c = db.find({'calculator.pathtags': {'$all': ['O2-sp-triplet', 'molecules']}})
-print(c.count())
-print(next(c))
-#+END_SRC
-
-#+RESULTS:
-: 1
-: {u'info': {}, u'volume': 1000.0000000000007, u'natoms': 2, u'ctime': datetime.datetime(2017, 3, 6, 14, 11, 32, 960000), u'arrays': {u'positions': [[4.9927693, 5.0, 5.0], [6.227230700000001, 5.0, 5.0]], u'numbers': [8, 8], u'tags': [0, 0]}, u'calculator': {u'magmom': 2.0000084, u'stress': [0.0012823514731940845, 0.0016375624234798473, 0.0016375624234798473, -0.0, -0.0, -0.0], u'elapsed-time': 96.775, u'name': u'Vasp', u'parameters': {u'magmom': [1.0, 1.0], u'pp': u'PBE', u'xc': u'pbe', u'kpts': [1, 1, 1], u'encut': 400, u'lcharg': False, u'ibrion': 2, u'ispin': 2, u'ismear': 0, u'lwave': True, u'sigma': 0.01, u'lorbit': 11, u'nsw': 10}, u'charges': [None, None], u'energy': -9.84832389, u'smax': 0.0016375624234798473, u'dipole': None, u'nionic-steps': 1, u'potcars': [[u'O', u'potpaw_PBE/O/POTCAR', u'592f34096943a6f30db8749d13efca516d75ec55']], u'magmoms': [0.815, 0.815], u'fmax': 0.02269834, u'pathtags': [u'O2-sp-triplet', u'molecules', u'dft-book', u'jkitchin'], u'forces': [[0.02269834, 0.0, 0.0], [-0.02269834, 0.0, 0.0]], u'path': u'/home-research/jkitchin/dft-book/molecules/O2-sp-triplet', u'memory-used': 0.121297, u'free_energy': -9.84832389}, u'O': 2, u'atoms': [{u'magmom': 0.0, u'index': 0, u'symbol': u'O', u'charge': 0.0, u'tag': 0, u'position': [4.9927693, 5.0, 5.0], u'momentum': [0.0, 0.0, 0.0]}, {u'magmom': 0.0, u'index': 1, u'symbol': u'O', u'charge': 0.0, u'tag': 0, u'position': [6.227230700000001, 5.0, 5.0], u'momentum': [0.0, 0.0, 0.0]}], u'cell': [[10.0, 0.0, 0.0], [0.0, 10.0, 0.0], [0.0, 0.0, 10.0]], u'mass': 31.9988, u'user': u'jkitchin', u'pbc': [True, True, True], u'mtime': datetime.datetime(2017, 3, 6, 14, 11, 32, 960000), u'_id': ObjectId('58bd6e16340e3bfc7f69cd7d'), u'constraints': []}
-
-What you can see here is the document contains:
+Here is some typical data stored.
 
 #+BEGIN_EXAMPLE
 {u'info': {},
  u'volume': 1000.0000000000007,
  u'natoms': 2,
  u'ctime': datetime.datetime(2017, 3, 6, 14, 11, 32, 960000),
- u'arrays': {u'positions': [[4.9927693, 5.0, 5.0], [6.227230700000001, 5.0, 5.0]], u'numbers': [8, 8],
+ u'arrays': {u'positions': [[4.9927693, 5.0, 5.0], [6.227230700000001, 5.0, 5.0]],
+ 	     u'numbers': [8, 8],
              u'tags': [0, 0]},
  u'calculator': {u'magmom': 2.0000084,
                  u'stress': [0.0012823514731940845, 0.0016375624234798473,
@@ -79,25 +52,243 @@ What you can see here is the document contains:
  u'constraints': []}
 #+END_EXAMPLE
 
-There is some redundancy to make searching easier.
+It might make sense to consolidate the atoms object like this:
+
+{'atoms': arrays, cell, pbc, volume, mass,...}
+
+and to make a symbol dictionary: {symbols: {sym1: count, sym2: count}}
+
+#+BEGIN_SRC python :results output org drawer
+from vasp import Vasp
+from vasp.mongo import MongoDatabase
+db = MongoDatabase()
+
+calc = Vasp(path)
+atoms = calc.get_atoms()
+db.write(atoms)
+#+END_SRC
+
+* Assumptions
+
+We assume a Mongo server is running on localhost at port 27017, with an "ase" database and "atoms" collection by default. You can set all of these with args to MongoDatabase(). The server does not run automatically right now, it has to be started after reboots. There is currently no security on the database.
+
+Then, you create atoms, and write them to the database. You can write arbitrary (anything that can be serialized to json) key-value pairs to the database.
+
+Start here: https://docs.mongodb.com/manual/
+
+Query intro: https://docs.mongodb.com/manual/crud/#read-operations
+
+* Example queries
+** path tags
+
+Find by pathtags, which is just the path split by directories. The order is not important.
+
+The MongoDatabase initializer returns the database object. There is a db.collection attribute that is the actual collection you want to work on. There are a few thing wrappers for functions like find and count.
+
+The find function returns a pymongo cursor, which is a generator that returns documents. The documents are basically Python dictionaries.
+
+
+#+BEGIN_SRC python
+import pprint
+from vasp.mongo import MongoDatabase
+db = MongoDatabase()
+
+c = db.find({'calculator.pathtags': {'$all': ['O2-sp-triplet', 'molecules']}})
+print(c.count())
+pprint.pprint(next(c))
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+1
+{u'O': 2,
+ u'_id': ObjectId('58bd6e16340e3bfc7f69cd7d'),
+ u'arrays': {u'numbers': [8, 8],
+             u'positions': [[4.9927693, 5.0, 5.0],
+                            [6.227230700000001, 5.0, 5.0]],
+             u'tags': [0, 0]},
+ u'atoms': [{u'charge': 0.0,
+             u'index': 0,
+             u'magmom': 0.0,
+             u'momentum': [0.0, 0.0, 0.0],
+             u'position': [4.9927693, 5.0, 5.0],
+             u'symbol': u'O',
+             u'tag': 0},
+            {u'charge': 0.0,
+             u'index': 1,
+             u'magmom': 0.0,
+             u'momentum': [0.0, 0.0, 0.0],
+             u'position': [6.227230700000001, 5.0, 5.0],
+             u'symbol': u'O',
+             u'tag': 0}],
+ u'calculator': {u'charges': [None, None],
+                 u'dipole': None,
+                 u'elapsed-time': 96.775,
+                 u'energy': -9.84832389,
+                 u'fmax': 0.02269834,
+                 u'forces': [[0.02269834, 0.0, 0.0], [-0.02269834, 0.0, 0.0]],
+                 u'free_energy': -9.84832389,
+                 u'magmom': 2.0000084,
+                 u'magmoms': [0.815, 0.815],
+                 u'memory-used': 0.121297,
+                 u'name': u'Vasp',
+                 u'nionic-steps': 1,
+                 u'parameters': {u'encut': 400,
+                                 u'ibrion': 2,
+                                 u'ismear': 0,
+                                 u'ispin': 2,
+                                 u'kpts': [1, 1, 1],
+                                 u'lcharg': False,
+                                 u'lorbit': 11,
+                                 u'lwave': True,
+                                 u'magmom': [1.0, 1.0],
+                                 u'nsw': 10,
+                                 u'pp': u'PBE',
+                                 u'sigma': 0.01,
+                                 u'xc': u'pbe'},
+                 u'path': u'/home-research/jkitchin/dft-book/molecules/O2-sp-triplet',
+                 u'pathtags': [u'O2-sp-triplet',
+                               u'molecules',
+                               u'dft-book',
+                               u'jkitchin'],
+                 u'potcars': [[u'O',
+                               u'potpaw_PBE/O/POTCAR',
+                               u'592f34096943a6f30db8749d13efca516d75ec55']],
+                 u'smax': 0.0016375624234798473,
+                 u'stress': [0.0012823514731940845,
+                             0.0016375624234798473,
+                             0.0016375624234798473,
+                             -0.0,
+                             -0.0,
+                             -0.0]},
+ u'cell': [[10.0, 0.0, 0.0], [0.0, 10.0, 0.0], [0.0, 0.0, 10.0]],
+ u'constraints': [],
+ u'ctime': datetime.datetime(2017, 3, 6, 14, 11, 32, 960000),
+ u'info': {},
+ u'mass': 31.9988,
+ u'mtime': datetime.datetime(2017, 3, 6, 14, 11, 32, 960000),
+ u'natoms': 2,
+ u'pbc': [True, True, True],
+ u'user': u'jkitchin',
+ u'volume': 1000.0000000000007}
+#+end_example
+
 
 ** formula
 
 By formula, Say NH3. We query by type and number, and we specify natoms too, to prevent getting slabs with adsorbates of this composition.
 
 #+BEGIN_SRC python :results output org drawer
+from pprint import pprint
 from vasp.mongo import MongoDatabase
 db = MongoDatabase()
 
 c = db.find({'N': 1, 'H': 3, 'natoms': 4})
 print(c.count())
-print(next(c))
+pprint(next(c))
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
 2
-{u'info': {}, u'volume': 1000.0000000000007, u'natoms': 4, u'calc': {u'kpts': [1, 1, 1], u'pathtags': [u'nh3-initial', u'molecules', u'dft-book', u'jkitchin'], u'xc': u'pbe', u'energy': -19.43888613, u'smax': 0.0017784115889653107, u'encut': 350, u'potcars': [[u'N', u'potpaw_PBE/N/POTCAR', u'536358c988fa48058b235b560c7e07049edd40e0'], [u'H', u'potpaw_PBE/H/POTCAR', u'51dd11a1883cb1d482388078d3764b6e1fde9e02']], u'lcharg': False, u'ismear': 1, u'nsw': 10, u'pp': u'PBE', u'dipole': None, u'forces': [[0.0, 0.0, 0.0], [0.0, 0.39139705, -0.14433966], [0.33616912, -0.19508419, -0.14309217], [-0.33616912, -0.19508419, -0.14309217]], u'free_energy': -19.43888613, u'magmoms': [0.0, 0.0, 0.0, 0.0], u'fmax': 0.39139705, u'ibrion': 1, u'elapsed-time': 205.702, u'path': u'/home-research/jkitchin/dft-book/molecules/nh3-initial', u'magmom': 0, u'stress': [0.0012757928392310243, 0.0012806163024495433, 0.0017784115889653107, -6.455093568170983e-07, -0.0, -0.0], u'name': u'Vasp', u'charges': None, u'lwave': True, u'sigma': 0.1}, u'ctime': datetime.datetime(2017, 3, 5, 1, 23, 32, 926000), u'H': 3, u'atoms': [{u'magmom': 0.0, u'index': 0, u'symbol': u'N', u'charge': 0.0, u'tag': 0, u'position': [5.0, 5.0, 5.0], u'momentum': [0.0, 0.0, 0.0]}, {u'magmom': 0.0, u'index': 1, u'symbol': u'H', u'charge': 0.0, u'tag': 0, u'position': [5.0, 5.939731, 4.611702999999999], u'momentum': [0.0, 0.0, 0.0]}, {u'magmom': 0.0, u'index': 2, u'symbol': u'H', u'charge': 0.0, u'tag': 0, u'position': [5.813831, 4.5301350000000005, 4.611702999999999], u'momentum': [0.0, 0.0, 0.0]}, {u'magmom': 0.0, u'index': 3, u'symbol': u'H', u'charge': 0.0, u'tag': 0, u'position': [4.1861690000000005, 4.5301350000000005, 4.611702999999999], u'momentum': [0.0, 0.0, 0.0]}], u'cell': [[10.0, 0.0, 0.0], [0.0, 10.0, 0.0], [0.0, 0.0, 10.0]], u'N': 1, u'mass': 17.030520000000003, u'user': u'jkitchin', u'pbc': [True, True, True], u'mtime': datetime.datetime(2017, 3, 5, 1, 23, 32, 926000), u'_id': ObjectId('58bb689a340e3bbdaa5c3bb3'), u'constraints': u"(lp0\n(iase.constraints\nFixAtoms\np1\n(dp2\nS'index'\np3\ncnumpy.core.multiarray\n_reconstruct\np4\n(cnumpy\nndarray\np5\n(I0\ntp6\nS'b'\np7\ntp8\nRp9\n(I1\n(I1\ntp10\ncnumpy\ndtype\np11\n(S'i8'\np12\nI0\nI1\ntp13\nRp14\n(I3\nS'<'\np15\nNNNI-1\nI-1\nI0\ntp16\nbI00\nS'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00'\np17\ntp18\nbsba."}
+{u'H': 3,
+ u'N': 1,
+ u'_id': ObjectId('58bd6e4a340e3bfc7f69cda4'),
+ u'arrays': {u'numbers': [7, 1, 1, 1],
+             u'positions': [[5.0, 5.0, 5.0],
+                            [5.0, 5.9492361, 4.6072123],
+                            [5.8219788999999995,
+                             4.5253727999999995,
+                             4.6072491],
+                            [4.1780211000000005,
+                             4.5253727999999995,
+                             4.6072491]],
+             u'tags': [0, 0, 0, 0]},
+ u'atoms': [{u'charge': 0.0,
+             u'index': 0,
+             u'magmom': 0.0,
+             u'momentum': [0.0, 0.0, 0.0],
+             u'position': [5.0, 5.0, 5.0],
+             u'symbol': u'N',
+             u'tag': 0},
+            {u'charge': 0.0,
+             u'index': 1,
+             u'magmom': 0.0,
+             u'momentum': [0.0, 0.0, 0.0],
+             u'position': [5.0, 5.9492361, 4.6072123],
+             u'symbol': u'H',
+             u'tag': 0},
+            {u'charge': 0.0,
+             u'index': 2,
+             u'magmom': 0.0,
+             u'momentum': [0.0, 0.0, 0.0],
+             u'position': [5.8219788999999995,
+                           4.5253727999999995,
+                           4.6072491],
+             u'symbol': u'H',
+             u'tag': 0},
+            {u'charge': 0.0,
+             u'index': 3,
+             u'magmom': 0.0,
+             u'momentum': [0.0, 0.0, 0.0],
+             u'position': [4.1780211000000005,
+                           4.5253727999999995,
+                           4.6072491],
+             u'symbol': u'H',
+             u'tag': 0}],
+ u'calculator': {u'charges': [None, None, None, None],
+                 u'dipole': None,
+                 u'elapsed-time': 205.702,
+                 u'energy': -19.44508478,
+                 u'fmax': 0.01656847,
+                 u'forces': [[0.0, 0.0, 0.0],
+                             [0.0, -0.01656847, -0.01226173],
+                             [-0.01416242, 0.00778803, -0.01222133],
+                             [0.01416242, 0.00778803, -0.01222133]],
+                 u'free_energy': -19.44508478,
+                 u'magmom': 0,
+                 u'magmoms': [0.0, 0.0, 0.0, 0.0],
+                 u'memory-used': 0.089491,
+                 u'name': u'Vasp',
+                 u'nionic-steps': 3,
+                 u'parameters': {u'encut': 350,
+                                 u'ibrion': 1,
+                                 u'ismear': 1,
+                                 u'kpts': [1, 1, 1],
+                                 u'lcharg': False,
+                                 u'lwave': True,
+                                 u'nsw': 10,
+                                 u'pp': u'PBE',
+                                 u'sigma': 0.1,
+                                 u'xc': u'pbe'},
+                 u'path': u'/home-research/jkitchin/dft-book/molecules/nh3-initial',
+                 u'pathtags': [u'nh3-initial',
+                               u'molecules',
+                               u'dft-book',
+                               u'jkitchin'],
+                 u'potcars': [[u'N',
+                               u'potpaw_PBE/N/POTCAR',
+                               u'536358c988fa48058b235b560c7e07049edd40e0'],
+                              [u'H',
+                               u'potpaw_PBE/H/POTCAR',
+                               u'51dd11a1883cb1d482388078d3764b6e1fde9e02']],
+                 u'smax': 0.0019324973600313817,
+                 u'stress': [0.0018598465495721207,
+                             0.0018678603789048624,
+                             0.0019324973600313817,
+                             -1.4921138961610293e-06,
+                             -0.0,
+                             -0.0]},
+ u'cell': [[10.0, 0.0, 0.0], [0.0, 10.0, 0.0], [0.0, 0.0, 10.0]],
+ u'constraints': [{u'kwargs': {u'indices': [0]}, u'name': u'FixAtoms'}],
+ u'ctime': datetime.datetime(2017, 3, 6, 14, 12, 26, 214000),
+ u'info': {},
+ u'mass': 17.030520000000003,
+ u'mtime': datetime.datetime(2017, 3, 6, 14, 12, 26, 214000),
+ u'natoms': 4,
+ u'pbc': [True, True, True],
+ u'user': u'jkitchin',
+ u'volume': 1000.0000000000007}
 :END:
 
 ** By a bond length
@@ -156,6 +347,41 @@ for doc in c: print(doc['calculator']['parameters']['setups'])
 [[u'O', u'_s']]
 [[u'O', u'_s']]
 :END:
+
+** An equation of state
+
+#+BEGIN_SRC python :results output org drawer
+import numpy as np
+from vasp.mongo import MongoDatabase
+db = MongoDatabase()
+
+eos = db.find({'Cu': 1, 'natoms': 1,
+               'calculator.parameters.kpts': [8, 8, 8],
+               'calculator.parameters.encut': 350},
+              projection={'_id': 0, 'calculator.pathtags': 1})
+
+print(eos.count())
+for c in eos: print c
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+12
+{u'calculator': {u'pathtags': [u'Cu-3.5', u'bulk', u'dft-book', u'jkitchin']}}
+{u'calculator': {u'pathtags': [u'Cu-3.55', u'bulk', u'dft-book', u'jkitchin']}}
+{u'calculator': {u'pathtags': [u'Cu-3.6', u'bulk', u'dft-book', u'jkitchin']}}
+{u'calculator': {u'pathtags': [u'Cu-3.65', u'bulk', u'dft-book', u'jkitchin']}}
+{u'calculator': {u'pathtags': [u'Cu-3.7', u'bulk', u'dft-book', u'jkitchin']}}
+{u'calculator': {u'pathtags': [u'Cu-3.75', u'bulk', u'dft-book', u'jkitchin']}}
+{u'calculator': {u'pathtags': [u'Cu-bcc-2.75', u'bulk', u'dft-book', u'jkitchin']}}
+{u'calculator': {u'pathtags': [u'Cu-bcc-2.8', u'bulk', u'dft-book', u'jkitchin']}}
+{u'calculator': {u'pathtags': [u'Cu-bcc-2.85', u'bulk', u'dft-book', u'jkitchin']}}
+{u'calculator': {u'pathtags': [u'Cu-bcc-2.9', u'bulk', u'dft-book', u'jkitchin']}}
+{u'calculator': {u'pathtags': [u'Cu-bcc-2.95', u'bulk', u'dft-book', u'jkitchin']}}
+{u'calculator': {u'pathtags': [u'Cu-bcc-3.0', u'bulk', u'dft-book', u'jkitchin']}}
+:END:
+
+This makes it seem like storing a spacegroup is a good idea. For now, we either need to match patterns on a tag, or use external python filtering.
 
 ** List all the pathtags
 
@@ -308,3 +534,8 @@ for root, dirs, files in os.walk('/home-research/jkitchin/research'):
 #+RESULTS:
 :RESULTS:
 :END:
+* TODO These are things we don't do now but might want to
+
+** NEB
+** Store trajectories
+** Store derived results like adsorption energies, barriers
