@@ -12,10 +12,42 @@ import numpy as np
 from collections import OrderedDict
 import datetime
 import json
+import hashlib
+
 from pymongo import MongoClient
 from ase import Atoms, Atom
 from ase.io.jsonio import encode
 from vasp import Vasp
+import spglib
+
+def mongo_atoms_doc(atoms):
+    """Return a dictionary of an Atoms object."""
+    d = OrderedDict(atoms=[{'symbol': atom.symbol,
+                            'position': json.loads(encode(atom.position)),
+                            'tag': atom.tag,
+                            'index': atom.index,
+                            'charge': atom.charge,
+                            'momentum': json.loads(encode(atom.momentum)),
+                            'magmom': atom.magmom}
+                           for atom in atoms],
+                    cell=atoms.cell,
+                    pbc=atoms.pbc,
+                    info=atoms.info,
+                    constraints=[c.todict() for c in atoms.constraints])
+
+    d['natoms'] = len(atoms)
+    cell = atoms.get_cell()
+    if cell is not None and np.linalg.det(cell) > 0:
+        d['volume'] = atoms.get_volume()
+
+    d['mass'] = sum(atoms.get_masses())
+
+    syms = atoms.get_chemical_symbols()
+    d['chemical_symbols'] = list(set(syms))
+    d['symbol_counts'] = {sym: syms.count(sym) for sym in syms}
+    d['spacegroup'] = spglib.get_spacegroup(atoms)
+
+    return json.loads(encode(d))
 
 
 class MongoDatabase(MongoClient):
@@ -43,51 +75,25 @@ class MongoDatabase(MongoClient):
         Returns the inserted id.
         """
 
-        d = OrderedDict(user=os.getenv('USER'),
-                        ctime=datetime.datetime.utcnow(),
-                        mtime=datetime.datetime.utcnow(),
-                        atoms=[{'symbol': atom.symbol,
-                                'position': json.loads(encode(atom.position)),
-                                'tag': atom.tag,
-                                'index': atom.index,
-                                'charge': atom.charge,
-                                'momentum': json.loads(encode(atom.momentum)),
-                                'magmom': atom.magmom}
-                               for atom in atoms],
-                        arrays=json.loads(encode(atoms.arrays)),
-                        pbc=json.loads(encode(atoms.pbc)),
-                        info=atoms.info,
-                        constraints=[json.loads(encode(c.todict()))
-                                     for c in atoms.constraints],
-                        # This works, but is not searchable, and has
-                        # security issues
-                        # constraints=pickle.dumps(atoms.constraints),
-
-                        # I would like this, but todict leaves arrays
-                        # in which do not convert to json.
-                        # constraints=[c.todict() for c in
-                        # atoms.constraints],
-                        cell=json.loads(encode(atoms.cell)))
-
-        # Convenience values
-        cell = atoms.get_cell()
-        if cell is not None and np.linalg.det(cell) > 0:
-            d['volume'] = atoms.get_volume()
-
-        d['mass'] = sum(atoms.get_masses())
-
-        # fields for each symbol counts
-        syms = atoms.get_chemical_symbols()
-        for sym in set(syms):
-            d[sym] = syms.count(sym)
-
-        d['natoms'] = len(atoms)
+        d = OrderedDict(atoms=mongo_atoms_doc(atoms))
 
         # Calculated values
         if atoms.get_calculator() is not None:
             # Need some calculator data
             calc = atoms.get_calculator()
             d['calculator'] = calc.todict()
+
+        d['user'] = os.getenv('USER'),
+        # This is a has of what is inserted. You might use it to check
+        # for uniqueness of the insert.
+        d['inserted-hash'] = hashlib.sha1(json.dumps(d)).hexdigest()
+
+        # Created time.
+        d['ctime'] = datetime.datetime.utcnow()
+        # Modified time - depends on user to update
+        d['mtime'] = datetime.datetime.utcnow()
+
+        d.update(kwargs)
 
         return self.collection.insert_one(d).inserted_id
 
@@ -111,8 +117,8 @@ class MongoDatabase(MongoClient):
                                 momentum=atom['momentum'],
                                 magmom=atom['magmom'],
                                 charge=atom['charge'])
-                           for atom in doc['atoms']],
-                          cell=doc['cell'])
+                           for atom in doc['atoms']['atoms']],
+                          cell=doc['atoms']['cell'])
 
             calc_data = doc['calculator']
             pars = calc_data['parameters']

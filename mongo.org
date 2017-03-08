@@ -7,56 +7,111 @@ This document describes a MongoDB for vaspy calculations. Each calculation is sa
 
 Here is some typical data stored.
 
-#+BEGIN_EXAMPLE
-{u'info': {},
- u'volume': 1000.0000000000007,
- u'natoms': 2,
- u'ctime': datetime.datetime(2017, 3, 6, 14, 11, 32, 960000),
- u'arrays': {u'positions': [[4.9927693, 5.0, 5.0], [6.227230700000001, 5.0, 5.0]],
- 	     u'numbers': [8, 8],
-             u'tags': [0, 0]},
- u'calculator': {u'magmom': 2.0000084,
-                 u'stress': [0.0012823514731940845, 0.0016375624234798473,
-		             0.0016375624234798473, -0.0, -0.0, -0.0],
-		 u'elapsed-time': 96.775,
-		 u'name': u'Vasp',
-		 u'parameters': {u'magmom': [1.0, 1.0], u'pp': u'PBE', u'xc': u'pbe',
-		                 u'kpts': [1, 1, 1], u'encut': 400, u'lcharg': False,
-				 u'ibrion': 2, u'ispin': 2, u'ismear': 0, u'lwave': True,
-				 u'sigma': 0.01, u'lorbit': 11, u'nsw': 10},
-		 u'charges': [None, None],
-		 u'energy': -9.84832389,
-		 u'smax': 0.0016375624234798473,
-		 u'dipole': None,
-		 u'nionic-steps': 1,
-		 u'potcars': [[u'O', u'potpaw_PBE/O/POTCAR', u'592f34096943a6f30db8749d13efca516d75ec55']],
-		 u'magmoms': [0.815, 0.815],
-		 u'fmax': 0.02269834,
-		 u'pathtags': [u'O2-sp-triplet', u'molecules', u'dft-book', u'jkitchin'],
-		 u'forces': [[0.02269834, 0.0, 0.0], [-0.02269834, 0.0, 0.0]],
-		 u'path': u'/home-research/jkitchin/dft-book/molecules/O2-sp-triplet',
-		 u'memory-used': 0.121297,
-		 u'free_energy': -9.84832389},
- u'O': 2,
- u'atoms': [{u'magmom': 0.0, u'index': 0, u'symbol': u'O', u'charge': 0.0, u'tag': 0,
-             u'position': [4.9927693, 5.0, 5.0],
-	     u'momentum': [0.0, 0.0, 0.0]},
-	     {u'magmom': 0.0, u'index': 1, u'symbol': u'O', u'charge': 0.0, u'tag': 0,
-	     u'position': [6.227230700000001, 5.0, 5.0], u'momentum': [0.0, 0.0, 0.0]}],
- u'cell': [[10.0, 0.0, 0.0], [0.0, 10.0, 0.0], [0.0, 0.0, 10.0]],
- u'mass': 31.9988,
- u'user': u'jkitchin',
- u'pbc': [True, True, True],
- u'mtime': datetime.datetime(2017, 3, 6, 14, 11, 32, 960000),
- u'_id': ObjectId('58bd6e16340e3bfc7f69cd7d'),
- u'constraints': []}
-#+END_EXAMPLE
+#+BEGIN_SRC python :results output org drawer
+from vasp.mongo import MongoDatabase
+db = MongoDatabase()
 
-It might make sense to consolidate the atoms object like this:
+import pprint
+pprint.pprint(next(db.find({}, limit=1)))
+#+END_SRC
 
-{'atoms': arrays, cell, pbc, volume, mass,...}
+#+RESULTS:
+:RESULTS:
+{u'_id': ObjectId('58bf461a340e3bba7e7f1879'),
+ u'atoms': {u'atoms': [{u'charge': 0.0,
+                        u'index': 0,
+                        u'magmom': 0.0,
+                        u'momentum': [0.0, 0.0, 0.0],
+                        u'position': [0.0, 0.0, 9.999999873089783],
+                        u'symbol': u'Al',
+                        u'tag': 0},
+                       {u'charge': 0.0,
+                        u'index': 1,
+                        u'magmom': 0.0,
+                        u'momentum': [0.0, 0.0, 0.0],
+                        u'position': [1.4318912156810875,
+                                      0.8267027783996388,
+                                      12.338268547696593],
+                        u'symbol': u'Al',
+                        u'tag': 0},
+                       {u'charge': 0.0,
+                        u'index': 2,
+                        u'magmom': 0.0,
+                        u'momentum': [0.0, 0.0, 0.0],
+                        u'position': [2.863782474318912,
+                                      1.6534055816003612,
+                                      14.676537222303404],
+                        u'symbol': u'Al',
+                        u'tag': 0},
+                       {u'charge': 0.0,
+                        u'index': 3,
+                        u'magmom': 0.0,
+                        u'momentum': [0.0, 0.0, 0.0],
+                        u'position': [0.0, 0.0, 17.014805896910214],
+                        u'symbol': u'Al',
+                        u'tag': 0}],
+            u'cell': [[2.86378246, 0.0, 0.0],
+                      [1.43189123, 2.48010836, 0.0],
+                      [0.0, 0.0, 27.01480577]],
+            u'chemical_symbols': [u'Al'],
+            u'constraints': [],
+            u'info': {},
+            u'mass': 107.92616,
+            u'natoms': 4,
+            u'pbc': [True, True, True],
+            u'spacegroup': u'P-3m1 (164)',
+            u'symbol_counts': {u'Al': 1},
+            u'volume': 191.87240999273095},
+ u'calculator': {u'charges': [None, None, None, None],
+                 u'dipole': None,
+                 u'elapsed-time': 443.049,
+                 u'energy': -14.17006237,
+                 u'fmax': 0.18858625,
+                 u'forces': [[0.0, 0.0, -0.01914122],
+                             [0.0, 0.0, 0.18858625],
+                             [0.0, 0.0, -0.18858625],
+                             [0.0, 0.0, 0.01914122]],
+                 u'free_energy': -14.17006237,
+                 u'magmom': 0,
+                 u'magmoms': [0.0, 0.0, 0.0, 0.0],
+                 u'memory-used': 0.070486,
+                 u'name': u'Vasp',
+                 u'nionic-steps': 1,
+                 u'parameters': {u'encut': 300,
+                                 u'ismear': 1,
+                                 u'kpts': [6, 6, 6],
+                                 u'lcharg': True,
+                                 u'lwave': True,
+                                 u'pp': u'PBE',
+                                 u'sigma': 0.1,
+                                 u'xc': u'pbe'},
+                 u'path': u'/home-research/jkitchin/dft-book/blog/Al-bandstructure',
+                 u'pathtags': [u'Al-bandstructure',
+                               u'blog',
+                               u'dft-book',
+                               u'jkitchin'],
+                 u'potcars': [[u'Al',
+                               u'potpaw_PBE/Al/POTCAR',
+                               u'ad7c649117f1490637e05717e30ab9a0dd8774f6']],
+                 u'program': u'vasp ',
+                 u'run-date': u'2016 05 27 ',
+                 u'run-time': u'11:13:55 ',
+                 u'smax': 0.006449951563292716,
+                 u'stress': [0.006449951563292716,
+                             0.006449951563292716,
+                             0.0017486387353480974,
+                             -0.0,
+                             -0.0,
+                             -0.0],
+                 u'subversion': u'31Mar14 (build Aug 04 2015 12:48:45) complex                          serial ',
+                 u'version': u'5.3.5  '},
+ u'ctime': datetime.datetime(2017, 3, 7, 23, 45, 30, 126000),
+ u'inserted-hash': u'ee438b3946a3c144dff689f4632aafd5a69ac3e2',
+ u'mtime': [datetime.datetime(2017, 3, 7, 23, 45, 30, 126000)],
+ u'user': [u'jkitchin']}
+:END:
 
-and to make a symbol dictionary: {symbols: {sym1: count, sym2: count}}
+It is easy to write atoms with arbitrary key-value pairs. You have to do the work to decide if writing would add a duplicate entry.
 
 #+BEGIN_SRC python :results output org drawer
 from vasp import Vasp
@@ -65,7 +120,7 @@ db = MongoDatabase()
 
 calc = Vasp(path)
 atoms = calc.get_atoms()
-db.write(atoms)
+db.write(atoms, key1=va1, key2, val2)
 #+END_SRC
 
 * Assumptions
@@ -101,26 +156,31 @@ pprint.pprint(next(c))
 #+RESULTS:
 #+begin_example
 1
-{u'O': 2,
- u'_id': ObjectId('58bd6e16340e3bfc7f69cd7d'),
- u'arrays': {u'numbers': [8, 8],
-             u'positions': [[4.9927693, 5.0, 5.0],
-                            [6.227230700000001, 5.0, 5.0]],
-             u'tags': [0, 0]},
- u'atoms': [{u'charge': 0.0,
-             u'index': 0,
-             u'magmom': 0.0,
-             u'momentum': [0.0, 0.0, 0.0],
-             u'position': [4.9927693, 5.0, 5.0],
-             u'symbol': u'O',
-             u'tag': 0},
-            {u'charge': 0.0,
-             u'index': 1,
-             u'magmom': 0.0,
-             u'momentum': [0.0, 0.0, 0.0],
-             u'position': [6.227230700000001, 5.0, 5.0],
-             u'symbol': u'O',
-             u'tag': 0}],
+{u'_id': ObjectId('58bf469f340e3bba7e7f18fe'),
+ u'atoms': {u'atoms': [{u'charge': 0.0,
+                        u'index': 0,
+                        u'magmom': 0.0,
+                        u'momentum': [0.0, 0.0, 0.0],
+                        u'position': [4.9927693, 5.0, 5.0],
+                        u'symbol': u'O',
+                        u'tag': 0},
+                       {u'charge': 0.0,
+                        u'index': 1,
+                        u'magmom': 0.0,
+                        u'momentum': [0.0, 0.0, 0.0],
+                        u'position': [6.227230700000001, 5.0, 5.0],
+                        u'symbol': u'O',
+                        u'tag': 0}],
+            u'cell': [[10.0, 0.0, 0.0], [0.0, 10.0, 0.0], [0.0, 0.0, 10.0]],
+            u'chemical_symbols': [u'O'],
+            u'constraints': [],
+            u'info': {},
+            u'mass': 31.9988,
+            u'natoms': 2,
+            u'pbc': [True, True, True],
+            u'spacegroup': u'P4/mmm (123)',
+            u'symbol_counts': {u'O': 1},
+            u'volume': 1000.0000000000007},
  u'calculator': {u'charges': [None, None],
                  u'dipole': None,
                  u'elapsed-time': 96.775,
@@ -154,23 +214,22 @@ pprint.pprint(next(c))
                  u'potcars': [[u'O',
                                u'potpaw_PBE/O/POTCAR',
                                u'592f34096943a6f30db8749d13efca516d75ec55']],
+                 u'program': u'vasp ',
+                 u'run-date': u'2016 05 19 ',
+                 u'run-time': u'09:21:47 ',
                  u'smax': 0.0016375624234798473,
                  u'stress': [0.0012823514731940845,
                              0.0016375624234798473,
                              0.0016375624234798473,
                              -0.0,
                              -0.0,
-                             -0.0]},
- u'cell': [[10.0, 0.0, 0.0], [0.0, 10.0, 0.0], [0.0, 0.0, 10.0]],
- u'constraints': [],
- u'ctime': datetime.datetime(2017, 3, 6, 14, 11, 32, 960000),
- u'info': {},
- u'mass': 31.9988,
- u'mtime': datetime.datetime(2017, 3, 6, 14, 11, 32, 960000),
- u'natoms': 2,
- u'pbc': [True, True, True],
- u'user': u'jkitchin',
- u'volume': 1000.0000000000007}
+                             -0.0],
+                 u'subversion': u'31Mar14 (build Aug 04 2015 12:48:45) complex                          serial ',
+                 u'version': u'5.3.5  '},
+ u'ctime': datetime.datetime(2017, 3, 7, 23, 47, 43, 393000),
+ u'inserted-hash': u'6af880c95c12110a814606fa07c8c8060b132dd3',
+ u'mtime': [datetime.datetime(2017, 3, 7, 23, 47, 43, 393000)],
+ u'user': [u'jkitchin']}
 #+end_example
 
 
@@ -183,7 +242,9 @@ from pprint import pprint
 from vasp.mongo import MongoDatabase
 db = MongoDatabase()
 
-c = db.find({'N': 1, 'H': 3, 'natoms': 4})
+c = db.find({'atoms.symbol_counts.N': 1,
+             'atoms.symbol_counts.H': 3,
+             'atoms.natoms': 4})
 print(c.count())
 pprint(next(c))
 #+END_SRC
@@ -191,51 +252,50 @@ pprint(next(c))
 #+RESULTS:
 :RESULTS:
 2
-{u'H': 3,
- u'N': 1,
- u'_id': ObjectId('58bd6e4a340e3bfc7f69cda4'),
- u'arrays': {u'numbers': [7, 1, 1, 1],
-             u'positions': [[5.0, 5.0, 5.0],
-                            [5.0, 5.9492361, 4.6072123],
-                            [5.8219788999999995,
-                             4.5253727999999995,
-                             4.6072491],
-                            [4.1780211000000005,
-                             4.5253727999999995,
-                             4.6072491]],
-             u'tags': [0, 0, 0, 0]},
- u'atoms': [{u'charge': 0.0,
-             u'index': 0,
-             u'magmom': 0.0,
-             u'momentum': [0.0, 0.0, 0.0],
-             u'position': [5.0, 5.0, 5.0],
-             u'symbol': u'N',
-             u'tag': 0},
-            {u'charge': 0.0,
-             u'index': 1,
-             u'magmom': 0.0,
-             u'momentum': [0.0, 0.0, 0.0],
-             u'position': [5.0, 5.9492361, 4.6072123],
-             u'symbol': u'H',
-             u'tag': 0},
-            {u'charge': 0.0,
-             u'index': 2,
-             u'magmom': 0.0,
-             u'momentum': [0.0, 0.0, 0.0],
-             u'position': [5.8219788999999995,
-                           4.5253727999999995,
-                           4.6072491],
-             u'symbol': u'H',
-             u'tag': 0},
-            {u'charge': 0.0,
-             u'index': 3,
-             u'magmom': 0.0,
-             u'momentum': [0.0, 0.0, 0.0],
-             u'position': [4.1780211000000005,
-                           4.5253727999999995,
-                           4.6072491],
-             u'symbol': u'H',
-             u'tag': 0}],
+{u'_id': ObjectId('58bf4a8d340e3bceec74d081'),
+ u'atoms': {u'atoms': [{u'charge': 0.0,
+                        u'index': 0,
+                        u'magmom': 0.0,
+                        u'momentum': [0.0, 0.0, 0.0],
+                        u'position': [5.0, 5.0, 5.0],
+                        u'symbol': u'N',
+                        u'tag': 0},
+                       {u'charge': 0.0,
+                        u'index': 1,
+                        u'magmom': 0.0,
+                        u'momentum': [0.0, 0.0, 0.0],
+                        u'position': [5.0, 5.9492361, 4.6072123],
+                        u'symbol': u'H',
+                        u'tag': 0},
+                       {u'charge': 0.0,
+                        u'index': 2,
+                        u'magmom': 0.0,
+                        u'momentum': [0.0, 0.0, 0.0],
+                        u'position': [5.8219788999999995,
+                                      4.5253727999999995,
+                                      4.6072491],
+                        u'symbol': u'H',
+                        u'tag': 0},
+                       {u'charge': 0.0,
+                        u'index': 3,
+                        u'magmom': 0.0,
+                        u'momentum': [0.0, 0.0, 0.0],
+                        u'position': [4.1780211000000005,
+                                      4.5253727999999995,
+                                      4.6072491],
+                        u'symbol': u'H',
+                        u'tag': 0}],
+            u'cell': [[10.0, 0.0, 0.0], [0.0, 10.0, 0.0], [0.0, 0.0, 10.0]],
+            u'chemical_symbols': [u'H', u'N'],
+            u'constraints': [{u'kwargs': {u'indices': [0]},
+                              u'name': u'FixAtoms'}],
+            u'info': {},
+            u'mass': 17.030520000000003,
+            u'natoms': 4,
+            u'pbc': [True, True, True],
+            u'spacegroup': u'Pm (6)',
+            u'symbol_counts': {u'H': 3, u'N': 1},
+            u'volume': 1000.0000000000007},
  u'calculator': {u'charges': [None, None, None, None],
                  u'dipole': None,
                  u'elapsed-time': 205.702,
@@ -272,53 +332,38 @@ pprint(next(c))
                               [u'H',
                                u'potpaw_PBE/H/POTCAR',
                                u'51dd11a1883cb1d482388078d3764b6e1fde9e02']],
+                 u'program': u'vasp ',
+                 u'run-date': u'2016 05 18 ',
+                 u'run-time': u'22:35:27 ',
                  u'smax': 0.0019324973600313817,
                  u'stress': [0.0018598465495721207,
                              0.0018678603789048624,
                              0.0019324973600313817,
                              -1.4921138961610293e-06,
                              -0.0,
-                             -0.0]},
- u'cell': [[10.0, 0.0, 0.0], [0.0, 10.0, 0.0], [0.0, 0.0, 10.0]],
- u'constraints': [{u'kwargs': {u'indices': [0]}, u'name': u'FixAtoms'}],
- u'ctime': datetime.datetime(2017, 3, 6, 14, 12, 26, 214000),
- u'info': {},
- u'mass': 17.030520000000003,
- u'mtime': datetime.datetime(2017, 3, 6, 14, 12, 26, 214000),
- u'natoms': 4,
- u'pbc': [True, True, True],
- u'user': u'jkitchin',
- u'volume': 1000.0000000000007}
+                             -0.0],
+                 u'subversion': u'31Mar14 (build Aug 04 2015 12:48:45) complex                          serial ',
+                 u'version': u'5.3.5  '},
+ u'ctime': datetime.datetime(2017, 3, 8, 0, 4, 29, 371000),
+ u'inserted-hash': u'b1e359083a3f6f5cf39067424e845361b84219a0',
+ u'mtime': datetime.datetime(2017, 3, 8, 0, 4, 29, 371000),
+ u'user': [u'jkitchin']}
 :END:
 
-** By a bond length
-
-By C-O bond-length, say we want C-O bond lengths less than 1.2 angstroms. This would not be an easy query to do in the database. Instead we get all documents that match at least one C and one O, and use python externally to filter the matches.
+Here we find calculations containing N and H.
 
 #+BEGIN_SRC python :results output org drawer
-import numpy as np
+from pprint import pprint
 from vasp.mongo import MongoDatabase
 db = MongoDatabase()
 
-all_atoms = db.get_atoms({'C': {'$gte': 1}, 'O': {'$gte': 1}})
-
-def bond_length_filter(atoms, bond_length=1.2):
-    "Return True if there is a C-O bond less than bond_length in atoms."    
-    C = [atom for atom in atoms if atom.symbol == 'C']
-    O = [atom for atom in atoms if atom.symbol == 'O']
-    for catom in C:
-        for oatom in O:
-            d = np.sqrt(sum(catom.position - oatom.position)**2)
-            if d <= bond_length:
-                return d
-
-A = [atoms for atoms in all_atoms if bond_length_filter(atoms)]
-print(len(A))
+c = db.find({'atoms.chemical_symbols': {'$all': ['N', 'H']}})
+print(c.count())
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-23
+2
 :END:
 
 ** By a calc parameter
@@ -350,12 +395,15 @@ for doc in c: print(doc['calculator']['parameters']['setups'])
 
 ** An equation of state
 
+Here we filter by spacegroup to get a set of calculations we could use for an equation of state of fcc Cu.
+
 #+BEGIN_SRC python :results output org drawer
 import numpy as np
 from vasp.mongo import MongoDatabase
 db = MongoDatabase()
 
-eos = db.find({'Cu': 1, 'natoms': 1,
+eos = db.find({'atoms.symbol_counts.Cu': 1, 'atoms.natoms': 1,
+               'atoms.spacegroup': {'$regex': '(225)'},
                'calculator.parameters.kpts': [8, 8, 8],
                'calculator.parameters.encut': 350},
               projection={'_id': 0, 'calculator.pathtags': 1})
@@ -366,22 +414,176 @@ for c in eos: print c
 
 #+RESULTS:
 :RESULTS:
-12
+6
 {u'calculator': {u'pathtags': [u'Cu-3.5', u'bulk', u'dft-book', u'jkitchin']}}
 {u'calculator': {u'pathtags': [u'Cu-3.55', u'bulk', u'dft-book', u'jkitchin']}}
 {u'calculator': {u'pathtags': [u'Cu-3.6', u'bulk', u'dft-book', u'jkitchin']}}
 {u'calculator': {u'pathtags': [u'Cu-3.65', u'bulk', u'dft-book', u'jkitchin']}}
 {u'calculator': {u'pathtags': [u'Cu-3.7', u'bulk', u'dft-book', u'jkitchin']}}
 {u'calculator': {u'pathtags': [u'Cu-3.75', u'bulk', u'dft-book', u'jkitchin']}}
-{u'calculator': {u'pathtags': [u'Cu-bcc-2.75', u'bulk', u'dft-book', u'jkitchin']}}
-{u'calculator': {u'pathtags': [u'Cu-bcc-2.8', u'bulk', u'dft-book', u'jkitchin']}}
-{u'calculator': {u'pathtags': [u'Cu-bcc-2.85', u'bulk', u'dft-book', u'jkitchin']}}
-{u'calculator': {u'pathtags': [u'Cu-bcc-2.9', u'bulk', u'dft-book', u'jkitchin']}}
-{u'calculator': {u'pathtags': [u'Cu-bcc-2.95', u'bulk', u'dft-book', u'jkitchin']}}
-{u'calculator': {u'pathtags': [u'Cu-bcc-3.0', u'bulk', u'dft-book', u'jkitchin']}}
 :END:
 
 This makes it seem like storing a spacegroup is a good idea. For now, we either need to match patterns on a tag, or use external python filtering.
+
+** Check a calculator
+
+This shows we can rebuild a calculator from the database.
+
+#+BEGIN_SRC python :results output org drawer
+from vasp.mongo import MongoDatabase
+from vasp import Vasp
+
+db = MongoDatabase()
+atoms = next(db.get_atoms({'atoms.symbol_counts.O': 1}))
+calc = atoms.get_calculator()
+print(calc.ppp_list)
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+[['C', 'potpaw_PBE/C/POTCAR', 1], ['O', 'potpaw_PBE/O/POTCAR', 1]]
+:END:
+
+
+
+*** A special setup calculator
+
+#+BEGIN_SRC python :results output org drawer
+from vasp.mongo import MongoDatabase
+from vasp import Vasp
+
+db = MongoDatabase()
+atoms = next(db.get_atoms({'calculator.path': '/home-research/jkitchin/dft-book/molecules/O_s'}))
+calc = atoms.get_calculator()
+print(calc)
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+
+
+Vasp calculation directory:
+---------------------------
+  [[/home-research/jkitchin/dft-book/molecules/O_s]]
+
+Unit cell:
+----------
+       x       y       z             |v|
+  v0   6.000   0.000   0.000       6.000 Ang
+  v1   0.000   6.000   0.000       6.000 Ang
+  v2   0.000   0.000   6.000       6.000 Ang
+  alpha, beta, gamma (deg):  90.0  90.0  90.0
+  Total volume:                  216.000 Ang^3
+  Stress:    xx     yy     zz     yz     xz     xy
+          0.001  0.001  0.001 -0.000 -0.000 -0.000 GPa
+
+  ID  tag     sym    x         y         z        rmsF (eV/A)
+  0   0       O      5.000     5.000     5.000       0.00
+  Potential energy: -1.5056 eV
+
+INPUT Parameters:
+-----------------
+  magmom    : [1.0]
+  pp        : PBE
+  setups    : [['O', '_s']]
+  kpts      : [1, 1, 1]
+  encut     : 300
+  lcharg    : False
+  xc        : pbe
+  ispin     : 2
+  ismear    : 0
+  lwave     : False
+  sigma     : 0.001
+  lorbit    : 11
+
+Pseudopotentials used:
+----------------------
+  O: potpaw_PBE/O_s/POTCAR (git-hash: b4bfc67547c457885a1cc949eeda825354a6520a)
+:END:
+
+*** calc with rwigs
+
+#+BEGIN_SRC python :results output org drawer
+from vasp.mongo import MongoDatabase
+from vasp import Vasp
+
+db = MongoDatabase()
+atoms = next(db.get_atoms({'calculator.path': '/home-research/jkitchin/dft-book/molecules/co-ados'}))
+calc = atoms.get_calculator()
+print(calc)
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+
+
+Vasp calculation directory:
+---------------------------
+  [[/home-research/jkitchin/dft-book/molecules/co-ados]]
+
+Unit cell:
+----------
+       x       y       z             |v|
+  v0   6.000   0.000   0.000       6.000 Ang
+  v1   0.000   6.000   0.000       6.000 Ang
+  v2   0.000   0.000   6.000       6.000 Ang
+  alpha, beta, gamma (deg):  90.0  90.0  90.0
+  Total volume:                  216.000 Ang^3
+  Stress:    xx     yy     zz     yz     xz     xy
+          0.060  0.027  0.027 -0.000 -0.000 -0.000 GPa
+
+  ID  tag     sym    x         y         z        rmsF (eV/A)
+  0   0       C      0.000     0.000     0.000       5.14
+  1   0       O      1.200     0.000     0.000       5.14
+  Potential energy: -14.7178 eV
+
+INPUT Parameters:
+-----------------
+  lcharg    : False
+  pp        : PBE
+  kpts      : [1, 1, 1]
+  xc        : pbe
+  ismear    : 1
+  lwave     : False
+  sigma     : 0.1
+  rwigs     : {'C': 1.0, 'O': 1.0}
+  encut     : 300
+
+Pseudopotentials used:
+----------------------
+  C: potpaw_PBE/C/POTCAR (git-hash: ee4d8576584f8e9f32e90853a0cbf9d4a9297330)
+  O: potpaw_PBE/O/POTCAR (git-hash: 592f34096943a6f30db8749d13efca516d75ec55)
+:END:
+
+** By a bond length
+By C-O bond-length, say we want C-O bond lengths less than 1.2 angstroms. This would not be an easy query to do in the database. Instead we get all documents that match at least one C and one O, and use python externally to filter the matches.
+
+#+BEGIN_SRC python :results output org drawer
+import numpy as np
+from vasp.mongo import MongoDatabase
+db = MongoDatabase()
+
+all_atoms = db.get_atoms({'atoms.symbol_counts.C': {'$gte': 1},
+                          'atoms.symbol_counts.O': {'$gte': 1}})
+
+def bond_length_filter(atoms, bond_length=1.2):
+    "Return True if there is a C-O bond less than bond_length in atoms."
+    C = [atom for atom in atoms if atom.symbol == 'C']
+    O = [atom for atom in atoms if atom.symbol == 'O']
+    for catom in C:
+        for oatom in O:
+            d = np.sqrt(sum(catom.position - oatom.position)**2)
+            if d <= bond_length:
+                return d
+
+A = [atoms for atoms in all_atoms if bond_length_filter(atoms)]
+print(len(A))
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+24
+:END:
 
 ** List all the pathtags
 
@@ -398,62 +600,7 @@ print(c)
 
 #+RESULTS:
 :RESULTS:
-[u'Al-bandstructure', u'blog', u'dft-book', u'jkitchin', u'co-1.05', u'molecules', u'org', u'source', u'co-1.1', u'co-1.15', u'co-1.2', u'co-1.25', u'co-n00', u'co-n01', u'co-n02', u'co-n03', u'co-n04', u'co-n05', u'co-n06', u'co-n07', u'co-n08', u'co-n09', u'Fe-bcc-fixedmagmom-4.00', u'bulk', u'Fe-bcc-fixedmagmom-4.50', u'Fe-bcc-fixedmagmom-5.00', u'Fe-bcc-fixedmagmom-5.50', u'Fe-bcc-fixedmagmom-6.00', u'mp', u'serial-Cu-0', u'serial-Cu-1', u'serial-Cu-2', u'serial-Cu-3', u'serial-Cu-4', u'serial-Cu-5', u'serial-Cu-6', u'serial-Cu-7', u'serial-Cu-8', u'serial-Cu-9', u'mp-Cu-0', u'mp-Cu-1', u'mp-Cu-2', u'mp-Cu-3', u'mp-Cu-4', u'mp-Cu-5', u'mp-Cu-6', u'mp-Cu-7', u'mp-Cu-8', u'mp-Cu-9', u'mp-threadpool-Cu-0', u'mp-threadpool-Cu-1', u'mp-threadpool-Cu-2', u'mp-threadpool-Cu-3', u'mp-threadpool-Cu-4', u'mp-threadpool-Cu-5', u'mp-threadpool-Cu-6', u'mp-threadpool-Cu-7', u'mp-threadpool-Cu-8', u'mp-threadpool-Cu-9', u'threads-Cu-0', u'threads-Cu-1', u'threads-Cu-3', u'threads-Cu-2', u'threads-Cu-4', u'threads-Cu-6', u'threads-Cu-9', u'threads-Cu-5', u'threads-Cu-7', u'threads-Cu-8', u'mp-pool-Cu-1', u'mp-pool-Cu-2', u'mp-pool-Cu-9', u'mp-pool-Cu-5', u'mp-pool-Cu-7', u'mp-pool-Cu-3', u'mp-pool-Cu-0', u'mp-pool-Cu-4', u'mp-pool-Cu-8', u'mp-pool-Cu-6', u'futures-Cu-0', u'futures-Cu-1', u'futures-Cu-2', u'futures-Cu-3', u'futures-Cu-4', u'futures-Cu-6', u'futures-Cu-7', u'futures-Cu-5', u'futures-Cu-8', u'futures-Cu-9', u'queue-Cu-1', u'queue-Cu-2', u'queue-Cu-0', u'queue-Cu-3', u'queue-Cu-4', u'queue-Cu-5', u'queue-Cu-6', u'queue-Cu-7', u'queue-Cu-8', u'queue-Cu-9', u'bandstructure', u'simple-co', u'simple-co-n4', u'co-L-4', u'co-L-5', u'co-L-6', u'co-L-8', u'co-L-10', u'co-en-250', u'co-en-300', u'co-en-350', u'co-en-400', u'co-en-450', u'co-en-500', u'clone-1', u'co-chg', u'co-centered', u'benzene', u'chlorobenzene', u'co-ados', u'CF3Br', u'h2o-bader', u'co-cg', u'h2o-relax-centered', u'h2o_vib', u'h2o_relax', u'h2o_vib_dfpt', u'n2-relax', u'n2-vib', u'O', u'O2', u'O-sp-triplet', u'O2-sp-triplet', u'O-sp-triplet-250', u'O2-sp-triplet-250', u'O-sp-triplet-300', u'O2-sp-triplet-300', u'O-sp-triplet-350', u'O2-sp-triplet-350', u'O-sp-triplet-400', u'O2-sp-triplet-400', u'O-sp-triplet-450', u'O2-sp-triplet-450', u'O-sp-triplet-500', u'O2-sp-triplet-500', u'O-sp-triplet-550', u'O2-sp-triplet-550', u'O-sp-triplet-sigma-0.2', u'O2-sp-triplet-sigma-0.2', u'O-sp-triplet-sigma-0.1', u'O2-sp-triplet-sigma-0.1', u'O-sp-triplet-sigma-0.05', u'O2-sp-triplet-sigma-0.05', u'O-sp-triplet-sigma-0.02', u'O2-sp-triplet-sigma-0.02', u'O-sp-triplet-sigma-0.01', u'O2-sp-triplet-sigma-0.01', u'O-sp-triplet-sigma-0.001', u'O2-sp-triplet-sigma-0.001', u'O-sp-singlet', u'O2-sp-singlet', u'O-square-box-origin', u'O-square-box-center', u'O-square-box-random', u'O-orthorhombic-box-origin', u'O-orthorhombic-box-center', u'O-orthorhombic-box-random', u'O-sp-triplet-lowsym', u'O2-sp-singlet-magmoms', u'O2-sp-triplet-magmoms', u'O-sp-triplet-lowsym-s', u'nh3-initial', u'nh3-final', u'O2-sp-triplet-s', u'benzene-pbe', u'benzene-pbe-d2', u'O_s', u'simple-co-gga', u'CO', u'wgs', u'CO2', u'H2', u'H2O', u'CO-vib', u'CO2-vib', u'H2-vib', u'H2O-vib', u'Al-slab-unrelaxed', u'surfaces', u'Pt-slab-O-fcc', u'Pt-slab', u'Pt-slab-O-bridge', u'Pt-slab-O-hcp', u'Pt-slab-O-bridge-xy-constrained', u'Pt-slab-1x1', u'Pt-slab-1x1-O-fcc', u'Pt-slab-O-fcc-vib', u'Au-110', u'Au-110-missing-row', u'Ag-110', u'Ag-110-missing-row', u'Cu-110', u'Cu-110-missing-row', u'Al-slab-locpot', u'Al-Na-nodip', u'Al-Na-dip', u'Au-pbe', u'Au-pbe-d2', u'Au-benzene-pbe-d2', u'Al-slab-relaxed', u'Ag-kpts-2', u'Ag-kpts-3', u'Ag-kpts-4', u'Ag-kpts-5', u'Ag-kpts-6', u'Ag-kpts-8', u'Ag-kpts-10', u'Cu-sigma-0.001', u'Cu-sigma-0.05', u'Cu-sigma-0.1', u'Cu-sigma-0.2', u'Cu-sigma-0.5', u'Cu-3.5', u'Cu-3.55', u'Cu-3.6', u'Cu-3.65', u'Cu-3.7', u'Cu-3.75', u'Cu-bcc-2.75', u'Cu-bcc-2.8', u'Cu-bcc-2.85', u'Cu-bcc-2.9', u'Cu-bcc-2.95', u'Cu-bcc-3.0', u'Fe-bcc-fixedmagmom-0.00', u'Fe-bcc-fixedmagmom-2.00', u'Fe-bcc-fixedmagmom-8.00', u'Fe-bcc-sp-1', u'afm-feo', u'pd-ados', u'bulk-rh', u'atomic-rh', u'bulk-rh-kpts-3', u'bulk-rh-kpts-4', u'bulk-rh-kpts-6', u'bulk-rh-kpts-9', u'bulk-rh-kpts-12', u'bulk-rh-kpts-15', u'bulk-rh-kpts-18', u'atomic-rh-sp', u'Fe-bulk', u'Al-bulk', u'Ni-3.5', u'Ni-3.55', u'Ni-3.6', u'Ni-3.65', u'Ni-3.7', u'Ni-3.75', u'Cu2O', u'CuO', u'pd-dos-k8-ismear-5', u'pd-dos-k10-ismear-5', u'pd-dos-k12-ismear-5', u'pd-dos-k14-ismear-5', u'pd-dos-k16-ismear-5', u'pd-dos-k18-ismear-5', u'pd-dos-k20-ismear-5', u'Pd-LDA-3.75', u'Pd-LDA-3.8', u'Pd-LDA-3.85', u'Pd-LDA-3.9', u'Pd-LDA-3.95', u'Pd-LDA-4.0', u'Pd-LDA-4.05', u'Pd-LDA-4.1', u'Pd-GGA-PS-3.75', u'Pd-GGA-PS-3.8', u'Pd-GGA-PS-3.85', u'Pd-GGA-PS-3.9', u'Pd-GGA-PS-3.95', u'Pd-GGA-PS-4.0', u'Pd-GGA-PS-4.05', u'Pd-GGA-PS-4.1', u'Pd-GGA-AM-3.75', u'Pd-GGA-AM-3.8', u'Pd-GGA-AM-3.85', u'Pd-GGA-AM-3.9', u'Pd-GGA-AM-3.95', u'Pd-GGA-AM-4.0', u'Pd-GGA-AM-4.05', u'Pd-GGA-AM-4.1', u'Pd-GGA-RP-3.75', u'Pd-GGA-RP-3.8', u'Pd-GGA-RP-3.85', u'Pd-GGA-RP-3.9', u'Pd-GGA-RP-3.95', u'Pd-GGA-RP-4.0', u'Pd-GGA-RP-4.05', u'Pd-GGA-RP-4.1', u'Pd-GGA-PE-3.75', u'Pd-GGA-PE-3.8', u'Pd-GGA-PE-3.85', u'Pd-GGA-PE-3.9', u'Pd-GGA-PE-3.95', u'Pd-GGA-PE-4.0', u'Pd-GGA-PE-4.05', u'Pd-GGA-PE-4.1', u'Al-lda-vasp', u'Al-lda-ase', u'Fe-elastic', u'Au-fcc', u'Ag-fcc', u'Cu-fcc', u'Cu2O-U=4.0', u'CuO-U=4.0', u'Al-elastic', u'Ni-PBE', u'Cu-cls-0', u'CuPd-cls-0', u'Si-selfconsistent', u'Si-bandstructure', u'Ni-PBE0', u'Ni-HSE06', u'Si-bs-0', u'Si-bs-1', u'Si-bs-2', u'Al-c11--0.1', u'Al-c11--0.05', u'Al-c11-0', u'Al-c11-0.05', u'Al-c11-0.1', u'Al-c11--0.025', u'Al-c11-0.0', u'Al-c11-0.025', u'alloy', u'pd', u'cupd-1', u'cupd-2', u'cu', u'cu3pd-1', u'cu3pd-2', u'2.50-1.40', u'Ru', u'2.50-1.50', u'2.50-1.60', u'2.50-1.70', u'2.50-1.80', u'2.60-1.40', u'2.60-1.50', u'2.60-1.60', u'2.60-1.70', u'2.60-1.80', u'2.70-1.40', u'2.70-1.50', u'2.70-1.60', u'2.70-1.70', u'2.70-1.80', u'2.80-1.40', u'2.80-1.50', u'2.80-1.60', u'2.80-1.70', u'2.80-1.80', u'2.90-1.40', u'2.90-1.50', u'2.90-1.60', u'2.90-1.70', u'2.90-1.80', u'kpts-2', u'tio2', u'kpts-3', u'kpts-4', u'kpts-5', u'kpts-6', u'kpts-7', u'kpts-8', u'step1-0.90', u'step1-0.95', u'step1-1.00', u'step1-1.05', u'step1-1.10', u'step2-0.90', u'step2-0.95', u'step2-1.00', u'step2-1.05', u'step2-1.10', u'step3', u'step4', u'TiO2', u'rutile', u'rutile-28.0', u'rutile-30.0', u'rutile-32.0', u'rutile-34.0', u'rutile-36.0', u'anatase', u'anatase-30.0', u'anatase-33.0', u'anatase-35.0', u'anatase-37.0', u'anatase-39.0', u'3', u'Cu-layers', u'4', u'5', u'6', u'7', u'8', u'9', u'10', u'11', u'devel', u'lr-u', u'step1', u'step2--0.100', u'step2--0.050', u'step2--0.025', u'step2-0.025', u'step2-0.050', u'step2-0.100', u'step3--0.100', u'step3--0.050', u'step3--0.025', u'step3-0.025', u'step3-0.050', u'step3-0.100', u'0.bak', u'FeNi_O_rocksalt', u'FeO-NiO-ATAT', u'research', u'0', u'1', u'113', u'114', u'116', u'118', u'12', u'122', u'126', u'13', u'135', u'137', u'138', u'14', u'15', u'16', u'17', u'179', u'18', u'189', u'19', u'190', u'191', u'2', u'20', u'207', u'21', u'22', u'23', u'232', u'24', u'25', u'26', u'27', u'33', u'35', u'36', u'38', u'43', u'44', u'45', u'46', u'48', u'49', u'50', u'55', u'60', u'65', u'67', u'68', u'70', u'72', u'73', u'75', u'76', u'77', u'79', u'80', u'82', u'86', u'98', u'Br2', u'adsorbate-CX', u'vasp', u'C', u'CBr1', u'CBr2', u'CBr3', u'CBr4', u'CCl1', u'CCl2', u'CCl3', u'CCl4', u'CF1', u'CF2', u'CF3', u'CF4', u'CH1', u'CH2', u'CH3', u'CH4', u'Cl2', u'F2', u'CF0', u'Ir', u'bridge', u'fcc', u'hcp', u'CH0', u'ontop', u'Pd', u'Pt', u'Rh', u'0.0', u'Ag', u'adsorbate-ht', u'phase1', u'0.25', u'Br', u'0.5', u'0.75', u'1.0', u'Cl', u'F', u'H', u'N', u'S', u'Au', u'Cu', u'phase2']
-:END:
-
-** Check a calculator
-
-This shows we can rebuild a calculator from the database.
-
-#+BEGIN_SRC python :results output org drawer
-from vasp.mongo import MongoDatabase
-from vasp import Vasp
-
-db = MongoDatabase()
-atoms = next(db.get_atoms({'O': 1}))
-print(atoms.get_calculator())
-#+END_SRC
-
-#+RESULTS:
-:RESULTS:
-
-
-Vasp calculation directory:
----------------------------
-  [[/home-research/jkitchin/dft-book/blog/source/org/molecules/co-1.05]]
-
-Unit cell:
-----------
-       x       y       z             |v|
-  v0   6.000   0.000   0.000       6.000 Ang
-  v1   0.000   6.000   0.000       6.000 Ang
-  v2   0.000   0.000   6.000       6.000 Ang
-  alpha, beta, gamma (deg):  90.0  90.0  90.0
-  Total volume:                  216.000 Ang^3
-  Stress:    xx     yy     zz     yz     xz     xy
-         -0.060  0.011  0.011 -0.000 -0.000 -0.000 GPa
-
-  ID  tag     sym    x         y         z        rmsF (eV/A)
-  0   0       C      0.000     0.000     0.000      14.93
-  1   0       O      1.050     0.000     0.000      14.93
-  Potential energy: -14.2158 eV
-
-INPUT Parameters:
------------------
-  lcharg    : False
-  pp        : PBE
-  nbands    : 6
-  xc        : pbe
-  ismear    : 1
-  lwave     : False
-  sigma     : 0.01
-  kpts      : [1, 1, 1]
-  encut     : 350
-
-Pseudopotentials used:
-----------------------
-  C: potpaw_PBE/C/POTCAR (git-hash: ee4d8576584f8e9f32e90853a0cbf9d4a9297330)
-  O: potpaw_PBE/O/POTCAR (git-hash: 592f34096943a6f30db8749d13efca516d75ec55)
+[u'Al-bandstructure', u'blog', u'dft-book', u'jkitchin', u'co-1.05', u'molecules', u'org', u'source', u'co-1.1', u'co-1.15', u'co-1.2', u'co-1.25', u'co-n00', u'co-n01', u'co-n02', u'co-n03', u'co-n04', u'co-n05', u'co-n06', u'co-n07', u'co-n08', u'co-n09', u'Fe-bcc-fixedmagmom-4.00', u'bulk', u'Fe-bcc-fixedmagmom-4.50', u'Fe-bcc-fixedmagmom-5.00', u'Fe-bcc-fixedmagmom-5.50', u'Fe-bcc-fixedmagmom-6.00', u'mp', u'serial-Cu-0', u'serial-Cu-1', u'serial-Cu-2', u'serial-Cu-3', u'serial-Cu-4', u'serial-Cu-5', u'serial-Cu-6', u'serial-Cu-7', u'serial-Cu-8', u'serial-Cu-9', u'mp-Cu-0', u'mp-Cu-1', u'mp-Cu-2', u'mp-Cu-3', u'mp-Cu-4', u'mp-Cu-5', u'mp-Cu-6', u'mp-Cu-7', u'mp-Cu-8', u'mp-Cu-9', u'mp-threadpool-Cu-0', u'mp-threadpool-Cu-1', u'mp-threadpool-Cu-2', u'mp-threadpool-Cu-3', u'mp-threadpool-Cu-4', u'mp-threadpool-Cu-5', u'mp-threadpool-Cu-6', u'mp-threadpool-Cu-7', u'mp-threadpool-Cu-8', u'mp-threadpool-Cu-9', u'threads-Cu-0', u'threads-Cu-1', u'threads-Cu-3', u'threads-Cu-2', u'threads-Cu-4', u'threads-Cu-6', u'threads-Cu-9', u'threads-Cu-5', u'threads-Cu-7', u'threads-Cu-8', u'mp-pool-Cu-1', u'mp-pool-Cu-2', u'mp-pool-Cu-9', u'mp-pool-Cu-5', u'mp-pool-Cu-7', u'mp-pool-Cu-3', u'mp-pool-Cu-0', u'mp-pool-Cu-4', u'mp-pool-Cu-8', u'mp-pool-Cu-6', u'futures-Cu-0', u'futures-Cu-1', u'futures-Cu-2', u'futures-Cu-3', u'futures-Cu-4', u'futures-Cu-6', u'futures-Cu-7', u'futures-Cu-5', u'futures-Cu-8', u'futures-Cu-9', u'queue-Cu-1', u'queue-Cu-2', u'queue-Cu-0', u'queue-Cu-3', u'queue-Cu-4', u'queue-Cu-5', u'queue-Cu-6', u'queue-Cu-7', u'queue-Cu-8', u'queue-Cu-9', u'bandstructure', u'simple-co', u'simple-co-n4', u'co-L-4', u'co-L-5', u'co-L-6', u'co-L-8', u'co-L-10', u'co-en-250', u'co-en-300', u'co-en-350', u'co-en-400', u'co-en-450', u'co-en-500', u'clone-1', u'co-chg', u'co-centered', u'benzene', u'chlorobenzene', u'co-ados', u'CF3Br', u'h2o-bader', u'co-cg', u'h2o-relax-centered', u'h2o_vib', u'h2o_relax', u'h2o_vib_dfpt', u'n2-relax', u'n2-vib', u'O', u'O2', u'O-sp-triplet', u'O2-sp-triplet', u'O-sp-triplet-250', u'O2-sp-triplet-250', u'O-sp-triplet-300', u'O2-sp-triplet-300', u'O-sp-triplet-350', u'O2-sp-triplet-350', u'O-sp-triplet-400', u'O2-sp-triplet-400', u'O-sp-triplet-450', u'O2-sp-triplet-450', u'O-sp-triplet-500', u'O2-sp-triplet-500', u'O-sp-triplet-550', u'O2-sp-triplet-550', u'O-sp-triplet-sigma-0.2', u'O2-sp-triplet-sigma-0.2', u'O-sp-triplet-sigma-0.1', u'O2-sp-triplet-sigma-0.1', u'O-sp-triplet-sigma-0.05', u'O2-sp-triplet-sigma-0.05', u'O-sp-triplet-sigma-0.02', u'O2-sp-triplet-sigma-0.02', u'O-sp-triplet-sigma-0.01', u'O2-sp-triplet-sigma-0.01', u'O-sp-triplet-sigma-0.001', u'O2-sp-triplet-sigma-0.001', u'O-sp-singlet', u'O2-sp-singlet', u'O-square-box-origin', u'O-square-box-center', u'O-square-box-random', u'O-orthorhombic-box-origin', u'O-orthorhombic-box-center', u'O-orthorhombic-box-random', u'O-sp-triplet-lowsym', u'O2-sp-singlet-magmoms', u'O2-sp-triplet-magmoms', u'O-sp-triplet-lowsym-s', u'nh3-initial', u'nh3-final', u'O2-sp-triplet-s', u'benzene-pbe', u'benzene-pbe-d2', u'O_s', u'simple-co-gga', u'CO', u'wgs', u'CO2', u'H2', u'H2O', u'CO-vib', u'CO2-vib', u'H2-vib', u'H2O-vib', u'Al-slab-unrelaxed', u'surfaces', u'Pt-slab-O-fcc', u'Pt-slab', u'Pt-slab-O-bridge', u'Pt-slab-O-hcp', u'Pt-slab-O-bridge-xy-constrained', u'Pt-slab-1x1', u'Pt-slab-1x1-O-fcc', u'Pt-slab-O-fcc-vib', u'Au-110', u'Au-110-missing-row', u'Ag-110', u'Ag-110-missing-row', u'Cu-110', u'Cu-110-missing-row', u'Al-slab-locpot', u'Al-Na-nodip', u'Al-Na-dip', u'Au-pbe', u'Au-pbe-d2', u'Au-benzene-pbe-d2', u'Al-slab-relaxed', u'Ag-kpts-2', u'Ag-kpts-3', u'Ag-kpts-4', u'Ag-kpts-5', u'Ag-kpts-6', u'Ag-kpts-8', u'Ag-kpts-10', u'Cu-sigma-0.001', u'Cu-sigma-0.05', u'Cu-sigma-0.1', u'Cu-sigma-0.2', u'Cu-sigma-0.5', u'Cu-3.5', u'Cu-3.55', u'Cu-3.6', u'Cu-3.65', u'Cu-3.7', u'Cu-3.75', u'Cu-bcc-2.75', u'Cu-bcc-2.8', u'Cu-bcc-2.85', u'Cu-bcc-2.9', u'Cu-bcc-2.95', u'Cu-bcc-3.0', u'Fe-bcc-fixedmagmom-0.00', u'Fe-bcc-fixedmagmom-2.00', u'Fe-bcc-fixedmagmom-8.00', u'Fe-bcc-sp-1', u'afm-feo', u'pd-ados', u'bulk-rh', u'atomic-rh', u'bulk-rh-kpts-3', u'bulk-rh-kpts-4', u'bulk-rh-kpts-6', u'bulk-rh-kpts-9', u'bulk-rh-kpts-12', u'bulk-rh-kpts-15', u'bulk-rh-kpts-18', u'atomic-rh-sp', u'Fe-bulk', u'Al-bulk', u'Ni-3.5', u'Ni-3.55', u'Ni-3.6', u'Ni-3.65', u'Ni-3.7', u'Ni-3.75', u'Cu2O', u'CuO', u'pd-dos-k8-ismear-5', u'pd-dos-k10-ismear-5', u'pd-dos-k12-ismear-5', u'pd-dos-k14-ismear-5', u'pd-dos-k16-ismear-5', u'pd-dos-k18-ismear-5', u'pd-dos-k20-ismear-5', u'Pd-LDA-3.75', u'Pd-LDA-3.8', u'Pd-LDA-3.85', u'Pd-LDA-3.9', u'Pd-LDA-3.95', u'Pd-LDA-4.0', u'Pd-LDA-4.05', u'Pd-LDA-4.1', u'Pd-GGA-PS-3.75', u'Pd-GGA-PS-3.8', u'Pd-GGA-PS-3.85', u'Pd-GGA-PS-3.9', u'Pd-GGA-PS-3.95', u'Pd-GGA-PS-4.0', u'Pd-GGA-PS-4.05', u'Pd-GGA-PS-4.1', u'Pd-GGA-AM-3.75', u'Pd-GGA-AM-3.8', u'Pd-GGA-AM-3.85', u'Pd-GGA-AM-3.9', u'Pd-GGA-AM-3.95', u'Pd-GGA-AM-4.0', u'Pd-GGA-AM-4.05', u'Pd-GGA-AM-4.1', u'Pd-GGA-RP-3.75', u'Pd-GGA-RP-3.8', u'Pd-GGA-RP-3.85', u'Pd-GGA-RP-3.9', u'Pd-GGA-RP-3.95', u'Pd-GGA-RP-4.0', u'Pd-GGA-RP-4.05', u'Pd-GGA-RP-4.1', u'Pd-GGA-PE-3.75', u'Pd-GGA-PE-3.8', u'Pd-GGA-PE-3.85', u'Pd-GGA-PE-3.9', u'Pd-GGA-PE-3.95', u'Pd-GGA-PE-4.0', u'Pd-GGA-PE-4.05', u'Pd-GGA-PE-4.1', u'Al-lda-vasp', u'Al-lda-ase', u'Fe-elastic', u'Au-fcc', u'Ag-fcc', u'Cu-fcc', u'Cu2O-U=4.0', u'CuO-U=4.0', u'Al-elastic', u'Ni-PBE', u'Cu-cls-0', u'CuPd-cls-0', u'Si-selfconsistent', u'Si-bandstructure', u'Ni-PBE0', u'Ni-HSE06', u'Si-bs-0', u'Si-bs-1', u'Si-bs-2', u'Al-c11--0.1', u'Al-c11--0.05', u'Al-c11-0', u'Al-c11-0.05', u'Al-c11-0.1', u'Al-c11--0.025', u'Al-c11-0.0', u'Al-c11-0.025', u'alloy', u'pd', u'cupd-1', u'cupd-2', u'cu', u'cu3pd-1', u'cu3pd-2', u'2.50-1.40', u'Ru', u'2.50-1.50', u'2.50-1.60', u'2.50-1.70', u'2.50-1.80', u'2.60-1.40', u'2.60-1.50', u'2.60-1.60', u'2.60-1.70', u'2.60-1.80', u'2.70-1.40', u'2.70-1.50', u'2.70-1.60', u'2.70-1.70', u'2.70-1.80', u'2.80-1.40', u'2.80-1.50', u'2.80-1.60', u'2.80-1.70', u'2.80-1.80', u'2.90-1.40', u'2.90-1.50', u'2.90-1.60', u'2.90-1.70', u'2.90-1.80', u'kpts-2', u'tio2', u'kpts-3', u'kpts-4', u'kpts-5', u'kpts-6', u'kpts-7', u'kpts-8', u'step1-0.90', u'step1-0.95', u'step1-1.00', u'step1-1.05', u'step1-1.10', u'step2-0.90', u'step2-0.95', u'step2-1.00', u'step2-1.05', u'step2-1.10', u'step3', u'step4', u'TiO2', u'rutile', u'rutile-28.0', u'rutile-30.0', u'rutile-32.0', u'rutile-34.0', u'rutile-36.0', u'anatase', u'anatase-30.0', u'anatase-33.0', u'anatase-35.0', u'anatase-37.0', u'anatase-39.0', u'3', u'Cu-layers', u'4', u'5', u'6', u'7', u'8', u'9', u'10', u'11', u'devel', u'lr-u', u'step1', u'step2--0.100', u'step2--0.050', u'step2--0.025', u'step2-0.025', u'step2-0.050', u'step2-0.100', u'step3--0.100', u'step3--0.050', u'step3--0.025', u'step3-0.025', u'step3-0.050', u'step3-0.100']
 :END:
 
 ** update a record
@@ -466,23 +613,24 @@ from bson.objectid import ObjectId
 
 db = MongoDatabase()
 
-print(next(db.find(limit=1))['_id'])
-
-db.collection.update({'_id': ObjectId('58bd6d8c340e3bfc7f69ccf8')},
-                     {'$set': {'special_tags': ['bulk-modulus']}})
+db.collection.update({'calculator.path': '/home-research/jkitchin/dft-book/molecules/nh3-initial'},
+                     {'$set': {'special_tags': ['initial-state']}})
 
 # this is how to add a tag to the tags array
-db.collection.update({'_id': ObjectId('58bd6d8c340e3bfc7f69ccf8')},
-                     {'$addToSet': {'special_tags': {'$each': ['bulk-modulus', 'Murnaghan']}}})
+db.collection.update({'calculator.path': '/home-research/jkitchin/dft-book/molecules/nh3-initial'},
+                     {'$addToSet': {'special_tags': {'$each': ['neb', 'initial-state']}}})
 
-c = db.find({'_id': ObjectId('58bd6d8c340e3bfc7f69ccf8')})
-print(next(c))
+c = db.find({'calculator.path': '/home-research/jkitchin/dft-book/molecules/nh3-initial'},
+            projection={'special_tags': 1})
+
+import pprint
+pprint.pprint(next(c))
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-58bd6d8c340e3bfc7f69ccf8
-{u'info': {}, u'volume': 191.87240999273095, u'natoms': 4, u'special_tags': [u'bulk-modulus', u'Murnaghan'], u'ctime': datetime.datetime(2017, 3, 6, 14, 9, 16, 340000), u'arrays': {u'positions': [[0.0, 0.0, 9.999999873089783], [1.4318912156810875, 0.8267027783996388, 12.338268547696593], [2.863782474318912, 1.6534055816003612, 14.676537222303404], [0.0, 0.0, 17.014805896910214]], u'numbers': [13, 13, 13, 13], u'tags': [0, 0, 0, 0]}, u'calculator': {u'magmom': 0, u'stress': [0.006449951563292716, 0.006449951563292716, 0.0017486387353480974, -0.0, -0.0, -0.0], u'elapsed-time': 443.049, u'name': u'Vasp', u'parameters': {u'pp': u'PBE', u'xc': u'pbe', u'kpts': [6, 6, 6], u'encut': 300, u'lcharg': True, u'ismear': 1, u'lwave': True, u'sigma': 0.1}, u'charges': [None, None, None, None], u'energy': -14.17006237, u'smax': 0.006449951563292716, u'dipole': None, u'nionic-steps': 1, u'potcars': [[u'Al', u'potpaw_PBE/Al/POTCAR', u'ad7c649117f1490637e05717e30ab9a0dd8774f6']], u'magmoms': [0.0, 0.0, 0.0, 0.0], u'fmax': 0.18858625, u'pathtags': [u'Al-bandstructure', u'blog', u'dft-book', u'jkitchin'], u'forces': [[0.0, 0.0, -0.01914122], [0.0, 0.0, 0.18858625], [0.0, 0.0, -0.18858625], [0.0, 0.0, 0.01914122]], u'path': u'/home-research/jkitchin/dft-book/blog/Al-bandstructure', u'memory-used': 0.070486, u'free_energy': -14.17006237}, u'Al': 4, u'atoms': [{u'magmom': 0.0, u'index': 0, u'symbol': u'Al', u'charge': 0.0, u'tag': 0, u'position': [0.0, 0.0, 9.999999873089783], u'momentum': [0.0, 0.0, 0.0]}, {u'magmom': 0.0, u'index': 1, u'symbol': u'Al', u'charge': 0.0, u'tag': 0, u'position': [1.4318912156810875, 0.8267027783996388, 12.338268547696593], u'momentum': [0.0, 0.0, 0.0]}, {u'magmom': 0.0, u'index': 2, u'symbol': u'Al', u'charge': 0.0, u'tag': 0, u'position': [2.863782474318912, 1.6534055816003612, 14.676537222303404], u'momentum': [0.0, 0.0, 0.0]}, {u'magmom': 0.0, u'index': 3, u'symbol': u'Al', u'charge': 0.0, u'tag': 0, u'position': [0.0, 0.0, 17.014805896910214], u'momentum': [0.0, 0.0, 0.0]}], u'cell': [[2.86378246, 0.0, 0.0], [1.43189123, 2.48010836, 0.0], [0.0, 0.0, 27.01480577]], u'mass': 107.92616, u'user': u'jkitchin', u'pbc': [True, True, True], u'mtime': datetime.datetime(2017, 3, 6, 14, 9, 16, 341000), u'_id': ObjectId('58bd6d8c340e3bfc7f69ccf8'), u'constraints': []}
+{u'_id': ObjectId('58bf4a8d340e3bceec74d081'),
+ u'special_tags': [u'initial-state', u'neb']}
 :END:
 
 * An example to walk directory and add calculations.
@@ -508,7 +656,7 @@ def vasp_p(directory):
 from vasp.mongo import MongoDatabase
 db = MongoDatabase()
 
-for root, dirs, files in os.walk('/home-research/jkitchin/research'):
+for root, dirs, files in os.walk('/home-research/jkitchin/dft-book'):
     for d in dirs:
         # compute absolute path to each directory in the current root
         absd = os.path.join(root, d)
@@ -520,20 +668,447 @@ for root, dirs, files in os.walk('/home-research/jkitchin/research'):
             and db.find({"calculator.path": absd}).count() == 0):
             # we found a vasp directory, so we can do something in it.
             # here we add it to the ase mongdb
-            try:
-                calc = Vasp(absd)
-                atoms = calc.get_atoms()
-                db.write(atoms)
-                print('added {}'.format(absd))
-            except:
-                print('Exception in {}'.format(absd))
-        else:
-            print('{} already there.'.format(absd))
+
+            calc = Vasp(absd)
+            atoms = calc.get_atoms()
+            db.write(atoms)
+            print('added {}'.format(absd))
+
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
+added /home-research/jkitchin/dft-book/blog/Al-bandstructure
+added /home-research/jkitchin/dft-book/blog/source/org/molecules/co-1.05
+added /home-research/jkitchin/dft-book/blog/source/org/molecules/co-1.1
+added /home-research/jkitchin/dft-book/blog/source/org/molecules/co-1.15
+added /home-research/jkitchin/dft-book/blog/source/org/molecules/co-1.2
+added /home-research/jkitchin/dft-book/blog/source/org/molecules/co-1.25
+added /home-research/jkitchin/dft-book/blog/source/org/molecules/co-n00
+added /home-research/jkitchin/dft-book/blog/source/org/molecules/co-n01
+added /home-research/jkitchin/dft-book/blog/source/org/molecules/co-n02
+added /home-research/jkitchin/dft-book/blog/source/org/molecules/co-n03
+added /home-research/jkitchin/dft-book/blog/source/org/molecules/co-n04
+added /home-research/jkitchin/dft-book/blog/source/org/molecules/co-n05
+added /home-research/jkitchin/dft-book/blog/source/org/molecules/co-n06
+added /home-research/jkitchin/dft-book/blog/source/org/molecules/co-n07
+added /home-research/jkitchin/dft-book/blog/source/org/molecules/co-n08
+added /home-research/jkitchin/dft-book/blog/source/org/molecules/co-n09
+added /home-research/jkitchin/dft-book/blog/source/org/bulk/Fe-bcc-fixedmagmom-4.00
+added /home-research/jkitchin/dft-book/blog/source/org/bulk/Fe-bcc-fixedmagmom-4.50
+added /home-research/jkitchin/dft-book/blog/source/org/bulk/Fe-bcc-fixedmagmom-5.00
+added /home-research/jkitchin/dft-book/blog/source/org/bulk/Fe-bcc-fixedmagmom-5.50
+added /home-research/jkitchin/dft-book/blog/source/org/bulk/Fe-bcc-fixedmagmom-6.00
+added /home-research/jkitchin/dft-book/blog/source/org/mp/serial-Cu-0
+added /home-research/jkitchin/dft-book/blog/source/org/mp/serial-Cu-1
+added /home-research/jkitchin/dft-book/blog/source/org/mp/serial-Cu-2
+added /home-research/jkitchin/dft-book/blog/source/org/mp/serial-Cu-3
+added /home-research/jkitchin/dft-book/blog/source/org/mp/serial-Cu-4
+added /home-research/jkitchin/dft-book/blog/source/org/mp/serial-Cu-5
+added /home-research/jkitchin/dft-book/blog/source/org/mp/serial-Cu-6
+added /home-research/jkitchin/dft-book/blog/source/org/mp/serial-Cu-7
+added /home-research/jkitchin/dft-book/blog/source/org/mp/serial-Cu-8
+added /home-research/jkitchin/dft-book/blog/source/org/mp/serial-Cu-9
+added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-Cu-0
+added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-Cu-1
+added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-Cu-2
+added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-Cu-3
+added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-Cu-4
+added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-Cu-5
+added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-Cu-6
+added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-Cu-7
+added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-Cu-8
+added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-Cu-9
+added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-threadpool-Cu-0
+added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-threadpool-Cu-1
+added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-threadpool-Cu-2
+added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-threadpool-Cu-3
+added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-threadpool-Cu-4
+added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-threadpool-Cu-5
+added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-threadpool-Cu-6
+added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-threadpool-Cu-7
+added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-threadpool-Cu-8
+added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-threadpool-Cu-9
+added /home-research/jkitchin/dft-book/blog/source/org/mp/threads-Cu-0
+added /home-research/jkitchin/dft-book/blog/source/org/mp/threads-Cu-1
+added /home-research/jkitchin/dft-book/blog/source/org/mp/threads-Cu-3
+added /home-research/jkitchin/dft-book/blog/source/org/mp/threads-Cu-2
+added /home-research/jkitchin/dft-book/blog/source/org/mp/threads-Cu-4
+added /home-research/jkitchin/dft-book/blog/source/org/mp/threads-Cu-6
+added /home-research/jkitchin/dft-book/blog/source/org/mp/threads-Cu-9
+added /home-research/jkitchin/dft-book/blog/source/org/mp/threads-Cu-5
+added /home-research/jkitchin/dft-book/blog/source/org/mp/threads-Cu-7
+added /home-research/jkitchin/dft-book/blog/source/org/mp/threads-Cu-8
+added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-pool-Cu-1
+added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-pool-Cu-2
+added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-pool-Cu-9
+added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-pool-Cu-5
+added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-pool-Cu-7
+added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-pool-Cu-3
+added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-pool-Cu-0
+added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-pool-Cu-4
+added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-pool-Cu-8
+added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-pool-Cu-6
+added /home-research/jkitchin/dft-book/blog/source/org/mp/futures-Cu-0
+added /home-research/jkitchin/dft-book/blog/source/org/mp/futures-Cu-1
+added /home-research/jkitchin/dft-book/blog/source/org/mp/futures-Cu-2
+added /home-research/jkitchin/dft-book/blog/source/org/mp/futures-Cu-3
+added /home-research/jkitchin/dft-book/blog/source/org/mp/futures-Cu-4
+added /home-research/jkitchin/dft-book/blog/source/org/mp/futures-Cu-6
+added /home-research/jkitchin/dft-book/blog/source/org/mp/futures-Cu-7
+added /home-research/jkitchin/dft-book/blog/source/org/mp/futures-Cu-5
+added /home-research/jkitchin/dft-book/blog/source/org/mp/futures-Cu-8
+added /home-research/jkitchin/dft-book/blog/source/org/mp/futures-Cu-9
+added /home-research/jkitchin/dft-book/blog/source/org/mp/queue-Cu-1
+added /home-research/jkitchin/dft-book/blog/source/org/mp/queue-Cu-2
+added /home-research/jkitchin/dft-book/blog/source/org/mp/queue-Cu-0
+added /home-research/jkitchin/dft-book/blog/source/org/mp/queue-Cu-3
+added /home-research/jkitchin/dft-book/blog/source/org/mp/queue-Cu-4
+added /home-research/jkitchin/dft-book/blog/source/org/mp/queue-Cu-5
+added /home-research/jkitchin/dft-book/blog/source/org/mp/queue-Cu-6
+added /home-research/jkitchin/dft-book/blog/source/org/mp/queue-Cu-7
+added /home-research/jkitchin/dft-book/blog/source/org/mp/queue-Cu-8
+added /home-research/jkitchin/dft-book/blog/source/org/mp/queue-Cu-9
+added /home-research/jkitchin/dft-book/blog/Al-bandstructure/bandstructure
+added /home-research/jkitchin/dft-book/blog/bulk/Fe-bcc-fixedmagmom-4.00
+added /home-research/jkitchin/dft-book/blog/bulk/Fe-bcc-fixedmagmom-4.50
+added /home-research/jkitchin/dft-book/blog/bulk/Fe-bcc-fixedmagmom-5.00
+added /home-research/jkitchin/dft-book/blog/bulk/Fe-bcc-fixedmagmom-5.50
+added /home-research/jkitchin/dft-book/blog/bulk/Fe-bcc-fixedmagmom-6.00
+added /home-research/jkitchin/dft-book/molecules/simple-co
+added /home-research/jkitchin/dft-book/molecules/simple-co-n4
+added /home-research/jkitchin/dft-book/molecules/co-L-4
+added /home-research/jkitchin/dft-book/molecules/co-L-5
+added /home-research/jkitchin/dft-book/molecules/co-L-6
+added /home-research/jkitchin/dft-book/molecules/co-L-8
+added /home-research/jkitchin/dft-book/molecules/co-L-10
+added /home-research/jkitchin/dft-book/molecules/co-en-250
+added /home-research/jkitchin/dft-book/molecules/co-en-300
+added /home-research/jkitchin/dft-book/molecules/co-en-350
+added /home-research/jkitchin/dft-book/molecules/co-en-400
+added /home-research/jkitchin/dft-book/molecules/co-en-450
+added /home-research/jkitchin/dft-book/molecules/co-en-500
+added /home-research/jkitchin/dft-book/molecules/clone-1
+added /home-research/jkitchin/dft-book/molecules/co-chg
+added /home-research/jkitchin/dft-book/molecules/co-centered
+added /home-research/jkitchin/dft-book/molecules/benzene
+added /home-research/jkitchin/dft-book/molecules/chlorobenzene
+added /home-research/jkitchin/dft-book/molecules/co-ados
+added /home-research/jkitchin/dft-book/molecules/CF3Br
+added /home-research/jkitchin/dft-book/molecules/h2o-bader
+added /home-research/jkitchin/dft-book/molecules/co-1.05
+added /home-research/jkitchin/dft-book/molecules/co-1.1
+added /home-research/jkitchin/dft-book/molecules/co-1.15
+added /home-research/jkitchin/dft-book/molecules/co-1.2
+added /home-research/jkitchin/dft-book/molecules/co-1.25
+added /home-research/jkitchin/dft-book/molecules/co-cg
+added /home-research/jkitchin/dft-book/molecules/h2o-relax-centered
+added /home-research/jkitchin/dft-book/molecules/h2o_vib
+added /home-research/jkitchin/dft-book/molecules/h2o_relax
+added /home-research/jkitchin/dft-book/molecules/h2o_vib_dfpt
+added /home-research/jkitchin/dft-book/molecules/n2-relax
+added /home-research/jkitchin/dft-book/molecules/n2-vib
+added /home-research/jkitchin/dft-book/molecules/O
+added /home-research/jkitchin/dft-book/molecules/O2
+added /home-research/jkitchin/dft-book/molecules/O-sp-triplet
+added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet
+added /home-research/jkitchin/dft-book/molecules/O-sp-triplet-250
+added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet-250
+added /home-research/jkitchin/dft-book/molecules/O-sp-triplet-300
+added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet-300
+added /home-research/jkitchin/dft-book/molecules/O-sp-triplet-350
+added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet-350
+added /home-research/jkitchin/dft-book/molecules/O-sp-triplet-400
+added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet-400
+added /home-research/jkitchin/dft-book/molecules/O-sp-triplet-450
+added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet-450
+added /home-research/jkitchin/dft-book/molecules/O-sp-triplet-500
+added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet-500
+added /home-research/jkitchin/dft-book/molecules/O-sp-triplet-550
+added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet-550
+added /home-research/jkitchin/dft-book/molecules/O-sp-triplet-sigma-0.2
+added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet-sigma-0.2
+added /home-research/jkitchin/dft-book/molecules/O-sp-triplet-sigma-0.1
+added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet-sigma-0.1
+added /home-research/jkitchin/dft-book/molecules/O-sp-triplet-sigma-0.05
+added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet-sigma-0.05
+added /home-research/jkitchin/dft-book/molecules/O-sp-triplet-sigma-0.02
+added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet-sigma-0.02
+added /home-research/jkitchin/dft-book/molecules/O-sp-triplet-sigma-0.01
+added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet-sigma-0.01
+added /home-research/jkitchin/dft-book/molecules/O-sp-triplet-sigma-0.001
+added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet-sigma-0.001
+added /home-research/jkitchin/dft-book/molecules/O-sp-singlet
+added /home-research/jkitchin/dft-book/molecules/O2-sp-singlet
+added /home-research/jkitchin/dft-book/molecules/O-square-box-origin
+added /home-research/jkitchin/dft-book/molecules/O-square-box-center
+added /home-research/jkitchin/dft-book/molecules/O-square-box-random
+added /home-research/jkitchin/dft-book/molecules/O-orthorhombic-box-origin
+added /home-research/jkitchin/dft-book/molecules/O-orthorhombic-box-center
+added /home-research/jkitchin/dft-book/molecules/O-orthorhombic-box-random
+added /home-research/jkitchin/dft-book/molecules/O-sp-triplet-lowsym
+added /home-research/jkitchin/dft-book/molecules/O2-sp-singlet-magmoms
+added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet-magmoms
+added /home-research/jkitchin/dft-book/molecules/O-sp-triplet-lowsym-s
+added /home-research/jkitchin/dft-book/molecules/nh3-initial
+added /home-research/jkitchin/dft-book/molecules/nh3-final
+added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet-s
+added /home-research/jkitchin/dft-book/molecules/benzene-pbe
+added /home-research/jkitchin/dft-book/molecules/benzene-pbe-d2
+added /home-research/jkitchin/dft-book/molecules/O_s
+added /home-research/jkitchin/dft-book/molecules/simple-co-gga
+added /home-research/jkitchin/dft-book/molecules/wgs/CO
+added /home-research/jkitchin/dft-book/molecules/wgs/CO2
+added /home-research/jkitchin/dft-book/molecules/wgs/H2
+added /home-research/jkitchin/dft-book/molecules/wgs/H2O
+added /home-research/jkitchin/dft-book/molecules/wgs/CO-vib
+added /home-research/jkitchin/dft-book/molecules/wgs/CO2-vib
+added /home-research/jkitchin/dft-book/molecules/wgs/H2-vib
+added /home-research/jkitchin/dft-book/molecules/wgs/H2O-vib
+added /home-research/jkitchin/dft-book/surfaces/Al-slab-unrelaxed
+added /home-research/jkitchin/dft-book/surfaces/Pt-slab-O-fcc
+added /home-research/jkitchin/dft-book/surfaces/Pt-slab
+added /home-research/jkitchin/dft-book/surfaces/Pt-slab-O-bridge
+added /home-research/jkitchin/dft-book/surfaces/Pt-slab-O-hcp
+added /home-research/jkitchin/dft-book/surfaces/Pt-slab-O-bridge-xy-constrained
+added /home-research/jkitchin/dft-book/surfaces/Pt-slab-1x1
+added /home-research/jkitchin/dft-book/surfaces/Pt-slab-1x1-O-fcc
+added /home-research/jkitchin/dft-book/surfaces/Pt-slab-O-fcc-vib
+added /home-research/jkitchin/dft-book/surfaces/Au-110
+added /home-research/jkitchin/dft-book/surfaces/Au-110-missing-row
+added /home-research/jkitchin/dft-book/surfaces/Ag-110
+added /home-research/jkitchin/dft-book/surfaces/Ag-110-missing-row
+added /home-research/jkitchin/dft-book/surfaces/Cu-110
+added /home-research/jkitchin/dft-book/surfaces/Cu-110-missing-row
+added /home-research/jkitchin/dft-book/surfaces/Al-slab-locpot
+added /home-research/jkitchin/dft-book/surfaces/Al-Na-nodip
+added /home-research/jkitchin/dft-book/surfaces/Al-Na-dip
+added /home-research/jkitchin/dft-book/surfaces/Au-pbe
+added /home-research/jkitchin/dft-book/surfaces/Au-pbe-d2
+added /home-research/jkitchin/dft-book/surfaces/Au-benzene-pbe-d2
+added /home-research/jkitchin/dft-book/surfaces/Al-slab-relaxed
+added /home-research/jkitchin/dft-book/surfaces/Al-bandstructure
+added /home-research/jkitchin/dft-book/surfaces/Al-bandstructure/bandstructure
+added /home-research/jkitchin/dft-book/bulk/Ag-kpts-2
+added /home-research/jkitchin/dft-book/bulk/Ag-kpts-3
+added /home-research/jkitchin/dft-book/bulk/Ag-kpts-4
+added /home-research/jkitchin/dft-book/bulk/Ag-kpts-5
+added /home-research/jkitchin/dft-book/bulk/Ag-kpts-6
+added /home-research/jkitchin/dft-book/bulk/Ag-kpts-8
+added /home-research/jkitchin/dft-book/bulk/Ag-kpts-10
+added /home-research/jkitchin/dft-book/bulk/Cu-sigma-0.001
+added /home-research/jkitchin/dft-book/bulk/Cu-sigma-0.05
+added /home-research/jkitchin/dft-book/bulk/Cu-sigma-0.1
+added /home-research/jkitchin/dft-book/bulk/Cu-sigma-0.2
+added /home-research/jkitchin/dft-book/bulk/Cu-sigma-0.5
+added /home-research/jkitchin/dft-book/bulk/Cu-3.5
+added /home-research/jkitchin/dft-book/bulk/Cu-3.55
+added /home-research/jkitchin/dft-book/bulk/Cu-3.6
+added /home-research/jkitchin/dft-book/bulk/Cu-3.65
+added /home-research/jkitchin/dft-book/bulk/Cu-3.7
+added /home-research/jkitchin/dft-book/bulk/Cu-3.75
+added /home-research/jkitchin/dft-book/bulk/Cu-bcc-2.75
+added /home-research/jkitchin/dft-book/bulk/Cu-bcc-2.8
+added /home-research/jkitchin/dft-book/bulk/Cu-bcc-2.85
+added /home-research/jkitchin/dft-book/bulk/Cu-bcc-2.9
+added /home-research/jkitchin/dft-book/bulk/Cu-bcc-2.95
+added /home-research/jkitchin/dft-book/bulk/Cu-bcc-3.0
+added /home-research/jkitchin/dft-book/bulk/Fe-bcc-fixedmagmom-0.00
+added /home-research/jkitchin/dft-book/bulk/Fe-bcc-fixedmagmom-2.00
+added /home-research/jkitchin/dft-book/bulk/Fe-bcc-fixedmagmom-4.00
+added /home-research/jkitchin/dft-book/bulk/Fe-bcc-fixedmagmom-5.00
+added /home-research/jkitchin/dft-book/bulk/Fe-bcc-fixedmagmom-6.00
+added /home-research/jkitchin/dft-book/bulk/Fe-bcc-fixedmagmom-8.00
+added /home-research/jkitchin/dft-book/bulk/Fe-bcc-sp-1
+added /home-research/jkitchin/dft-book/bulk/afm-feo
+added /home-research/jkitchin/dft-book/bulk/pd-ados
+added /home-research/jkitchin/dft-book/bulk/bulk-rh
+added /home-research/jkitchin/dft-book/bulk/atomic-rh
+added /home-research/jkitchin/dft-book/bulk/bulk-rh-kpts-3
+added /home-research/jkitchin/dft-book/bulk/bulk-rh-kpts-4
+added /home-research/jkitchin/dft-book/bulk/bulk-rh-kpts-6
+added /home-research/jkitchin/dft-book/bulk/bulk-rh-kpts-9
+added /home-research/jkitchin/dft-book/bulk/bulk-rh-kpts-12
+added /home-research/jkitchin/dft-book/bulk/bulk-rh-kpts-15
+added /home-research/jkitchin/dft-book/bulk/bulk-rh-kpts-18
+added /home-research/jkitchin/dft-book/bulk/atomic-rh-sp
+added /home-research/jkitchin/dft-book/bulk/Fe-bulk
+added /home-research/jkitchin/dft-book/bulk/Al-bulk
+added /home-research/jkitchin/dft-book/bulk/Ni-3.5
+added /home-research/jkitchin/dft-book/bulk/Ni-3.55
+added /home-research/jkitchin/dft-book/bulk/Ni-3.6
+added /home-research/jkitchin/dft-book/bulk/Ni-3.65
+added /home-research/jkitchin/dft-book/bulk/Ni-3.7
+added /home-research/jkitchin/dft-book/bulk/Ni-3.75
+added /home-research/jkitchin/dft-book/bulk/Cu2O
+added /home-research/jkitchin/dft-book/bulk/CuO
+added /home-research/jkitchin/dft-book/bulk/pd-dos-k8-ismear-5
+added /home-research/jkitchin/dft-book/bulk/pd-dos-k10-ismear-5
+added /home-research/jkitchin/dft-book/bulk/pd-dos-k12-ismear-5
+added /home-research/jkitchin/dft-book/bulk/pd-dos-k14-ismear-5
+added /home-research/jkitchin/dft-book/bulk/pd-dos-k16-ismear-5
+added /home-research/jkitchin/dft-book/bulk/pd-dos-k18-ismear-5
+added /home-research/jkitchin/dft-book/bulk/pd-dos-k20-ismear-5
+added /home-research/jkitchin/dft-book/bulk/Pd-LDA-3.75
+added /home-research/jkitchin/dft-book/bulk/Pd-LDA-3.8
+added /home-research/jkitchin/dft-book/bulk/Pd-LDA-3.85
+added /home-research/jkitchin/dft-book/bulk/Pd-LDA-3.9
+added /home-research/jkitchin/dft-book/bulk/Pd-LDA-3.95
+added /home-research/jkitchin/dft-book/bulk/Pd-LDA-4.0
+added /home-research/jkitchin/dft-book/bulk/Pd-LDA-4.05
+added /home-research/jkitchin/dft-book/bulk/Pd-LDA-4.1
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PS-3.75
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PS-3.8
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PS-3.85
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PS-3.9
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PS-3.95
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PS-4.0
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PS-4.05
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PS-4.1
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-AM-3.75
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-AM-3.8
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-AM-3.85
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-AM-3.9
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-AM-3.95
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-AM-4.0
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-AM-4.05
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-AM-4.1
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-RP-3.75
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-RP-3.8
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-RP-3.85
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-RP-3.9
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-RP-3.95
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-RP-4.0
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-RP-4.05
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-RP-4.1
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PE-3.75
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PE-3.8
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PE-3.85
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PE-3.9
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PE-3.95
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PE-4.0
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PE-4.05
+added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PE-4.1
+added /home-research/jkitchin/dft-book/bulk/Al-lda-vasp
+added /home-research/jkitchin/dft-book/bulk/Al-lda-ase
+added /home-research/jkitchin/dft-book/bulk/Fe-elastic
+added /home-research/jkitchin/dft-book/bulk/Au-fcc
+added /home-research/jkitchin/dft-book/bulk/Ag-fcc
+added /home-research/jkitchin/dft-book/bulk/Cu-fcc
+added /home-research/jkitchin/dft-book/bulk/Cu2O-U=4.0
+added /home-research/jkitchin/dft-book/bulk/CuO-U=4.0
+added /home-research/jkitchin/dft-book/bulk/Al-elastic
+added /home-research/jkitchin/dft-book/bulk/Ni-PBE
+added /home-research/jkitchin/dft-book/bulk/Cu-cls-0
+added /home-research/jkitchin/dft-book/bulk/CuPd-cls-0
+added /home-research/jkitchin/dft-book/bulk/Si-selfconsistent
+added /home-research/jkitchin/dft-book/bulk/Si-bandstructure
+added /home-research/jkitchin/dft-book/bulk/Ni-PBE0
+added /home-research/jkitchin/dft-book/bulk/Ni-HSE06
+added /home-research/jkitchin/dft-book/bulk/Si-bs-0
+added /home-research/jkitchin/dft-book/bulk/Si-bs-1
+added /home-research/jkitchin/dft-book/bulk/Si-bs-2
+added /home-research/jkitchin/dft-book/bulk/Al-c11--0.1
+added /home-research/jkitchin/dft-book/bulk/Al-c11--0.05
+added /home-research/jkitchin/dft-book/bulk/Al-c11-0
+added /home-research/jkitchin/dft-book/bulk/Al-c11-0.05
+added /home-research/jkitchin/dft-book/bulk/Al-c11-0.1
+added /home-research/jkitchin/dft-book/bulk/Al-c11--0.025
+added /home-research/jkitchin/dft-book/bulk/Al-c11-0.0
+added /home-research/jkitchin/dft-book/bulk/Al-c11-0.025
+added /home-research/jkitchin/dft-book/bulk/alloy/pd
+added /home-research/jkitchin/dft-book/bulk/alloy/cupd-1
+added /home-research/jkitchin/dft-book/bulk/alloy/cupd-2
+added /home-research/jkitchin/dft-book/bulk/alloy/cu
+added /home-research/jkitchin/dft-book/bulk/alloy/cu3pd-1
+added /home-research/jkitchin/dft-book/bulk/alloy/cu3pd-2
+added /home-research/jkitchin/dft-book/bulk/Ru/2.50-1.40
+added /home-research/jkitchin/dft-book/bulk/Ru/2.50-1.50
+added /home-research/jkitchin/dft-book/bulk/Ru/2.50-1.60
+added /home-research/jkitchin/dft-book/bulk/Ru/2.50-1.70
+added /home-research/jkitchin/dft-book/bulk/Ru/2.50-1.80
+added /home-research/jkitchin/dft-book/bulk/Ru/2.60-1.40
+added /home-research/jkitchin/dft-book/bulk/Ru/2.60-1.50
+added /home-research/jkitchin/dft-book/bulk/Ru/2.60-1.60
+added /home-research/jkitchin/dft-book/bulk/Ru/2.60-1.70
+added /home-research/jkitchin/dft-book/bulk/Ru/2.60-1.80
+added /home-research/jkitchin/dft-book/bulk/Ru/2.70-1.40
+added /home-research/jkitchin/dft-book/bulk/Ru/2.70-1.50
+added /home-research/jkitchin/dft-book/bulk/Ru/2.70-1.60
+added /home-research/jkitchin/dft-book/bulk/Ru/2.70-1.70
+added /home-research/jkitchin/dft-book/bulk/Ru/2.70-1.80
+added /home-research/jkitchin/dft-book/bulk/Ru/2.80-1.40
+added /home-research/jkitchin/dft-book/bulk/Ru/2.80-1.50
+added /home-research/jkitchin/dft-book/bulk/Ru/2.80-1.60
+added /home-research/jkitchin/dft-book/bulk/Ru/2.80-1.70
+added /home-research/jkitchin/dft-book/bulk/Ru/2.80-1.80
+added /home-research/jkitchin/dft-book/bulk/Ru/2.90-1.40
+added /home-research/jkitchin/dft-book/bulk/Ru/2.90-1.50
+added /home-research/jkitchin/dft-book/bulk/Ru/2.90-1.60
+added /home-research/jkitchin/dft-book/bulk/Ru/2.90-1.70
+added /home-research/jkitchin/dft-book/bulk/Ru/2.90-1.80
+added /home-research/jkitchin/dft-book/bulk/tio2/kpts-2
+added /home-research/jkitchin/dft-book/bulk/tio2/kpts-3
+added /home-research/jkitchin/dft-book/bulk/tio2/kpts-4
+added /home-research/jkitchin/dft-book/bulk/tio2/kpts-5
+added /home-research/jkitchin/dft-book/bulk/tio2/kpts-6
+added /home-research/jkitchin/dft-book/bulk/tio2/kpts-7
+added /home-research/jkitchin/dft-book/bulk/tio2/kpts-8
+added /home-research/jkitchin/dft-book/bulk/tio2/step1-0.90
+added /home-research/jkitchin/dft-book/bulk/tio2/step1-0.95
+added /home-research/jkitchin/dft-book/bulk/tio2/step1-1.00
+added /home-research/jkitchin/dft-book/bulk/tio2/step1-1.05
+added /home-research/jkitchin/dft-book/bulk/tio2/step1-1.10
+added /home-research/jkitchin/dft-book/bulk/tio2/step2-0.90
+added /home-research/jkitchin/dft-book/bulk/tio2/step2-0.95
+added /home-research/jkitchin/dft-book/bulk/tio2/step2-1.00
+added /home-research/jkitchin/dft-book/bulk/tio2/step2-1.05
+added /home-research/jkitchin/dft-book/bulk/tio2/step2-1.10
+added /home-research/jkitchin/dft-book/bulk/tio2/step3
+added /home-research/jkitchin/dft-book/bulk/tio2/step4
+added /home-research/jkitchin/dft-book/bulk/TiO2/rutile/rutile-28.0
+added /home-research/jkitchin/dft-book/bulk/TiO2/rutile/rutile-30.0
+added /home-research/jkitchin/dft-book/bulk/TiO2/rutile/rutile-32.0
+added /home-research/jkitchin/dft-book/bulk/TiO2/rutile/rutile-34.0
+added /home-research/jkitchin/dft-book/bulk/TiO2/rutile/rutile-36.0
+added /home-research/jkitchin/dft-book/bulk/TiO2/anatase/anatase-30.0
+added /home-research/jkitchin/dft-book/bulk/TiO2/anatase/anatase-33.0
+added /home-research/jkitchin/dft-book/bulk/TiO2/anatase/anatase-35.0
+added /home-research/jkitchin/dft-book/bulk/TiO2/anatase/anatase-37.0
+added /home-research/jkitchin/dft-book/bulk/TiO2/anatase/anatase-39.0
+added /home-research/jkitchin/dft-book/bulk/Cu-layers/3
+added /home-research/jkitchin/dft-book/bulk/Cu-layers/4
+added /home-research/jkitchin/dft-book/bulk/Cu-layers/5
+added /home-research/jkitchin/dft-book/bulk/Cu-layers/6
+added /home-research/jkitchin/dft-book/bulk/Cu-layers/7
+added /home-research/jkitchin/dft-book/bulk/Cu-layers/8
+added /home-research/jkitchin/dft-book/bulk/Cu-layers/9
+added /home-research/jkitchin/dft-book/bulk/Cu-layers/10
+added /home-research/jkitchin/dft-book/bulk/Cu-layers/11
+added /home-research/jkitchin/dft-book/bulk/Si-bs-0/bandstructure
+added /home-research/jkitchin/dft-book/bulk/Si-bs-0/bandstructure/bandstructure
+added /home-research/jkitchin/dft-book/bulk/Si-bs-0/bandstructure/bandstructure/bandstructure
+added /home-research/jkitchin/dft-book/bulk/Si-bs-1/bandstructure
+added /home-research/jkitchin/dft-book/bulk/Si-bs-1/bandstructure/bandstructure
+added /home-research/jkitchin/dft-book/bulk/Si-bs-1/bandstructure/bandstructure/bandstructure
+added /home-research/jkitchin/dft-book/bulk/Si-bs-2/bandstructure
+added /home-research/jkitchin/dft-book/bulk/Si-bs-2/bandstructure/bandstructure
+added /home-research/jkitchin/dft-book/devel/molecules/lr-u/step1
+added /home-research/jkitchin/dft-book/devel/molecules/lr-u/step2--0.100
+added /home-research/jkitchin/dft-book/devel/molecules/lr-u/step2--0.050
+added /home-research/jkitchin/dft-book/devel/molecules/lr-u/step2--0.025
+added /home-research/jkitchin/dft-book/devel/molecules/lr-u/step2-0.025
+added /home-research/jkitchin/dft-book/devel/molecules/lr-u/step2-0.050
+added /home-research/jkitchin/dft-book/devel/molecules/lr-u/step2-0.100
+added /home-research/jkitchin/dft-book/devel/molecules/lr-u/step3--0.100
+added /home-research/jkitchin/dft-book/devel/molecules/lr-u/step3--0.050
+added /home-research/jkitchin/dft-book/devel/molecules/lr-u/step3--0.025
+added /home-research/jkitchin/dft-book/devel/molecules/lr-u/step3-0.025
+added /home-research/jkitchin/dft-book/devel/molecules/lr-u/step3-0.050
+added /home-research/jkitchin/dft-book/devel/molecules/lr-u/step3-0.100
 :END:
+
+
 * TODO These are things we don't do now but might want to
 
 ** NEB

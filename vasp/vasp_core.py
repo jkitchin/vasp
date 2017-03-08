@@ -123,8 +123,7 @@ class Vasp(FileIOCalculator, object):
     special_kwargs = ['xc',  # sets vasp tags for the exc-functional
                       'pp',  # determines where POTCARs are retrieved from
                       'setups',
-                      # kpoints
-                      'kpts',
+                      'kpts', # kpoints setup
                       'gamma',
                       'kpts_nintersections',
                       'reciprocal',
@@ -262,12 +261,6 @@ class Vasp(FileIOCalculator, object):
         else:
             ispin = None
 
-        if 'rwigs' in kwargs:
-            rwigs = kwargs['rwigs']
-            del kwargs['rwigs']
-        else:
-            rwigs = None
-
         if 'ldau_luj' in kwargs:
             ldau_luj = kwargs['ldau_luj']
             del kwargs['ldau_luj']
@@ -293,12 +286,9 @@ class Vasp(FileIOCalculator, object):
             aimm = atoms.get_initial_magnetic_moments()
             self.atoms.set_initial_magnetic_moments(aimm)
 
-        # These depend on having atoms already.
+        # These depend on having atoms already so we set them here.
         if ispin is not None:
             self.set(**self.set_ispin_dict(ispin))
-
-        if rwigs is not None:
-            self.set(**self.set_rwigs_dict(rwigs))
 
         if ldau_luj is not None:
             self.set(**self.set_ldau_luj_dict(ldau_luj))
@@ -457,7 +447,7 @@ class Vasp(FileIOCalculator, object):
         """
         s = ['\n', 'Vasp calculation directory:']
         s += ['---------------------------']
-        s += ['  [[{self.directory}]]']
+        s += ['  [[{self.directory}]]'.format(self=self)]
 
         atoms = self.get_atoms()
         cell = atoms.get_cell()
@@ -512,6 +502,7 @@ class Vasp(FileIOCalculator, object):
 
         forces = self.results.get('forces', np.array([[np.nan, np.nan, np.nan]
                                                       for atom in self.atoms]))
+
         for i, atom in enumerate(atoms):
             rms_f = np.sum(forces[i] ** 2) ** 0.5
 
@@ -542,10 +533,11 @@ class Vasp(FileIOCalculator, object):
         #########################
         s += ['\nPseudopotentials used:']
         s += ['----------------------']
+
         for sym, ppp, hash in self.get_pseudopotentials():
             s += ['  {}: {} (git-hash: {})'.format(sym, ppp, hash)]
 
-        return '\n'.join(s).format(self=self)
+        return '\n'.join(s)
 
     def set_label(self, label):
         """Set working directory.
@@ -1048,6 +1040,7 @@ class Vasp(FileIOCalculator, object):
 
         import os
 
+        # split the path by directory as a kind of set of tags.
         path, folder = self.directory, ''
         folders = []
         while path != '/':
@@ -1059,11 +1052,12 @@ class Vasp(FileIOCalculator, object):
         d = OrderedDict(name='Vasp',
                         path=self.directory,
                         pathtags=folders)
-        d.update(parameters=json.loads(encode(self.parameters)))
+
+        d.update(parameters=self.parameters)
         d.update(potcars=self.get_pseudopotentials())
         for prop in self.implemented_properties:
             val = self.results.get(prop, None)
-            d[prop] = json.loads(encode(val))
+            d[prop] = val
 
         f = self.results.get('forces', None)
         if f is not None:
@@ -1076,4 +1070,10 @@ class Vasp(FileIOCalculator, object):
         d['elapsed-time'] = self.get_elapsed_time()
         d['memory-used'] = self.get_memory()
         d['nionic-steps'] = self.get_number_of_ionic_steps()
-        return d
+        program, version, subversion, rd, rt = self.get_program_info()
+        d['program'] = program
+        d['version'] = version
+        d['subversion'] = subversion
+        d['run-date'] = rd
+        d['run-time'] = rt
+        return json.loads(encode(d))
