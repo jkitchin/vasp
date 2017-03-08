@@ -17,7 +17,7 @@ pprint.pprint(next(db.find({}, limit=1)))
 
 #+RESULTS:
 :RESULTS:
-{u'_id': ObjectId('58c01b86340e3b45a4a6d511'),
+{u'_id': ObjectId('58c02ae9340e3b6fc4c69edf'),
  u'atoms': {u'atoms': [{u'charge': 0.0,
                         u'index': 0,
                         u'magmom': 0.0,
@@ -105,11 +105,11 @@ pprint.pprint(next(db.find({}, limit=1)))
                              -0.0],
                  u'subversion': u'31Mar14 (build Aug 04 2015 12:48:45) complex                          serial ',
                  u'version': u'5.3.5  '},
- u'ctime': datetime.datetime(2017, 3, 8, 14, 56, 6, 748000),
- u'inserted-hash': u'b337975791237f9c611b1a34e559dda2d1322ab9',
- u'mtime': datetime.datetime(2017, 3, 8, 14, 56, 6, 748000),
+ u'ctime': datetime.datetime(2017, 3, 8, 16, 1, 45, 525000),
+ u'inserted-hash': u'b841d78d4d353513d3644c0cfe63c400da5db615',
+ u'mtime': datetime.datetime(2017, 3, 8, 16, 1, 45, 525000),
  u'source': u'dft-book',
- u'user': [u'jkitchin']}
+ u'user': u'jkitchin'}
 :END:
 
 It is easy to write atoms with arbitrary key-value pairs. You have to do the work to decide if writing would add a duplicate entry.
