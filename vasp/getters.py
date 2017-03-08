@@ -219,9 +219,12 @@ def get_ados(self, atom_index, orbital, spin=1, efermi=None):
 @monkeypatch_class(vasp.Vasp)
 def get_elapsed_time(self):
     """Return elapsed calculation time in seconds from the OUTCAR file."""
-    self.update()
+
     import re
     regexp = re.compile('Elapsed time \(sec\):\s*(?P<time>[0-9]*\.[0-9]*)')
+
+    if not os.path.exists(os.path.join(self.directory, 'OUTCAR')):
+        return None
 
     with open(os.path.join(self.directory, 'OUTCAR')) as f:
         lines = f.readlines()
@@ -570,7 +573,9 @@ def get_orbital_occupations(self):
 @monkeypatch_class(vasp.Vasp)
 def get_number_of_ionic_steps(self):
     """Returns number of ionic steps from the OUTCAR."""
-    self.update()
+
+    if not os.path.exists(os.path.join(self.directory, 'OUTCAR')):
+        return None
 
     nsteps = None
     for line in open(os.path.join(self.directory, 'OUTCAR')):
@@ -630,6 +635,9 @@ def get_charges(self, atoms=None):
 @monkeypatch_class(vasp.Vasp)
 def get_program_info(self):
     """Return data about the vasp that was used for the calculation."""
+    if not os.path.exists(os.path.join(self.directory, 'vasprun.xml')):
+        return None, None, None, None, None
+
     with open(os.path.join(self.directory, 'vasprun.xml')) as f:
         tree = ElementTree.parse(f)
         program = tree.find("generator/i[@name='program']").text

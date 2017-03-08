@@ -438,7 +438,9 @@ def read_neb(self):
     self.parameters = {}
     self.set(images=(len(atoms) - 2))
     self.atoms = atoms[0].copy()
-
+    self.atoms.set_calculator(self)
+    for a in self.neb:
+        a.set_calculator(self)
     if os.path.exists(self.incar):
         self.parameters.update(self.read_incar())
     if os.path.exists(self.potcar):

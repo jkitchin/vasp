@@ -20,6 +20,7 @@ from ase.io.jsonio import encode
 from vasp import Vasp
 import spglib
 
+
 def mongo_atoms_doc(atoms):
     """Return a dictionary of an Atoms object."""
     d = OrderedDict(atoms=[{'symbol': atom.symbol,
@@ -67,19 +68,19 @@ class MongoDatabase(MongoClient):
         self.db = self[database]
         self.collection = getattr(self.db, collection)
 
-    def write(self, atoms, **kwargs):
+    @staticmethod
+    def mongo_doc(atoms, **kwargs):
         """
         atoms is an ase.atoms.Atoms object.
         kwargs are key-value pairs that will be written to the database.
 
-        Returns the inserted id.
+        Returns a dictionary for inserting to Mongo.
         """
 
         d = OrderedDict(atoms=mongo_atoms_doc(atoms))
 
         # Calculated values
         if atoms.get_calculator() is not None:
-            # Need some calculator data
             calc = atoms.get_calculator()
             d['calculator'] = calc.todict()
 
@@ -95,6 +96,11 @@ class MongoDatabase(MongoClient):
 
         d.update(kwargs)
 
+        return d
+
+    def write(self, d, **kwargs):
+        """d should be a dictionary, e.g. from mongo_doc."""
+        d.update(kwargs)
         return self.collection.insert_one(d).inserted_id
 
     def find(self, *args, **kwargs):
@@ -125,5 +131,4 @@ class MongoDatabase(MongoClient):
             calc = Vasp(calc_data['path'], **pars)
             atoms.set_calculator(calc)
 
-            # TODO the calculator
             yield atoms

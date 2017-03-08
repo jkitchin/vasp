@@ -175,6 +175,10 @@ def write_incar(self, incar=None):
                 # Do not write out None values
                 # It is how we delete tags
                 pass
+            # I am very unhappy about this special case.
+            elif key == ' RWIGS':
+                s = ' '.join([str(val[x[0]]) for x in self.ppp_list])
+                f.write('{} = {}\n'.format(key, s))
             elif isinstance(val, bool):
                 s = '.TRUE.' if val else '.FALSE.'
                 f.write('{} = {}\n'.format(key, s))

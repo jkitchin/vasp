@@ -217,8 +217,8 @@ class Vasp(FileIOCalculator, object):
         self.neb = None
         # We have to check for the type here this because an NEB uses
         # a list of atoms objects. We set pbc to be True because that
-        # is what is read in from files, and if we don't the atoms
-        # look incompatible.
+        # is what is read in from files, and if we don't want the
+        # atoms look incompatible.
         if atoms is not None and isinstance(atoms, ase.atoms.Atoms):
             atoms.pbc = [True, True, True]
         elif atoms is not None:
@@ -226,6 +226,8 @@ class Vasp(FileIOCalculator, object):
                 a.pbc = [True, True, True]
             self.neb = True
 
+        # self.neb started as None, and will not be None if the code
+        # above detects a list of atoms.
         if self.neb is not None:
             self.neb = atoms
 
@@ -582,6 +584,20 @@ class Vasp(FileIOCalculator, object):
         # Check if the parameters have changed
         file_params = {}
         file_params.update(self.read_incar())
+
+        if 'rwigs' in file_params:
+            # This gets read as a list.
+            with open(self.potcar) as f:
+                lines = f.readlines()
+
+            # symbols are in the # FIXME: first line of each potcar
+            symbols = [lines[0].split()[1]]
+            for i, line in enumerate(lines):
+                if 'End of Dataset' in line and i != len(lines) - 1:
+                    symbols += [lines[i + 1].split()[1]]
+
+            file_params['rwigs'] = dict(zip(symbols,
+                                            file_params['rwigs']))
         file_params.update(self.read_potcar())
         file_params.update(self.read_kpoints())
 
@@ -1067,13 +1083,25 @@ class Vasp(FileIOCalculator, object):
         if s is not None:
             d['smax'] = max(np.abs(s.flatten()))
 
-        d['elapsed-time'] = self.get_elapsed_time()
-        d['memory-used'] = self.get_memory()
-        d['nionic-steps'] = self.get_number_of_ionic_steps()
-        program, version, subversion, rd, rt = self.get_program_info()
-        d['program'] = program
-        d['version'] = version
-        d['subversion'] = subversion
-        d['run-date'] = rd
-        d['run-time'] = rt
+        # NEBs remain a difficult issue. The root directory does not
+        # have an OUTCAR so many of these don't work. Also, there is
+        # not an obvious atoms to attach to it, or an obvious energy.
+        # I compromise here and just store the images and energy.
+        if not self.neb:
+            d['elapsed-time'] = self.get_elapsed_time()
+            d['memory-used'] = self.get_memory()
+            d['nionic-steps'] = self.get_number_of_ionic_steps()
+            program, version, subversion, rd, rt = self.get_program_info()
+            d['program'] = program
+            d['version'] = version
+            d['subversion'] = subversion
+            d['run-date'] = rd
+            d['run-time'] = rt
+
+        if self.neb:
+            images, energies = self.get_neb()
+            d['energy'] = energies
+            from mongo import mongo_atoms_doc
+            d['images'] = [mongo_atoms_doc(atoms) for atoms in images]
+
         return json.loads(encode(d))

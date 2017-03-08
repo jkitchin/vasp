@@ -382,6 +382,10 @@ print(c.count())
 c = db.find({'calculator.parameters.setups': {'$exists': True}})
 print(c.count())
 for doc in c: print(doc['calculator']['parameters']['setups'])
+
+# An neb
+c = db.find({'calculator.parameters.images': {'$exists': True}})
+print(c.count())
 #+END_SRC
 
 #+RESULTS:
@@ -391,6 +395,7 @@ for doc in c: print(doc['calculator']['parameters']['setups'])
 [[u'O', u'_s']]
 [[u'O', u'_s']]
 [[u'O', u'_s']]
+1
 :END:
 
 ** An equation of state
@@ -406,7 +411,7 @@ eos = db.find({'atoms.symbol_counts.Cu': 1, 'atoms.natoms': 1,
                'atoms.spacegroup': {'$regex': '(225)'},
                'calculator.parameters.kpts': [8, 8, 8],
                'calculator.parameters.encut': 350},
-              projection={'_id': 0, 'calculator.pathtags': 1})
+              projection={'_id': 0, 'calculator.pathtags': 1, 'calculator.energy': 1, 'atoms.volume': 1})
 
 print(eos.count())
 for c in eos: print c
@@ -415,12 +420,12 @@ for c in eos: print c
 #+RESULTS:
 :RESULTS:
 6
-{u'calculator': {u'pathtags': [u'Cu-3.5', u'bulk', u'dft-book', u'jkitchin']}}
-{u'calculator': {u'pathtags': [u'Cu-3.55', u'bulk', u'dft-book', u'jkitchin']}}
-{u'calculator': {u'pathtags': [u'Cu-3.6', u'bulk', u'dft-book', u'jkitchin']}}
-{u'calculator': {u'pathtags': [u'Cu-3.65', u'bulk', u'dft-book', u'jkitchin']}}
-{u'calculator': {u'pathtags': [u'Cu-3.7', u'bulk', u'dft-book', u'jkitchin']}}
-{u'calculator': {u'pathtags': [u'Cu-3.75', u'bulk', u'dft-book', u'jkitchin']}}
+{u'calculator': {u'energy': -3.66182568, u'pathtags': [u'Cu-3.5', u'bulk', u'dft-book', u'jkitchin']}, u'atoms': {u'volume': 10.71875}}
+{u'calculator': {u'energy': -3.70817569, u'pathtags': [u'Cu-3.55', u'bulk', u'dft-book', u'jkitchin']}, u'atoms': {u'volume': 11.184718749999998}}
+{u'calculator': {u'energy': -3.73109713, u'pathtags': [u'Cu-3.6', u'bulk', u'dft-book', u'jkitchin']}, u'atoms': {u'volume': 11.663999999999998}}
+{u'calculator': {u'energy': -3.73432446, u'pathtags': [u'Cu-3.65', u'bulk', u'dft-book', u'jkitchin']}, u'atoms': {u'volume': 12.156781250000002}}
+{u'calculator': {u'energy': -3.72094163, u'pathtags': [u'Cu-3.7', u'bulk', u'dft-book', u'jkitchin']}, u'atoms': {u'volume': 12.663250000000003}}
+{u'calculator': {u'energy': -3.69342783, u'pathtags': [u'Cu-3.75', u'bulk', u'dft-book', u'jkitchin']}, u'atoms': {u'volume': 13.183593749999996}}
 :END:
 
 This makes it seem like storing a spacegroup is a good idea. For now, we either need to match patterns on a tag, or use external python filtering.
@@ -634,6 +639,7 @@ pprint.pprint(next(c))
 :END:
 
 * An example to walk directory and add calculations.
+This just defines a function that usually recognizes a Vasp directory (it fails on NEB directories), and if the directory is not in the database, it adds it.
 
 #+BEGIN_SRC python :results output org drawer
 import os
@@ -671,446 +677,45 @@ for root, dirs, files in os.walk('/home-research/jkitchin/dft-book'):
 
             calc = Vasp(absd)
             atoms = calc.get_atoms()
-            db.write(atoms)
+            db.write(db.mongo_doc(atoms), source="dft-book")
             print('added {}'.format(absd))
+#+END_SRC
 
+
+
+* Other things you might do
+
+** derived documents
+
+This is some idea that you could store an adsorption energy with links to the documents. Here is an example of getting an adsorption energy.
+
+#+BEGIN_SRC python :results output org drawer
+import numpy as np
+from vasp.mongo import MongoDatabase
+
+db = MongoDatabase()
+
+clean = db.collection.find_one({'calculator.pathtags': {'$all': ['surfaces', 'Pt-slab']}})
+oslab = db.collection.find_one({'calculator.pathtags': {'$all': ['surfaces', 'Pt-slab-O-fcc']}})
+o2 = db.collection.find_one({'calculator.pathtags': {'$all': ['molecules', 'O2-sp-triplet-350']}})
+
+print(clean['_id'])
+print(oslab['calculator']['energy'] - clean['calculator']['energy'] - 0.5 * o2['calculator']['energy'])
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-added /home-research/jkitchin/dft-book/blog/Al-bandstructure
-added /home-research/jkitchin/dft-book/blog/source/org/molecules/co-1.05
-added /home-research/jkitchin/dft-book/blog/source/org/molecules/co-1.1
-added /home-research/jkitchin/dft-book/blog/source/org/molecules/co-1.15
-added /home-research/jkitchin/dft-book/blog/source/org/molecules/co-1.2
-added /home-research/jkitchin/dft-book/blog/source/org/molecules/co-1.25
-added /home-research/jkitchin/dft-book/blog/source/org/molecules/co-n00
-added /home-research/jkitchin/dft-book/blog/source/org/molecules/co-n01
-added /home-research/jkitchin/dft-book/blog/source/org/molecules/co-n02
-added /home-research/jkitchin/dft-book/blog/source/org/molecules/co-n03
-added /home-research/jkitchin/dft-book/blog/source/org/molecules/co-n04
-added /home-research/jkitchin/dft-book/blog/source/org/molecules/co-n05
-added /home-research/jkitchin/dft-book/blog/source/org/molecules/co-n06
-added /home-research/jkitchin/dft-book/blog/source/org/molecules/co-n07
-added /home-research/jkitchin/dft-book/blog/source/org/molecules/co-n08
-added /home-research/jkitchin/dft-book/blog/source/org/molecules/co-n09
-added /home-research/jkitchin/dft-book/blog/source/org/bulk/Fe-bcc-fixedmagmom-4.00
-added /home-research/jkitchin/dft-book/blog/source/org/bulk/Fe-bcc-fixedmagmom-4.50
-added /home-research/jkitchin/dft-book/blog/source/org/bulk/Fe-bcc-fixedmagmom-5.00
-added /home-research/jkitchin/dft-book/blog/source/org/bulk/Fe-bcc-fixedmagmom-5.50
-added /home-research/jkitchin/dft-book/blog/source/org/bulk/Fe-bcc-fixedmagmom-6.00
-added /home-research/jkitchin/dft-book/blog/source/org/mp/serial-Cu-0
-added /home-research/jkitchin/dft-book/blog/source/org/mp/serial-Cu-1
-added /home-research/jkitchin/dft-book/blog/source/org/mp/serial-Cu-2
-added /home-research/jkitchin/dft-book/blog/source/org/mp/serial-Cu-3
-added /home-research/jkitchin/dft-book/blog/source/org/mp/serial-Cu-4
-added /home-research/jkitchin/dft-book/blog/source/org/mp/serial-Cu-5
-added /home-research/jkitchin/dft-book/blog/source/org/mp/serial-Cu-6
-added /home-research/jkitchin/dft-book/blog/source/org/mp/serial-Cu-7
-added /home-research/jkitchin/dft-book/blog/source/org/mp/serial-Cu-8
-added /home-research/jkitchin/dft-book/blog/source/org/mp/serial-Cu-9
-added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-Cu-0
-added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-Cu-1
-added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-Cu-2
-added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-Cu-3
-added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-Cu-4
-added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-Cu-5
-added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-Cu-6
-added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-Cu-7
-added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-Cu-8
-added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-Cu-9
-added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-threadpool-Cu-0
-added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-threadpool-Cu-1
-added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-threadpool-Cu-2
-added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-threadpool-Cu-3
-added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-threadpool-Cu-4
-added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-threadpool-Cu-5
-added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-threadpool-Cu-6
-added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-threadpool-Cu-7
-added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-threadpool-Cu-8
-added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-threadpool-Cu-9
-added /home-research/jkitchin/dft-book/blog/source/org/mp/threads-Cu-0
-added /home-research/jkitchin/dft-book/blog/source/org/mp/threads-Cu-1
-added /home-research/jkitchin/dft-book/blog/source/org/mp/threads-Cu-3
-added /home-research/jkitchin/dft-book/blog/source/org/mp/threads-Cu-2
-added /home-research/jkitchin/dft-book/blog/source/org/mp/threads-Cu-4
-added /home-research/jkitchin/dft-book/blog/source/org/mp/threads-Cu-6
-added /home-research/jkitchin/dft-book/blog/source/org/mp/threads-Cu-9
-added /home-research/jkitchin/dft-book/blog/source/org/mp/threads-Cu-5
-added /home-research/jkitchin/dft-book/blog/source/org/mp/threads-Cu-7
-added /home-research/jkitchin/dft-book/blog/source/org/mp/threads-Cu-8
-added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-pool-Cu-1
-added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-pool-Cu-2
-added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-pool-Cu-9
-added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-pool-Cu-5
-added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-pool-Cu-7
-added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-pool-Cu-3
-added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-pool-Cu-0
-added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-pool-Cu-4
-added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-pool-Cu-8
-added /home-research/jkitchin/dft-book/blog/source/org/mp/mp-pool-Cu-6
-added /home-research/jkitchin/dft-book/blog/source/org/mp/futures-Cu-0
-added /home-research/jkitchin/dft-book/blog/source/org/mp/futures-Cu-1
-added /home-research/jkitchin/dft-book/blog/source/org/mp/futures-Cu-2
-added /home-research/jkitchin/dft-book/blog/source/org/mp/futures-Cu-3
-added /home-research/jkitchin/dft-book/blog/source/org/mp/futures-Cu-4
-added /home-research/jkitchin/dft-book/blog/source/org/mp/futures-Cu-6
-added /home-research/jkitchin/dft-book/blog/source/org/mp/futures-Cu-7
-added /home-research/jkitchin/dft-book/blog/source/org/mp/futures-Cu-5
-added /home-research/jkitchin/dft-book/blog/source/org/mp/futures-Cu-8
-added /home-research/jkitchin/dft-book/blog/source/org/mp/futures-Cu-9
-added /home-research/jkitchin/dft-book/blog/source/org/mp/queue-Cu-1
-added /home-research/jkitchin/dft-book/blog/source/org/mp/queue-Cu-2
-added /home-research/jkitchin/dft-book/blog/source/org/mp/queue-Cu-0
-added /home-research/jkitchin/dft-book/blog/source/org/mp/queue-Cu-3
-added /home-research/jkitchin/dft-book/blog/source/org/mp/queue-Cu-4
-added /home-research/jkitchin/dft-book/blog/source/org/mp/queue-Cu-5
-added /home-research/jkitchin/dft-book/blog/source/org/mp/queue-Cu-6
-added /home-research/jkitchin/dft-book/blog/source/org/mp/queue-Cu-7
-added /home-research/jkitchin/dft-book/blog/source/org/mp/queue-Cu-8
-added /home-research/jkitchin/dft-book/blog/source/org/mp/queue-Cu-9
-added /home-research/jkitchin/dft-book/blog/Al-bandstructure/bandstructure
-added /home-research/jkitchin/dft-book/blog/bulk/Fe-bcc-fixedmagmom-4.00
-added /home-research/jkitchin/dft-book/blog/bulk/Fe-bcc-fixedmagmom-4.50
-added /home-research/jkitchin/dft-book/blog/bulk/Fe-bcc-fixedmagmom-5.00
-added /home-research/jkitchin/dft-book/blog/bulk/Fe-bcc-fixedmagmom-5.50
-added /home-research/jkitchin/dft-book/blog/bulk/Fe-bcc-fixedmagmom-6.00
-added /home-research/jkitchin/dft-book/molecules/simple-co
-added /home-research/jkitchin/dft-book/molecules/simple-co-n4
-added /home-research/jkitchin/dft-book/molecules/co-L-4
-added /home-research/jkitchin/dft-book/molecules/co-L-5
-added /home-research/jkitchin/dft-book/molecules/co-L-6
-added /home-research/jkitchin/dft-book/molecules/co-L-8
-added /home-research/jkitchin/dft-book/molecules/co-L-10
-added /home-research/jkitchin/dft-book/molecules/co-en-250
-added /home-research/jkitchin/dft-book/molecules/co-en-300
-added /home-research/jkitchin/dft-book/molecules/co-en-350
-added /home-research/jkitchin/dft-book/molecules/co-en-400
-added /home-research/jkitchin/dft-book/molecules/co-en-450
-added /home-research/jkitchin/dft-book/molecules/co-en-500
-added /home-research/jkitchin/dft-book/molecules/clone-1
-added /home-research/jkitchin/dft-book/molecules/co-chg
-added /home-research/jkitchin/dft-book/molecules/co-centered
-added /home-research/jkitchin/dft-book/molecules/benzene
-added /home-research/jkitchin/dft-book/molecules/chlorobenzene
-added /home-research/jkitchin/dft-book/molecules/co-ados
-added /home-research/jkitchin/dft-book/molecules/CF3Br
-added /home-research/jkitchin/dft-book/molecules/h2o-bader
-added /home-research/jkitchin/dft-book/molecules/co-1.05
-added /home-research/jkitchin/dft-book/molecules/co-1.1
-added /home-research/jkitchin/dft-book/molecules/co-1.15
-added /home-research/jkitchin/dft-book/molecules/co-1.2
-added /home-research/jkitchin/dft-book/molecules/co-1.25
-added /home-research/jkitchin/dft-book/molecules/co-cg
-added /home-research/jkitchin/dft-book/molecules/h2o-relax-centered
-added /home-research/jkitchin/dft-book/molecules/h2o_vib
-added /home-research/jkitchin/dft-book/molecules/h2o_relax
-added /home-research/jkitchin/dft-book/molecules/h2o_vib_dfpt
-added /home-research/jkitchin/dft-book/molecules/n2-relax
-added /home-research/jkitchin/dft-book/molecules/n2-vib
-added /home-research/jkitchin/dft-book/molecules/O
-added /home-research/jkitchin/dft-book/molecules/O2
-added /home-research/jkitchin/dft-book/molecules/O-sp-triplet
-added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet
-added /home-research/jkitchin/dft-book/molecules/O-sp-triplet-250
-added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet-250
-added /home-research/jkitchin/dft-book/molecules/O-sp-triplet-300
-added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet-300
-added /home-research/jkitchin/dft-book/molecules/O-sp-triplet-350
-added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet-350
-added /home-research/jkitchin/dft-book/molecules/O-sp-triplet-400
-added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet-400
-added /home-research/jkitchin/dft-book/molecules/O-sp-triplet-450
-added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet-450
-added /home-research/jkitchin/dft-book/molecules/O-sp-triplet-500
-added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet-500
-added /home-research/jkitchin/dft-book/molecules/O-sp-triplet-550
-added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet-550
-added /home-research/jkitchin/dft-book/molecules/O-sp-triplet-sigma-0.2
-added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet-sigma-0.2
-added /home-research/jkitchin/dft-book/molecules/O-sp-triplet-sigma-0.1
-added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet-sigma-0.1
-added /home-research/jkitchin/dft-book/molecules/O-sp-triplet-sigma-0.05
-added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet-sigma-0.05
-added /home-research/jkitchin/dft-book/molecules/O-sp-triplet-sigma-0.02
-added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet-sigma-0.02
-added /home-research/jkitchin/dft-book/molecules/O-sp-triplet-sigma-0.01
-added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet-sigma-0.01
-added /home-research/jkitchin/dft-book/molecules/O-sp-triplet-sigma-0.001
-added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet-sigma-0.001
-added /home-research/jkitchin/dft-book/molecules/O-sp-singlet
-added /home-research/jkitchin/dft-book/molecules/O2-sp-singlet
-added /home-research/jkitchin/dft-book/molecules/O-square-box-origin
-added /home-research/jkitchin/dft-book/molecules/O-square-box-center
-added /home-research/jkitchin/dft-book/molecules/O-square-box-random
-added /home-research/jkitchin/dft-book/molecules/O-orthorhombic-box-origin
-added /home-research/jkitchin/dft-book/molecules/O-orthorhombic-box-center
-added /home-research/jkitchin/dft-book/molecules/O-orthorhombic-box-random
-added /home-research/jkitchin/dft-book/molecules/O-sp-triplet-lowsym
-added /home-research/jkitchin/dft-book/molecules/O2-sp-singlet-magmoms
-added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet-magmoms
-added /home-research/jkitchin/dft-book/molecules/O-sp-triplet-lowsym-s
-added /home-research/jkitchin/dft-book/molecules/nh3-initial
-added /home-research/jkitchin/dft-book/molecules/nh3-final
-added /home-research/jkitchin/dft-book/molecules/O2-sp-triplet-s
-added /home-research/jkitchin/dft-book/molecules/benzene-pbe
-added /home-research/jkitchin/dft-book/molecules/benzene-pbe-d2
-added /home-research/jkitchin/dft-book/molecules/O_s
-added /home-research/jkitchin/dft-book/molecules/simple-co-gga
-added /home-research/jkitchin/dft-book/molecules/wgs/CO
-added /home-research/jkitchin/dft-book/molecules/wgs/CO2
-added /home-research/jkitchin/dft-book/molecules/wgs/H2
-added /home-research/jkitchin/dft-book/molecules/wgs/H2O
-added /home-research/jkitchin/dft-book/molecules/wgs/CO-vib
-added /home-research/jkitchin/dft-book/molecules/wgs/CO2-vib
-added /home-research/jkitchin/dft-book/molecules/wgs/H2-vib
-added /home-research/jkitchin/dft-book/molecules/wgs/H2O-vib
-added /home-research/jkitchin/dft-book/surfaces/Al-slab-unrelaxed
-added /home-research/jkitchin/dft-book/surfaces/Pt-slab-O-fcc
-added /home-research/jkitchin/dft-book/surfaces/Pt-slab
-added /home-research/jkitchin/dft-book/surfaces/Pt-slab-O-bridge
-added /home-research/jkitchin/dft-book/surfaces/Pt-slab-O-hcp
-added /home-research/jkitchin/dft-book/surfaces/Pt-slab-O-bridge-xy-constrained
-added /home-research/jkitchin/dft-book/surfaces/Pt-slab-1x1
-added /home-research/jkitchin/dft-book/surfaces/Pt-slab-1x1-O-fcc
-added /home-research/jkitchin/dft-book/surfaces/Pt-slab-O-fcc-vib
-added /home-research/jkitchin/dft-book/surfaces/Au-110
-added /home-research/jkitchin/dft-book/surfaces/Au-110-missing-row
-added /home-research/jkitchin/dft-book/surfaces/Ag-110
-added /home-research/jkitchin/dft-book/surfaces/Ag-110-missing-row
-added /home-research/jkitchin/dft-book/surfaces/Cu-110
-added /home-research/jkitchin/dft-book/surfaces/Cu-110-missing-row
-added /home-research/jkitchin/dft-book/surfaces/Al-slab-locpot
-added /home-research/jkitchin/dft-book/surfaces/Al-Na-nodip
-added /home-research/jkitchin/dft-book/surfaces/Al-Na-dip
-added /home-research/jkitchin/dft-book/surfaces/Au-pbe
-added /home-research/jkitchin/dft-book/surfaces/Au-pbe-d2
-added /home-research/jkitchin/dft-book/surfaces/Au-benzene-pbe-d2
-added /home-research/jkitchin/dft-book/surfaces/Al-slab-relaxed
-added /home-research/jkitchin/dft-book/surfaces/Al-bandstructure
-added /home-research/jkitchin/dft-book/surfaces/Al-bandstructure/bandstructure
-added /home-research/jkitchin/dft-book/bulk/Ag-kpts-2
-added /home-research/jkitchin/dft-book/bulk/Ag-kpts-3
-added /home-research/jkitchin/dft-book/bulk/Ag-kpts-4
-added /home-research/jkitchin/dft-book/bulk/Ag-kpts-5
-added /home-research/jkitchin/dft-book/bulk/Ag-kpts-6
-added /home-research/jkitchin/dft-book/bulk/Ag-kpts-8
-added /home-research/jkitchin/dft-book/bulk/Ag-kpts-10
-added /home-research/jkitchin/dft-book/bulk/Cu-sigma-0.001
-added /home-research/jkitchin/dft-book/bulk/Cu-sigma-0.05
-added /home-research/jkitchin/dft-book/bulk/Cu-sigma-0.1
-added /home-research/jkitchin/dft-book/bulk/Cu-sigma-0.2
-added /home-research/jkitchin/dft-book/bulk/Cu-sigma-0.5
-added /home-research/jkitchin/dft-book/bulk/Cu-3.5
-added /home-research/jkitchin/dft-book/bulk/Cu-3.55
-added /home-research/jkitchin/dft-book/bulk/Cu-3.6
-added /home-research/jkitchin/dft-book/bulk/Cu-3.65
-added /home-research/jkitchin/dft-book/bulk/Cu-3.7
-added /home-research/jkitchin/dft-book/bulk/Cu-3.75
-added /home-research/jkitchin/dft-book/bulk/Cu-bcc-2.75
-added /home-research/jkitchin/dft-book/bulk/Cu-bcc-2.8
-added /home-research/jkitchin/dft-book/bulk/Cu-bcc-2.85
-added /home-research/jkitchin/dft-book/bulk/Cu-bcc-2.9
-added /home-research/jkitchin/dft-book/bulk/Cu-bcc-2.95
-added /home-research/jkitchin/dft-book/bulk/Cu-bcc-3.0
-added /home-research/jkitchin/dft-book/bulk/Fe-bcc-fixedmagmom-0.00
-added /home-research/jkitchin/dft-book/bulk/Fe-bcc-fixedmagmom-2.00
-added /home-research/jkitchin/dft-book/bulk/Fe-bcc-fixedmagmom-4.00
-added /home-research/jkitchin/dft-book/bulk/Fe-bcc-fixedmagmom-5.00
-added /home-research/jkitchin/dft-book/bulk/Fe-bcc-fixedmagmom-6.00
-added /home-research/jkitchin/dft-book/bulk/Fe-bcc-fixedmagmom-8.00
-added /home-research/jkitchin/dft-book/bulk/Fe-bcc-sp-1
-added /home-research/jkitchin/dft-book/bulk/afm-feo
-added /home-research/jkitchin/dft-book/bulk/pd-ados
-added /home-research/jkitchin/dft-book/bulk/bulk-rh
-added /home-research/jkitchin/dft-book/bulk/atomic-rh
-added /home-research/jkitchin/dft-book/bulk/bulk-rh-kpts-3
-added /home-research/jkitchin/dft-book/bulk/bulk-rh-kpts-4
-added /home-research/jkitchin/dft-book/bulk/bulk-rh-kpts-6
-added /home-research/jkitchin/dft-book/bulk/bulk-rh-kpts-9
-added /home-research/jkitchin/dft-book/bulk/bulk-rh-kpts-12
-added /home-research/jkitchin/dft-book/bulk/bulk-rh-kpts-15
-added /home-research/jkitchin/dft-book/bulk/bulk-rh-kpts-18
-added /home-research/jkitchin/dft-book/bulk/atomic-rh-sp
-added /home-research/jkitchin/dft-book/bulk/Fe-bulk
-added /home-research/jkitchin/dft-book/bulk/Al-bulk
-added /home-research/jkitchin/dft-book/bulk/Ni-3.5
-added /home-research/jkitchin/dft-book/bulk/Ni-3.55
-added /home-research/jkitchin/dft-book/bulk/Ni-3.6
-added /home-research/jkitchin/dft-book/bulk/Ni-3.65
-added /home-research/jkitchin/dft-book/bulk/Ni-3.7
-added /home-research/jkitchin/dft-book/bulk/Ni-3.75
-added /home-research/jkitchin/dft-book/bulk/Cu2O
-added /home-research/jkitchin/dft-book/bulk/CuO
-added /home-research/jkitchin/dft-book/bulk/pd-dos-k8-ismear-5
-added /home-research/jkitchin/dft-book/bulk/pd-dos-k10-ismear-5
-added /home-research/jkitchin/dft-book/bulk/pd-dos-k12-ismear-5
-added /home-research/jkitchin/dft-book/bulk/pd-dos-k14-ismear-5
-added /home-research/jkitchin/dft-book/bulk/pd-dos-k16-ismear-5
-added /home-research/jkitchin/dft-book/bulk/pd-dos-k18-ismear-5
-added /home-research/jkitchin/dft-book/bulk/pd-dos-k20-ismear-5
-added /home-research/jkitchin/dft-book/bulk/Pd-LDA-3.75
-added /home-research/jkitchin/dft-book/bulk/Pd-LDA-3.8
-added /home-research/jkitchin/dft-book/bulk/Pd-LDA-3.85
-added /home-research/jkitchin/dft-book/bulk/Pd-LDA-3.9
-added /home-research/jkitchin/dft-book/bulk/Pd-LDA-3.95
-added /home-research/jkitchin/dft-book/bulk/Pd-LDA-4.0
-added /home-research/jkitchin/dft-book/bulk/Pd-LDA-4.05
-added /home-research/jkitchin/dft-book/bulk/Pd-LDA-4.1
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PS-3.75
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PS-3.8
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PS-3.85
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PS-3.9
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PS-3.95
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PS-4.0
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PS-4.05
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PS-4.1
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-AM-3.75
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-AM-3.8
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-AM-3.85
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-AM-3.9
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-AM-3.95
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-AM-4.0
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-AM-4.05
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-AM-4.1
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-RP-3.75
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-RP-3.8
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-RP-3.85
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-RP-3.9
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-RP-3.95
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-RP-4.0
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-RP-4.05
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-RP-4.1
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PE-3.75
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PE-3.8
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PE-3.85
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PE-3.9
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PE-3.95
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PE-4.0
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PE-4.05
-added /home-research/jkitchin/dft-book/bulk/Pd-GGA-PE-4.1
-added /home-research/jkitchin/dft-book/bulk/Al-lda-vasp
-added /home-research/jkitchin/dft-book/bulk/Al-lda-ase
-added /home-research/jkitchin/dft-book/bulk/Fe-elastic
-added /home-research/jkitchin/dft-book/bulk/Au-fcc
-added /home-research/jkitchin/dft-book/bulk/Ag-fcc
-added /home-research/jkitchin/dft-book/bulk/Cu-fcc
-added /home-research/jkitchin/dft-book/bulk/Cu2O-U=4.0
-added /home-research/jkitchin/dft-book/bulk/CuO-U=4.0
-added /home-research/jkitchin/dft-book/bulk/Al-elastic
-added /home-research/jkitchin/dft-book/bulk/Ni-PBE
-added /home-research/jkitchin/dft-book/bulk/Cu-cls-0
-added /home-research/jkitchin/dft-book/bulk/CuPd-cls-0
-added /home-research/jkitchin/dft-book/bulk/Si-selfconsistent
-added /home-research/jkitchin/dft-book/bulk/Si-bandstructure
-added /home-research/jkitchin/dft-book/bulk/Ni-PBE0
-added /home-research/jkitchin/dft-book/bulk/Ni-HSE06
-added /home-research/jkitchin/dft-book/bulk/Si-bs-0
-added /home-research/jkitchin/dft-book/bulk/Si-bs-1
-added /home-research/jkitchin/dft-book/bulk/Si-bs-2
-added /home-research/jkitchin/dft-book/bulk/Al-c11--0.1
-added /home-research/jkitchin/dft-book/bulk/Al-c11--0.05
-added /home-research/jkitchin/dft-book/bulk/Al-c11-0
-added /home-research/jkitchin/dft-book/bulk/Al-c11-0.05
-added /home-research/jkitchin/dft-book/bulk/Al-c11-0.1
-added /home-research/jkitchin/dft-book/bulk/Al-c11--0.025
-added /home-research/jkitchin/dft-book/bulk/Al-c11-0.0
-added /home-research/jkitchin/dft-book/bulk/Al-c11-0.025
-added /home-research/jkitchin/dft-book/bulk/alloy/pd
-added /home-research/jkitchin/dft-book/bulk/alloy/cupd-1
-added /home-research/jkitchin/dft-book/bulk/alloy/cupd-2
-added /home-research/jkitchin/dft-book/bulk/alloy/cu
-added /home-research/jkitchin/dft-book/bulk/alloy/cu3pd-1
-added /home-research/jkitchin/dft-book/bulk/alloy/cu3pd-2
-added /home-research/jkitchin/dft-book/bulk/Ru/2.50-1.40
-added /home-research/jkitchin/dft-book/bulk/Ru/2.50-1.50
-added /home-research/jkitchin/dft-book/bulk/Ru/2.50-1.60
-added /home-research/jkitchin/dft-book/bulk/Ru/2.50-1.70
-added /home-research/jkitchin/dft-book/bulk/Ru/2.50-1.80
-added /home-research/jkitchin/dft-book/bulk/Ru/2.60-1.40
-added /home-research/jkitchin/dft-book/bulk/Ru/2.60-1.50
-added /home-research/jkitchin/dft-book/bulk/Ru/2.60-1.60
-added /home-research/jkitchin/dft-book/bulk/Ru/2.60-1.70
-added /home-research/jkitchin/dft-book/bulk/Ru/2.60-1.80
-added /home-research/jkitchin/dft-book/bulk/Ru/2.70-1.40
-added /home-research/jkitchin/dft-book/bulk/Ru/2.70-1.50
-added /home-research/jkitchin/dft-book/bulk/Ru/2.70-1.60
-added /home-research/jkitchin/dft-book/bulk/Ru/2.70-1.70
-added /home-research/jkitchin/dft-book/bulk/Ru/2.70-1.80
-added /home-research/jkitchin/dft-book/bulk/Ru/2.80-1.40
-added /home-research/jkitchin/dft-book/bulk/Ru/2.80-1.50
-added /home-research/jkitchin/dft-book/bulk/Ru/2.80-1.60
-added /home-research/jkitchin/dft-book/bulk/Ru/2.80-1.70
-added /home-research/jkitchin/dft-book/bulk/Ru/2.80-1.80
-added /home-research/jkitchin/dft-book/bulk/Ru/2.90-1.40
-added /home-research/jkitchin/dft-book/bulk/Ru/2.90-1.50
-added /home-research/jkitchin/dft-book/bulk/Ru/2.90-1.60
-added /home-research/jkitchin/dft-book/bulk/Ru/2.90-1.70
-added /home-research/jkitchin/dft-book/bulk/Ru/2.90-1.80
-added /home-research/jkitchin/dft-book/bulk/tio2/kpts-2
-added /home-research/jkitchin/dft-book/bulk/tio2/kpts-3
-added /home-research/jkitchin/dft-book/bulk/tio2/kpts-4
-added /home-research/jkitchin/dft-book/bulk/tio2/kpts-5
-added /home-research/jkitchin/dft-book/bulk/tio2/kpts-6
-added /home-research/jkitchin/dft-book/bulk/tio2/kpts-7
-added /home-research/jkitchin/dft-book/bulk/tio2/kpts-8
-added /home-research/jkitchin/dft-book/bulk/tio2/step1-0.90
-added /home-research/jkitchin/dft-book/bulk/tio2/step1-0.95
-added /home-research/jkitchin/dft-book/bulk/tio2/step1-1.00
-added /home-research/jkitchin/dft-book/bulk/tio2/step1-1.05
-added /home-research/jkitchin/dft-book/bulk/tio2/step1-1.10
-added /home-research/jkitchin/dft-book/bulk/tio2/step2-0.90
-added /home-research/jkitchin/dft-book/bulk/tio2/step2-0.95
-added /home-research/jkitchin/dft-book/bulk/tio2/step2-1.00
-added /home-research/jkitchin/dft-book/bulk/tio2/step2-1.05
-added /home-research/jkitchin/dft-book/bulk/tio2/step2-1.10
-added /home-research/jkitchin/dft-book/bulk/tio2/step3
-added /home-research/jkitchin/dft-book/bulk/tio2/step4
-added /home-research/jkitchin/dft-book/bulk/TiO2/rutile/rutile-28.0
-added /home-research/jkitchin/dft-book/bulk/TiO2/rutile/rutile-30.0
-added /home-research/jkitchin/dft-book/bulk/TiO2/rutile/rutile-32.0
-added /home-research/jkitchin/dft-book/bulk/TiO2/rutile/rutile-34.0
-added /home-research/jkitchin/dft-book/bulk/TiO2/rutile/rutile-36.0
-added /home-research/jkitchin/dft-book/bulk/TiO2/anatase/anatase-30.0
-added /home-research/jkitchin/dft-book/bulk/TiO2/anatase/anatase-33.0
-added /home-research/jkitchin/dft-book/bulk/TiO2/anatase/anatase-35.0
-added /home-research/jkitchin/dft-book/bulk/TiO2/anatase/anatase-37.0
-added /home-research/jkitchin/dft-book/bulk/TiO2/anatase/anatase-39.0
-added /home-research/jkitchin/dft-book/bulk/Cu-layers/3
-added /home-research/jkitchin/dft-book/bulk/Cu-layers/4
-added /home-research/jkitchin/dft-book/bulk/Cu-layers/5
-added /home-research/jkitchin/dft-book/bulk/Cu-layers/6
-added /home-research/jkitchin/dft-book/bulk/Cu-layers/7
-added /home-research/jkitchin/dft-book/bulk/Cu-layers/8
-added /home-research/jkitchin/dft-book/bulk/Cu-layers/9
-added /home-research/jkitchin/dft-book/bulk/Cu-layers/10
-added /home-research/jkitchin/dft-book/bulk/Cu-layers/11
-added /home-research/jkitchin/dft-book/bulk/Si-bs-0/bandstructure
-added /home-research/jkitchin/dft-book/bulk/Si-bs-0/bandstructure/bandstructure
-added /home-research/jkitchin/dft-book/bulk/Si-bs-0/bandstructure/bandstructure/bandstructure
-added /home-research/jkitchin/dft-book/bulk/Si-bs-1/bandstructure
-added /home-research/jkitchin/dft-book/bulk/Si-bs-1/bandstructure/bandstructure
-added /home-research/jkitchin/dft-book/bulk/Si-bs-1/bandstructure/bandstructure/bandstructure
-added /home-research/jkitchin/dft-book/bulk/Si-bs-2/bandstructure
-added /home-research/jkitchin/dft-book/bulk/Si-bs-2/bandstructure/bandstructure
-added /home-research/jkitchin/dft-book/devel/molecules/lr-u/step1
-added /home-research/jkitchin/dft-book/devel/molecules/lr-u/step2--0.100
-added /home-research/jkitchin/dft-book/devel/molecules/lr-u/step2--0.050
-added /home-research/jkitchin/dft-book/devel/molecules/lr-u/step2--0.025
-added /home-research/jkitchin/dft-book/devel/molecules/lr-u/step2-0.025
-added /home-research/jkitchin/dft-book/devel/molecules/lr-u/step2-0.050
-added /home-research/jkitchin/dft-book/devel/molecules/lr-u/step2-0.100
-added /home-research/jkitchin/dft-book/devel/molecules/lr-u/step3--0.100
-added /home-research/jkitchin/dft-book/devel/molecules/lr-u/step3--0.050
-added /home-research/jkitchin/dft-book/devel/molecules/lr-u/step3--0.025
-added /home-research/jkitchin/dft-book/devel/molecules/lr-u/step3-0.025
-added /home-research/jkitchin/dft-book/devel/molecules/lr-u/step3-0.050
-added /home-research/jkitchin/dft-book/devel/molecules/lr-u/step3-0.100
+58bf59bf340e3bef692a308e
+-1.079817325
 :END:
 
+As a document, you could store something like this. This is a loose thought, the pseudo-example below should also include the _id for each calculation so you know where it came from. Maybe there is some jsonic way of storing variables. Alternatively, you could store a python script to do the calculation, and its result.
 
-* TODO These are things we don't do now but might want to
+#+BEGIN_SRC json
+{"+" : [clean_slab_energy o_slab_energy {"*": [0.5 o2_energy]}]}
+#+END_SRC
 
-** NEB
+
 ** Store trajectories
-** Store derived results like adsorption energies, barriers
+
+You can build up the document any way you want and store it.
