@@ -321,6 +321,20 @@ def read(self, restart=None):
 
         self.parameters['ldau_luj'] = ldau_luj
 
+    # rebuild the list to a dictionary. It gets read in at a time
+    # where there are no atoms.
+    if 'rwigs' in self.parameters:
+        with open(self.potcar) as f:
+            lines = f.readlines()
+
+        # symbols are in the # FIXME: first line of each potcar
+        symbols = [lines[0].split()[1]]
+        for i, line in enumerate(lines):
+            if 'End of Dataset' in line and i != len(lines) - 1:
+                symbols += [lines[i + 1].split()[1]]
+
+        self.parameters['rwigs'] = dict(zip(symbols, self.parameters['rwigs']))
+
     # Now get the atoms
     atoms = self.read_atoms()
     self.atoms = atoms
