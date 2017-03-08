@@ -90,16 +90,19 @@ def set_ispin_dict(self, val):
 
 @monkeypatch_class(vasp.Vasp)
 def set_rwigs_dict(self, val):
-    """Return rwigs parameters."""
+    """Return rwigs parameters in list form if val is a dict, or val
+otherwise."""
+
     d = {}
     if val is None:
         d['rwigs'] = None
         d['lorbit'] = None
-    else:
+    elif isinstance(val, dict):
         # val is a dictionary {sym: rwigs}
         # rwigs needs to be in the order of the potcars
         d['rwigs'] = [val[x[0]] for x in self.ppp_list]
-
+    else:
+        d['rwigs'] = val
     return d
 
 
