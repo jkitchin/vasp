@@ -41,6 +41,20 @@ parser.add_argument('-p', '--plot', action='store_true',
 parser.add_argument('-m', '--mongo', action='store_true',
                     help='Add to mongo db')
 
+parser.add_argument('--mongo-rm', action='store_true',
+                    help='Remove from mongo.')
+
+parser.add_argument('--add-tags', nargs='+',
+                    help='Add tags to mongo-entry')
+
+parser.add_argument('--remove-tags', nargs='+',
+                    help='Remove tags from mongo-entry')
+
+parser.add_argument('--show-db', action='store_true',
+                    help='Show entry in mongo db')
+
+
+
 args = parser.parse_args()
 
 if args.debug:
@@ -80,6 +94,53 @@ for d in args.dirs:
     if args.mongo:
         from vasp.mongo import MongoDatabase
         db = MongoDatabase()
-        if db.find({"calc.path": calc.directory}).count() == 0:
-            db.write(calc.atoms)
-            print('Added entry {}'.format(db.collection.count()))
+        if db.find({"calculator.path": calc.directory}).count() == 0:
+            atoms = calc.get_atoms()
+            iid = db.write(db.mongo_doc(atoms))
+            print('Added entry {}'.format(iid))
+
+    if args.add_tags:
+        from vasp.mongo import MongoDatabase
+        db = MongoDatabase()
+
+        if db.find({"calculator.path": calc.directory}).count() == 0:
+            atoms = calc.get_atoms()
+            iid = db.write(db.mongo_doc(atoms), tags=args.add_tags)
+            print('Added entry {}'.format(iid))
+        else:
+            db.collection.update({"calculator.path": calc.directory},
+                                 {'$addToSet': {'tags': {'$each': args.add_tags}}})
+
+
+    if args.remove_tags:
+        from vasp.mongo import MongoDatabase
+        db = MongoDatabase()
+
+        if db.find({"calculator.path": calc.directory}).count() == 0:
+            atoms = calc.get_atoms()
+            iid = db.write(db.mongo_doc(atoms))
+            print('Added entry {}'.format(iid))
+        else:
+            db.collection.update({"calculator.path": calc.directory},
+                                 {'$pullAll': {'tags': args.remove_tags}})
+
+
+    if args.show_db:
+        from vasp.mongo import MongoDatabase
+        db = MongoDatabase()
+        import pprint
+        pprint
+
+        c = db.find({"calculator.path": calc.directory})
+
+        if c.count() == 0:
+            print('No entry found')
+        else:
+            print('Found {} entries.'.format(c.count()))
+            for entry in c:
+                pprint.pprint(entry)
+
+    if args.mongo_rm:
+        from vasp.mongo import MongoDatabase
+        db = MongoDatabase()
+        db.collection.remove({"calculator.path": calc.directory})
