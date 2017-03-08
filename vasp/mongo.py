@@ -51,6 +51,36 @@ def mongo_atoms_doc(atoms):
     return json.loads(encode(d))
 
 
+def mongo_doc(atoms, **kwargs):
+        """
+        atoms is an ase.atoms.Atoms object.
+        kwargs are key-value pairs that will be written to the database.
+
+        Returns a dictionary for inserting to Mongo.
+        """
+
+        d = OrderedDict(atoms=mongo_atoms_doc(atoms))
+
+        # Calculated values
+        if atoms.get_calculator() is not None:
+            calc = atoms.get_calculator()
+            d['calculator'] = calc.todict()
+
+        d['user'] = os.getenv('USER')
+        # This is a has of what is inserted. You might use it to check
+        # for uniqueness of the insert.
+        d['inserted-hash'] = hashlib.sha1(json.dumps(d)).hexdigest()
+
+        # Created time.
+        d['ctime'] = datetime.datetime.utcnow()
+        # Modified time - depends on user to update
+        d['mtime'] = datetime.datetime.utcnow()
+
+        d.update(kwargs)
+
+        return d
+
+
 class MongoDatabase(MongoClient):
 
     def __init__(self,
@@ -68,38 +98,11 @@ class MongoDatabase(MongoClient):
         self.db = self[database]
         self.collection = getattr(self.db, collection)
 
-    @staticmethod
-    def mongo_doc(atoms, **kwargs):
-        """
-        atoms is an ase.atoms.Atoms object.
-        kwargs are key-value pairs that will be written to the database.
-
-        Returns a dictionary for inserting to Mongo.
-        """
-
-        d = OrderedDict(atoms=mongo_atoms_doc(atoms))
-
-        # Calculated values
-        if atoms.get_calculator() is not None:
-            calc = atoms.get_calculator()
-            d['calculator'] = calc.todict()
-
-        d['user'] = os.getenv('USER'),
-        # This is a has of what is inserted. You might use it to check
-        # for uniqueness of the insert.
-        d['inserted-hash'] = hashlib.sha1(json.dumps(d)).hexdigest()
-
-        # Created time.
-        d['ctime'] = datetime.datetime.utcnow()
-        # Modified time - depends on user to update
-        d['mtime'] = datetime.datetime.utcnow()
-
-        d.update(kwargs)
-
-        return d
-
     def write(self, d, **kwargs):
-        """d should be a dictionary, e.g. from mongo_doc."""
+        """d should be a dictionary, e.g. from mongo_doc.
+        This is a very thin wrapper on insert_one.
+
+        """
         d.update(kwargs)
         return self.collection.insert_one(d).inserted_id
 

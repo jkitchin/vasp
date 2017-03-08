@@ -17,7 +17,7 @@ pprint.pprint(next(db.find({}, limit=1)))
 
 #+RESULTS:
 :RESULTS:
-{u'_id': ObjectId('58bf461a340e3bba7e7f1879'),
+{u'_id': ObjectId('58c01b86340e3b45a4a6d511'),
  u'atoms': {u'atoms': [{u'charge': 0.0,
                         u'index': 0,
                         u'magmom': 0.0,
@@ -60,7 +60,7 @@ pprint.pprint(next(db.find({}, limit=1)))
             u'natoms': 4,
             u'pbc': [True, True, True],
             u'spacegroup': u'P-3m1 (164)',
-            u'symbol_counts': {u'Al': 1},
+            u'symbol_counts': {u'Al': 4},
             u'volume': 191.87240999273095},
  u'calculator': {u'charges': [None, None, None, None],
                  u'dipole': None,
@@ -105,9 +105,10 @@ pprint.pprint(next(db.find({}, limit=1)))
                              -0.0],
                  u'subversion': u'31Mar14 (build Aug 04 2015 12:48:45) complex                          serial ',
                  u'version': u'5.3.5  '},
- u'ctime': datetime.datetime(2017, 3, 7, 23, 45, 30, 126000),
- u'inserted-hash': u'ee438b3946a3c144dff689f4632aafd5a69ac3e2',
- u'mtime': [datetime.datetime(2017, 3, 7, 23, 45, 30, 126000)],
+ u'ctime': datetime.datetime(2017, 3, 8, 14, 56, 6, 748000),
+ u'inserted-hash': u'b337975791237f9c611b1a34e559dda2d1322ab9',
+ u'mtime': datetime.datetime(2017, 3, 8, 14, 56, 6, 748000),
+ u'source': u'dft-book',
  u'user': [u'jkitchin']}
 :END:
 
@@ -659,7 +660,7 @@ def vasp_p(directory):
                 return True
     return False
 
-from vasp.mongo import MongoDatabase
+from vasp.mongo import MongoDatabase, mongo_doc
 db = MongoDatabase()
 
 for root, dirs, files in os.walk('/home-research/jkitchin/dft-book'):
@@ -677,7 +678,7 @@ for root, dirs, files in os.walk('/home-research/jkitchin/dft-book'):
 
             calc = Vasp(absd)
             atoms = calc.get_atoms()
-            db.write(db.mongo_doc(atoms), source="dft-book")
+            db.write(mongo_doc(atoms), source="dft-book")
             print('added {}'.format(absd))
 #+END_SRC
 
