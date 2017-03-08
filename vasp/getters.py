@@ -625,3 +625,16 @@ def get_charges(self, atoms=None):
         return self._calculated_charges
     else:
         return None
+
+
+@monkeypatch_class(vasp.Vasp)
+def get_program_info(self):
+    """Return data about the vasp that was used for the calculation."""
+    with open(os.path.join(self.directory, 'vasprun.xml')) as f:
+        tree = ElementTree.parse(f)
+        program = tree.find("generator/i[@name='program']").text
+        version = tree.find("generator/i[@name='version']").text
+        subversion = tree.find("generator/i[@name='subversion']").text
+        rundate = tree.find("generator/i[@name='date']").text
+        runtime = tree.find("generator/i[@name='time']").text
+        return(program, version, subversion, rundate, runtime)
