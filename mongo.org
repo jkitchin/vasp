@@ -639,6 +639,26 @@ pprint.pprint(next(c))
  u'special_tags': [u'initial-state', u'neb']}
 :END:
 
+** Find calculations with FixAtoms constraints
+
+#+begin_SRC python :results output org drawer
+from vasp.mongo import MongoDatabase
+from bson.objectid import ObjectId
+
+db = MongoDatabase()
+
+
+
+c = db.find({'atoms.constraints.name': 'FixAtoms'})
+
+print(c.count())
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+21
+:END:
+
 * An example to walk directory and add calculations.
 This just defines a function that usually recognizes a Vasp directory (it fails on NEB directories), and if the directory is not in the database, it adds it.
 
