@@ -434,13 +434,13 @@ def reciprocal(calc, val):
 
 
 def rwigs(calc, val):
-    """RWIGS specifies the Wigner-Seitz radius for each atom type. (list)
+    """RWIGS specifies the Wigner-Seitz radius for each atom type. (dict)
 
     in vasp.py you enter a dictionary of {sym: radius}.
 
     http://cms.mpi.univie.ac.at/wiki/index.php/RWIGS
     """
-    assert isinstance(val, list)
+    assert isinstance(val, dict)
     assert calc.parameters.get('lorbit', 0) < 10, \
         'lorbit >= 10, rwigs is ignored.'
 
