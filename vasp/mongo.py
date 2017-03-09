@@ -52,6 +52,7 @@ def mongo_atoms_doc(atoms):
     return json.loads(encode(d))
 
 def mongo_doc_atoms(doc):
+    """Return an Atoms object from a dictionary."""
     atoms = Atoms([Atom(atom['symbol'],
                                 atom['position'],
                                 tag=atom['tag'],
