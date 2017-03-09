@@ -12,12 +12,12 @@ from vasp.mongo import MongoDatabase
 db = MongoDatabase()
 
 import pprint
-pprint.pprint(next(db.find({}, limit=1)))
+pprint.pprint(next(db.find({'calculator.class': 'Vasp'}, limit=1)))
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-{u'_id': ObjectId('58c02ae9340e3b6fc4c69edf'),
+{u'_id': ObjectId('58c0b8aa340e3b2aec02aed7'),
  u'atoms': {u'atoms': [{u'charge': 0.0,
                         u'index': 0,
                         u'magmom': 0.0,
@@ -63,6 +63,7 @@ pprint.pprint(next(db.find({}, limit=1)))
             u'symbol_counts': {u'Al': 4},
             u'volume': 191.87240999273095},
  u'calculator': {u'charges': [None, None, None, None],
+                 u'class': u'Vasp',
                  u'dipole': None,
                  u'elapsed-time': 443.049,
                  u'energy': -14.17006237,
@@ -75,6 +76,7 @@ pprint.pprint(next(db.find({}, limit=1)))
                  u'magmom': 0,
                  u'magmoms': [0.0, 0.0, 0.0, 0.0],
                  u'memory-used': 0.070486,
+                 u'module': u'vasp.vasp_core',
                  u'name': u'Vasp',
                  u'nionic-steps': 1,
                  u'parameters': {u'encut': 300,
@@ -105,24 +107,132 @@ pprint.pprint(next(db.find({}, limit=1)))
                              -0.0],
                  u'subversion': u'31Mar14 (build Aug 04 2015 12:48:45) complex                          serial ',
                  u'version': u'5.3.5  '},
- u'ctime': datetime.datetime(2017, 3, 8, 16, 1, 45, 525000),
- u'inserted-hash': u'b841d78d4d353513d3644c0cfe63c400da5db615',
- u'mtime': datetime.datetime(2017, 3, 8, 16, 1, 45, 525000),
+ u'ctime': datetime.datetime(2017, 3, 9, 2, 6, 34, 141000),
+ u'inserted-hash': u'130b806889a5cace009959e73055e4ab440a4618',
+ u'mtime': datetime.datetime(2017, 3, 9, 2, 6, 34, 141000),
+ u'results': {u'energy': -14.17006237,
+              u'fmax': 0.18858625,
+              u'forces': [[0.0, 0.0, -0.01914122],
+                          [0.0, 0.0, 0.18858625],
+                          [0.0, 0.0, -0.18858625],
+                          [0.0, 0.0, 0.01914122]],
+              u'smax': 0.006449951563292716,
+              u'stress': [0.006449951563292716,
+                          0.006449951563292716,
+                          0.0017486387353480974,
+                          -0.0,
+                          -0.0,
+                          -0.0]},
  u'source': u'dft-book',
  u'user': u'jkitchin'}
 :END:
 
 It is easy to write atoms with arbitrary key-value pairs. You have to do the work to decide if writing would add a duplicate entry.
 
+Here is an example of adding an entry to the database.
+
 #+BEGIN_SRC python :results output org drawer
-from vasp import Vasp
-from vasp.mongo import MongoDatabase
+from ase import Atoms
+from ase.calculators.emt import EMT
+h2 = Atoms('H2', [(0, 0, 0), (0, 0, 0.7)])
+h2.calc = EMT()
+print(h2.get_forces())
+
+from vasp.mongo import MongoDatabase, mongo_doc
 db = MongoDatabase()
 
-calc = Vasp(path)
-atoms = calc.get_atoms()
-db.write(atoms, key1=va1, key2, val2)
+doc = mongo_doc(h2)
+
+print(db.write(doc, relaxed=False))
 #+END_SRC
+
+#+RESULTS:
+:RESULTS:
+[[ 0.          0.         -9.80289641]
+ [ 0.          0.          9.80289641]]
+58c0b7d2340e3b29a6c6d4d2
+:END:
+
+You can query the database by an id:
+
+#+BEGIN_SRC python :results output org drawer
+from vasp.mongo import MongoDatabase
+from bson import ObjectId
+
+db = MongoDatabase()
+c = db.get_atoms({'_id': ObjectId('58c0b7d2340e3b29a6c6d4d2')})
+
+a = next(c)
+
+print(a)
+print(a.get_potential_energy())
+print(a.get_forces())
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+Atoms(symbols='H2', magmoms=..., tags=..., charges=..., positions=..., momenta=..., cell=[1.0, 1.0, 1.0], pbc=[False, False, False], calculator=SinglePointCalculator(...))
+1.41942600443
+[[ 0.          0.         -9.80289641]
+ [ 0.          0.          9.80289641]]
+:END:
+
+It isn't that easy to search by id unless you know it. Here we query a different way, using some parameters and calculator type.
+
+#+BEGIN_SRC python :results output org drawer
+from vasp.mongo import MongoDatabase
+
+db = MongoDatabase()
+
+hits = db.find({'calculator.class': 'EMT',
+                'atoms.symbol_counts.H': 2,
+                'atoms.natoms': 2,
+                'relaxed': False,})
+
+for hit in hits: print(hit)
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+{u'ctime': datetime.datetime(2017, 3, 9, 2, 2, 58, 702000), u'calculator': {u'class': u'EMT', u'module': u'ase.calculators.emt'}, u'inserted-hash': u'1b91b56993629c89de35de7a00e3ee19ebeba5b2', u'results': {u'fmax': 9.802896414149222, u'energy': 1.419426004428582, u'forces': [[0.0, 0.0, -9.802896414149222], [0.0, 0.0, 9.802896414149222]]}, u'atoms': {u'info': {}, u'cell': [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], u'natoms': 2, u'symbol_counts': {u'H': 2}, u'chemical_symbols': [u'H'], u'atoms': [{u'magmom': 0.0, u'index': 0, u'symbol': u'H', u'charge': 0.0, u'tag': 0, u'position': [0.0, 0.0, 0.0], u'momentum': [0.0, 0.0, 0.0]}, {u'magmom': 0.0, u'index': 1, u'symbol': u'H', u'charge': 0.0, u'tag': 0, u'position': [0.0, 0.0, 0.7], u'momentum': [0.0, 0.0, 0.0]}], u'volume': 1.0, u'mass': 2.01588, u'pbc': [False, False, False], u'spacegroup': u'P4/mmm (123)', u'constraints': []}, u'user': u'jkitchin', u'mtime': datetime.datetime(2017, 3, 9, 2, 2, 58, 702000), u'_id': ObjectId('58c0b7d2340e3b29a6c6d4d2'), u'relaxed': False}
+:END:
+
+We can add any kind of calculator.
+
+#+BEGIN_SRC python :results output org drawer
+from ase.calculators.singlepoint import SinglePointCalculator
+from ase import Atoms
+
+h2 = Atoms('H2', [(0, 0, 0), (0, 0, 0.7)])
+
+calc = SinglePointCalculator(energy=0.0, atoms=h2)
+h2.set_calculator(calc)
+
+from vasp.mongo import MongoDatabase, mongo_doc
+
+db = MongoDatabase()
+print(db.write(mongo_doc(h2)))
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+58c0b835340e3b2a2afb4999
+:END:
+
+#+BEGIN_SRC python :results output org drawer
+from vasp.mongo import MongoDatabase
+from bson import ObjectId
+
+db = MongoDatabase()
+c = db.find({'_id': ObjectId('58c0b835340e3b2a2afb4999')})
+
+print(next(c))
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+{u'ctime': datetime.datetime(2017, 3, 9, 2, 4, 37, 359000), u'calculator': {u'class': u'SinglePointCalculator', u'module': u'ase.calculators.singlepoint'}, u'inserted-hash': u'86b9784e88fcacd8e79cd86637c0744b584d0030', u'results': {u'energy': 0.0}, u'atoms': {u'info': {}, u'cell': [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], u'natoms': 2, u'symbol_counts': {u'H': 2}, u'chemical_symbols': [u'H'], u'atoms': [{u'magmom': 0.0, u'index': 0, u'symbol': u'H', u'charge': 0.0, u'tag': 0, u'position': [0.0, 0.0, 0.0], u'momentum': [0.0, 0.0, 0.0]}, {u'magmom': 0.0, u'index': 1, u'symbol': u'H', u'charge': 0.0, u'tag': 0, u'position': [0.0, 0.0, 0.7], u'momentum': [0.0, 0.0, 0.0]}], u'volume': 1.0, u'mass': 2.01588, u'pbc': [False, False, False], u'spacegroup': u'P4/mmm (123)', u'constraints': []}, u'user': u'jkitchin', u'mtime': datetime.datetime(2017, 3, 9, 2, 4, 37, 359000), u'_id': ObjectId('58c0b835340e3b2a2afb4999')}
+:END:
 
 * Assumptions
 
@@ -157,7 +267,7 @@ pprint.pprint(next(c))
 #+RESULTS:
 #+begin_example
 1
-{u'_id': ObjectId('58bf469f340e3bba7e7f18fe'),
+{u'_id': ObjectId('58c0b930340e3b2aec02af5b'),
  u'atoms': {u'atoms': [{u'charge': 0.0,
                         u'index': 0,
                         u'magmom': 0.0,
@@ -180,9 +290,10 @@ pprint.pprint(next(c))
             u'natoms': 2,
             u'pbc': [True, True, True],
             u'spacegroup': u'P4/mmm (123)',
-            u'symbol_counts': {u'O': 1},
+            u'symbol_counts': {u'O': 2},
             u'volume': 1000.0000000000007},
  u'calculator': {u'charges': [None, None],
+                 u'class': u'Vasp',
                  u'dipole': None,
                  u'elapsed-time': 96.775,
                  u'energy': -9.84832389,
@@ -192,6 +303,7 @@ pprint.pprint(next(c))
                  u'magmom': 2.0000084,
                  u'magmoms': [0.815, 0.815],
                  u'memory-used': 0.121297,
+                 u'module': u'vasp.vasp_core',
                  u'name': u'Vasp',
                  u'nionic-steps': 1,
                  u'parameters': {u'encut': 400,
@@ -227,10 +339,21 @@ pprint.pprint(next(c))
                              -0.0],
                  u'subversion': u'31Mar14 (build Aug 04 2015 12:48:45) complex                          serial ',
                  u'version': u'5.3.5  '},
- u'ctime': datetime.datetime(2017, 3, 7, 23, 47, 43, 393000),
- u'inserted-hash': u'6af880c95c12110a814606fa07c8c8060b132dd3',
- u'mtime': [datetime.datetime(2017, 3, 7, 23, 47, 43, 393000)],
- u'user': [u'jkitchin']}
+ u'ctime': datetime.datetime(2017, 3, 9, 2, 8, 48, 84000),
+ u'inserted-hash': u'063e6e1a504a4f8c871deb3ccab0e24ddaba122f',
+ u'mtime': datetime.datetime(2017, 3, 9, 2, 8, 48, 84000),
+ u'results': {u'energy': -9.84832389,
+              u'fmax': 0.02269834,
+              u'forces': [[0.02269834, 0.0, 0.0], [-0.02269834, 0.0, 0.0]],
+              u'smax': 0.0016375624234798473,
+              u'stress': [0.0012823514731940845,
+                          0.0016375624234798473,
+                          0.0016375624234798473,
+                          -0.0,
+                          -0.0,
+                          -0.0]},
+ u'source': u'dft-book',
+ u'user': u'jkitchin'}
 #+end_example
 
 
@@ -253,7 +376,7 @@ pprint(next(c))
 #+RESULTS:
 :RESULTS:
 2
-{u'_id': ObjectId('58bf4a8d340e3bceec74d081'),
+{u'_id': ObjectId('58c0b94e340e3b2aec02af82'),
  u'atoms': {u'atoms': [{u'charge': 0.0,
                         u'index': 0,
                         u'magmom': 0.0,
@@ -298,6 +421,7 @@ pprint(next(c))
             u'symbol_counts': {u'H': 3, u'N': 1},
             u'volume': 1000.0000000000007},
  u'calculator': {u'charges': [None, None, None, None],
+                 u'class': u'Vasp',
                  u'dipole': None,
                  u'elapsed-time': 205.702,
                  u'energy': -19.44508478,
@@ -310,6 +434,7 @@ pprint(next(c))
                  u'magmom': 0,
                  u'magmoms': [0.0, 0.0, 0.0, 0.0],
                  u'memory-used': 0.089491,
+                 u'module': u'vasp.vasp_core',
                  u'name': u'Vasp',
                  u'nionic-steps': 3,
                  u'parameters': {u'encut': 350,
@@ -345,10 +470,24 @@ pprint(next(c))
                              -0.0],
                  u'subversion': u'31Mar14 (build Aug 04 2015 12:48:45) complex                          serial ',
                  u'version': u'5.3.5  '},
- u'ctime': datetime.datetime(2017, 3, 8, 0, 4, 29, 371000),
- u'inserted-hash': u'b1e359083a3f6f5cf39067424e845361b84219a0',
- u'mtime': datetime.datetime(2017, 3, 8, 0, 4, 29, 371000),
- u'user': [u'jkitchin']}
+ u'ctime': datetime.datetime(2017, 3, 9, 2, 9, 18, 606000),
+ u'inserted-hash': u'97069959e059fd092badb741d6e2e0cfc63b9846',
+ u'mtime': datetime.datetime(2017, 3, 9, 2, 9, 18, 606000),
+ u'results': {u'energy': -19.44508478,
+              u'fmax': 0.01656847,
+              u'forces': [[0.0, 0.0, 0.0],
+                          [0.0, -0.01656847, -0.01226173],
+                          [-0.01416242, 0.00778803, -0.01222133],
+                          [0.01416242, 0.00778803, -0.01222133]],
+              u'smax': 0.0019324973600313817,
+              u'stress': [0.0018598465495721207,
+                          0.0018678603789048624,
+                          0.0019324973600313817,
+                          -1.4921138961610293e-06,
+                          -0.0,
+                          -0.0]},
+ u'source': u'dft-book',
+ u'user': u'jkitchin'}
 :END:
 
 Here we find calculations containing N and H.
@@ -396,12 +535,12 @@ print(c.count())
 [[u'O', u'_s']]
 [[u'O', u'_s']]
 [[u'O', u'_s']]
-1
+0
 :END:
 
 ** An equation of state
 
-Here we filter by spacegroup to get a set of calculations we could use for an equation of state of fcc Cu.
+Here we filter by spacegroup to get a set of calculations we could use for an equation of state of fcc Cu. We match on a regular expression on the spacegroup since it is stored as a string with the number in parentheses.
 
 #+BEGIN_SRC python :results output org drawer
 import numpy as np
@@ -412,7 +551,10 @@ eos = db.find({'atoms.symbol_counts.Cu': 1, 'atoms.natoms': 1,
                'atoms.spacegroup': {'$regex': '(225)'},
                'calculator.parameters.kpts': [8, 8, 8],
                'calculator.parameters.encut': 350},
-              projection={'_id': 0, 'calculator.pathtags': 1, 'calculator.energy': 1, 'atoms.volume': 1})
+              projection={'_id': 0, # do not show id
+                          'calculator.pathtags': 1,
+                          'calculator.energy': 1,
+                          'atoms.volume': 1})
 
 print(eos.count())
 for c in eos: print c
@@ -429,8 +571,6 @@ for c in eos: print c
 {u'calculator': {u'energy': -3.69342783, u'pathtags': [u'Cu-3.75', u'bulk', u'dft-book', u'jkitchin']}, u'atoms': {u'volume': 13.183593749999996}}
 :END:
 
-This makes it seem like storing a spacegroup is a good idea. For now, we either need to match patterns on a tag, or use external python filtering.
-
 ** Check a calculator
 
 This shows we can rebuild a calculator from the database.
@@ -440,19 +580,57 @@ from vasp.mongo import MongoDatabase
 from vasp import Vasp
 
 db = MongoDatabase()
-atoms = next(db.get_atoms({'atoms.symbol_counts.O': 1}))
-calc = atoms.get_calculator()
-print(calc.ppp_list)
+c = next(db.find({'atoms.symbol_counts.O': 1}))
+
+calc = Vasp(c['calculator']['path'], c['calculator']['parameters'])
+print(calc)
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-[['C', 'potpaw_PBE/C/POTCAR', 1], ['O', 'potpaw_PBE/O/POTCAR', 1]]
+
+
+Vasp calculation directory:
+---------------------------
+  [[/home-research/jkitchin/dft-book/blog/source/org/molecules/co-1.05]]
+
+Unit cell:
+----------
+       x       y       z             |v|
+  v0   6.000   0.000   0.000       6.000 Ang
+  v1   0.000   6.000   0.000       6.000 Ang
+  v2   0.000   0.000   6.000       6.000 Ang
+  alpha, beta, gamma (deg):  90.0  90.0  90.0
+  Total volume:                  216.000 Ang^3
+  Stress:    xx     yy     zz     yz     xz     xy
+         -0.060  0.011  0.011 -0.000 -0.000 -0.000 GPa
+
+  ID  tag     sym    x         y         z        rmsF (eV/A)
+  0   0       C      0.000     0.000     0.000      14.93
+  1   0       O      1.050     0.000     0.000      14.93
+  Potential energy: -14.2158 eV
+
+INPUT Parameters:
+-----------------
+  lcharg    : False
+  pp        : PBE
+  nbands    : 6
+  xc        : pbe
+  ismear    : 1
+  lwave     : False
+  sigma     : 0.01
+  kpts      : [1, 1, 1]
+  encut     : 350
+
+Pseudopotentials used:
+----------------------
+  C: potpaw_PBE/C/POTCAR (git-hash: ee4d8576584f8e9f32e90853a0cbf9d4a9297330)
+  O: potpaw_PBE/O/POTCAR (git-hash: 592f34096943a6f30db8749d13efca516d75ec55)
 :END:
 
 
 
-*** A special setup calculator
+*** TODO A special setup calculator
 
 #+BEGIN_SRC python :results output org drawer
 from vasp.mongo import MongoDatabase
@@ -507,7 +685,7 @@ Pseudopotentials used:
   O: potpaw_PBE/O_s/POTCAR (git-hash: b4bfc67547c457885a1cc949eeda825354a6520a)
 :END:
 
-*** calc with rwigs
+*** TODO calc with rwigs
 
 #+BEGIN_SRC python :results output org drawer
 from vasp.mongo import MongoDatabase
@@ -606,7 +784,7 @@ print(c)
 
 #+RESULTS:
 :RESULTS:
-[u'Al-bandstructure', u'blog', u'dft-book', u'jkitchin', u'co-1.05', u'molecules', u'org', u'source', u'co-1.1', u'co-1.15', u'co-1.2', u'co-1.25', u'co-n00', u'co-n01', u'co-n02', u'co-n03', u'co-n04', u'co-n05', u'co-n06', u'co-n07', u'co-n08', u'co-n09', u'Fe-bcc-fixedmagmom-4.00', u'bulk', u'Fe-bcc-fixedmagmom-4.50', u'Fe-bcc-fixedmagmom-5.00', u'Fe-bcc-fixedmagmom-5.50', u'Fe-bcc-fixedmagmom-6.00', u'mp', u'serial-Cu-0', u'serial-Cu-1', u'serial-Cu-2', u'serial-Cu-3', u'serial-Cu-4', u'serial-Cu-5', u'serial-Cu-6', u'serial-Cu-7', u'serial-Cu-8', u'serial-Cu-9', u'mp-Cu-0', u'mp-Cu-1', u'mp-Cu-2', u'mp-Cu-3', u'mp-Cu-4', u'mp-Cu-5', u'mp-Cu-6', u'mp-Cu-7', u'mp-Cu-8', u'mp-Cu-9', u'mp-threadpool-Cu-0', u'mp-threadpool-Cu-1', u'mp-threadpool-Cu-2', u'mp-threadpool-Cu-3', u'mp-threadpool-Cu-4', u'mp-threadpool-Cu-5', u'mp-threadpool-Cu-6', u'mp-threadpool-Cu-7', u'mp-threadpool-Cu-8', u'mp-threadpool-Cu-9', u'threads-Cu-0', u'threads-Cu-1', u'threads-Cu-3', u'threads-Cu-2', u'threads-Cu-4', u'threads-Cu-6', u'threads-Cu-9', u'threads-Cu-5', u'threads-Cu-7', u'threads-Cu-8', u'mp-pool-Cu-1', u'mp-pool-Cu-2', u'mp-pool-Cu-9', u'mp-pool-Cu-5', u'mp-pool-Cu-7', u'mp-pool-Cu-3', u'mp-pool-Cu-0', u'mp-pool-Cu-4', u'mp-pool-Cu-8', u'mp-pool-Cu-6', u'futures-Cu-0', u'futures-Cu-1', u'futures-Cu-2', u'futures-Cu-3', u'futures-Cu-4', u'futures-Cu-6', u'futures-Cu-7', u'futures-Cu-5', u'futures-Cu-8', u'futures-Cu-9', u'queue-Cu-1', u'queue-Cu-2', u'queue-Cu-0', u'queue-Cu-3', u'queue-Cu-4', u'queue-Cu-5', u'queue-Cu-6', u'queue-Cu-7', u'queue-Cu-8', u'queue-Cu-9', u'bandstructure', u'simple-co', u'simple-co-n4', u'co-L-4', u'co-L-5', u'co-L-6', u'co-L-8', u'co-L-10', u'co-en-250', u'co-en-300', u'co-en-350', u'co-en-400', u'co-en-450', u'co-en-500', u'clone-1', u'co-chg', u'co-centered', u'benzene', u'chlorobenzene', u'co-ados', u'CF3Br', u'h2o-bader', u'co-cg', u'h2o-relax-centered', u'h2o_vib', u'h2o_relax', u'h2o_vib_dfpt', u'n2-relax', u'n2-vib', u'O', u'O2', u'O-sp-triplet', u'O2-sp-triplet', u'O-sp-triplet-250', u'O2-sp-triplet-250', u'O-sp-triplet-300', u'O2-sp-triplet-300', u'O-sp-triplet-350', u'O2-sp-triplet-350', u'O-sp-triplet-400', u'O2-sp-triplet-400', u'O-sp-triplet-450', u'O2-sp-triplet-450', u'O-sp-triplet-500', u'O2-sp-triplet-500', u'O-sp-triplet-550', u'O2-sp-triplet-550', u'O-sp-triplet-sigma-0.2', u'O2-sp-triplet-sigma-0.2', u'O-sp-triplet-sigma-0.1', u'O2-sp-triplet-sigma-0.1', u'O-sp-triplet-sigma-0.05', u'O2-sp-triplet-sigma-0.05', u'O-sp-triplet-sigma-0.02', u'O2-sp-triplet-sigma-0.02', u'O-sp-triplet-sigma-0.01', u'O2-sp-triplet-sigma-0.01', u'O-sp-triplet-sigma-0.001', u'O2-sp-triplet-sigma-0.001', u'O-sp-singlet', u'O2-sp-singlet', u'O-square-box-origin', u'O-square-box-center', u'O-square-box-random', u'O-orthorhombic-box-origin', u'O-orthorhombic-box-center', u'O-orthorhombic-box-random', u'O-sp-triplet-lowsym', u'O2-sp-singlet-magmoms', u'O2-sp-triplet-magmoms', u'O-sp-triplet-lowsym-s', u'nh3-initial', u'nh3-final', u'O2-sp-triplet-s', u'benzene-pbe', u'benzene-pbe-d2', u'O_s', u'simple-co-gga', u'CO', u'wgs', u'CO2', u'H2', u'H2O', u'CO-vib', u'CO2-vib', u'H2-vib', u'H2O-vib', u'Al-slab-unrelaxed', u'surfaces', u'Pt-slab-O-fcc', u'Pt-slab', u'Pt-slab-O-bridge', u'Pt-slab-O-hcp', u'Pt-slab-O-bridge-xy-constrained', u'Pt-slab-1x1', u'Pt-slab-1x1-O-fcc', u'Pt-slab-O-fcc-vib', u'Au-110', u'Au-110-missing-row', u'Ag-110', u'Ag-110-missing-row', u'Cu-110', u'Cu-110-missing-row', u'Al-slab-locpot', u'Al-Na-nodip', u'Al-Na-dip', u'Au-pbe', u'Au-pbe-d2', u'Au-benzene-pbe-d2', u'Al-slab-relaxed', u'Ag-kpts-2', u'Ag-kpts-3', u'Ag-kpts-4', u'Ag-kpts-5', u'Ag-kpts-6', u'Ag-kpts-8', u'Ag-kpts-10', u'Cu-sigma-0.001', u'Cu-sigma-0.05', u'Cu-sigma-0.1', u'Cu-sigma-0.2', u'Cu-sigma-0.5', u'Cu-3.5', u'Cu-3.55', u'Cu-3.6', u'Cu-3.65', u'Cu-3.7', u'Cu-3.75', u'Cu-bcc-2.75', u'Cu-bcc-2.8', u'Cu-bcc-2.85', u'Cu-bcc-2.9', u'Cu-bcc-2.95', u'Cu-bcc-3.0', u'Fe-bcc-fixedmagmom-0.00', u'Fe-bcc-fixedmagmom-2.00', u'Fe-bcc-fixedmagmom-8.00', u'Fe-bcc-sp-1', u'afm-feo', u'pd-ados', u'bulk-rh', u'atomic-rh', u'bulk-rh-kpts-3', u'bulk-rh-kpts-4', u'bulk-rh-kpts-6', u'bulk-rh-kpts-9', u'bulk-rh-kpts-12', u'bulk-rh-kpts-15', u'bulk-rh-kpts-18', u'atomic-rh-sp', u'Fe-bulk', u'Al-bulk', u'Ni-3.5', u'Ni-3.55', u'Ni-3.6', u'Ni-3.65', u'Ni-3.7', u'Ni-3.75', u'Cu2O', u'CuO', u'pd-dos-k8-ismear-5', u'pd-dos-k10-ismear-5', u'pd-dos-k12-ismear-5', u'pd-dos-k14-ismear-5', u'pd-dos-k16-ismear-5', u'pd-dos-k18-ismear-5', u'pd-dos-k20-ismear-5', u'Pd-LDA-3.75', u'Pd-LDA-3.8', u'Pd-LDA-3.85', u'Pd-LDA-3.9', u'Pd-LDA-3.95', u'Pd-LDA-4.0', u'Pd-LDA-4.05', u'Pd-LDA-4.1', u'Pd-GGA-PS-3.75', u'Pd-GGA-PS-3.8', u'Pd-GGA-PS-3.85', u'Pd-GGA-PS-3.9', u'Pd-GGA-PS-3.95', u'Pd-GGA-PS-4.0', u'Pd-GGA-PS-4.05', u'Pd-GGA-PS-4.1', u'Pd-GGA-AM-3.75', u'Pd-GGA-AM-3.8', u'Pd-GGA-AM-3.85', u'Pd-GGA-AM-3.9', u'Pd-GGA-AM-3.95', u'Pd-GGA-AM-4.0', u'Pd-GGA-AM-4.05', u'Pd-GGA-AM-4.1', u'Pd-GGA-RP-3.75', u'Pd-GGA-RP-3.8', u'Pd-GGA-RP-3.85', u'Pd-GGA-RP-3.9', u'Pd-GGA-RP-3.95', u'Pd-GGA-RP-4.0', u'Pd-GGA-RP-4.05', u'Pd-GGA-RP-4.1', u'Pd-GGA-PE-3.75', u'Pd-GGA-PE-3.8', u'Pd-GGA-PE-3.85', u'Pd-GGA-PE-3.9', u'Pd-GGA-PE-3.95', u'Pd-GGA-PE-4.0', u'Pd-GGA-PE-4.05', u'Pd-GGA-PE-4.1', u'Al-lda-vasp', u'Al-lda-ase', u'Fe-elastic', u'Au-fcc', u'Ag-fcc', u'Cu-fcc', u'Cu2O-U=4.0', u'CuO-U=4.0', u'Al-elastic', u'Ni-PBE', u'Cu-cls-0', u'CuPd-cls-0', u'Si-selfconsistent', u'Si-bandstructure', u'Ni-PBE0', u'Ni-HSE06', u'Si-bs-0', u'Si-bs-1', u'Si-bs-2', u'Al-c11--0.1', u'Al-c11--0.05', u'Al-c11-0', u'Al-c11-0.05', u'Al-c11-0.1', u'Al-c11--0.025', u'Al-c11-0.0', u'Al-c11-0.025', u'alloy', u'pd', u'cupd-1', u'cupd-2', u'cu', u'cu3pd-1', u'cu3pd-2', u'2.50-1.40', u'Ru', u'2.50-1.50', u'2.50-1.60', u'2.50-1.70', u'2.50-1.80', u'2.60-1.40', u'2.60-1.50', u'2.60-1.60', u'2.60-1.70', u'2.60-1.80', u'2.70-1.40', u'2.70-1.50', u'2.70-1.60', u'2.70-1.70', u'2.70-1.80', u'2.80-1.40', u'2.80-1.50', u'2.80-1.60', u'2.80-1.70', u'2.80-1.80', u'2.90-1.40', u'2.90-1.50', u'2.90-1.60', u'2.90-1.70', u'2.90-1.80', u'kpts-2', u'tio2', u'kpts-3', u'kpts-4', u'kpts-5', u'kpts-6', u'kpts-7', u'kpts-8', u'step1-0.90', u'step1-0.95', u'step1-1.00', u'step1-1.05', u'step1-1.10', u'step2-0.90', u'step2-0.95', u'step2-1.00', u'step2-1.05', u'step2-1.10', u'step3', u'step4', u'TiO2', u'rutile', u'rutile-28.0', u'rutile-30.0', u'rutile-32.0', u'rutile-34.0', u'rutile-36.0', u'anatase', u'anatase-30.0', u'anatase-33.0', u'anatase-35.0', u'anatase-37.0', u'anatase-39.0', u'3', u'Cu-layers', u'4', u'5', u'6', u'7', u'8', u'9', u'10', u'11', u'devel', u'lr-u', u'step1', u'step2--0.100', u'step2--0.050', u'step2--0.025', u'step2-0.025', u'step2-0.050', u'step2-0.100', u'step3--0.100', u'step3--0.050', u'step3--0.025', u'step3-0.025', u'step3-0.050', u'step3-0.100']
+[u'Al-bandstructure', u'blog', u'dft-book', u'jkitchin', u'co-1.05', u'molecules', u'org', u'source', u'co-1.1', u'co-1.15', u'co-1.2', u'co-1.25', u'co-n00', u'co-n01', u'co-n02', u'co-n03', u'co-n04', u'co-n05', u'co-n06', u'co-n07', u'co-n08', u'co-n09', u'mp', u'serial-Cu-0', u'Fe-bcc-fixedmagmom-4.00', u'bulk', u'Fe-bcc-fixedmagmom-4.50', u'Fe-bcc-fixedmagmom-5.00', u'Fe-bcc-fixedmagmom-5.50', u'Fe-bcc-fixedmagmom-6.00', u'serial-Cu-1', u'serial-Cu-2', u'serial-Cu-3', u'serial-Cu-4', u'serial-Cu-5', u'serial-Cu-6', u'serial-Cu-7', u'serial-Cu-8', u'serial-Cu-9', u'mp-Cu-0', u'mp-Cu-1', u'mp-Cu-2', u'mp-Cu-3', u'mp-Cu-4', u'mp-Cu-5', u'mp-Cu-6', u'mp-Cu-7', u'mp-Cu-8', u'mp-Cu-9', u'mp-threadpool-Cu-0', u'mp-threadpool-Cu-1', u'mp-threadpool-Cu-2', u'mp-threadpool-Cu-3', u'mp-threadpool-Cu-4', u'mp-threadpool-Cu-5', u'mp-threadpool-Cu-6', u'mp-threadpool-Cu-7', u'mp-threadpool-Cu-8', u'mp-threadpool-Cu-9', u'threads-Cu-0', u'threads-Cu-1', u'threads-Cu-3', u'threads-Cu-2', u'threads-Cu-4', u'threads-Cu-6', u'threads-Cu-9', u'threads-Cu-5', u'threads-Cu-7', u'threads-Cu-8', u'mp-pool-Cu-1', u'mp-pool-Cu-2', u'mp-pool-Cu-9', u'mp-pool-Cu-5', u'mp-pool-Cu-7', u'mp-pool-Cu-3', u'mp-pool-Cu-0', u'mp-pool-Cu-4', u'mp-pool-Cu-8', u'mp-pool-Cu-6', u'futures-Cu-0', u'futures-Cu-1', u'futures-Cu-2', u'futures-Cu-3', u'futures-Cu-4', u'futures-Cu-6', u'futures-Cu-7', u'futures-Cu-5', u'futures-Cu-8', u'futures-Cu-9', u'queue-Cu-1', u'queue-Cu-2', u'queue-Cu-0', u'queue-Cu-3', u'queue-Cu-4', u'queue-Cu-5', u'queue-Cu-6', u'queue-Cu-7', u'queue-Cu-8', u'queue-Cu-9', u'bandstructure', u'simple-co', u'simple-co-n4', u'co-L-4', u'co-L-5', u'co-L-6', u'co-L-8', u'co-L-10', u'co-en-250', u'co-en-300', u'co-en-350', u'co-en-400', u'co-en-450', u'co-en-500', u'clone-1', u'co-chg', u'co-centered', u'benzene', u'chlorobenzene', u'CF3Br', u'h2o-bader', u'co-cg', u'h2o-relax-centered', u'h2o_vib', u'h2o_relax', u'h2o_vib_dfpt', u'n2-relax', u'n2-vib', u'O', u'O2', u'O-sp-triplet', u'O2-sp-triplet', u'O-sp-triplet-250', u'O2-sp-triplet-250', u'O-sp-triplet-300', u'O2-sp-triplet-300', u'O-sp-triplet-350', u'O2-sp-triplet-350', u'O-sp-triplet-400', u'O2-sp-triplet-400', u'O-sp-triplet-450', u'O2-sp-triplet-450', u'O-sp-triplet-500', u'O2-sp-triplet-500', u'O-sp-triplet-550', u'O2-sp-triplet-550', u'O-sp-triplet-sigma-0.2', u'O2-sp-triplet-sigma-0.2', u'O-sp-triplet-sigma-0.1', u'O2-sp-triplet-sigma-0.1', u'O-sp-triplet-sigma-0.05', u'O2-sp-triplet-sigma-0.05', u'O-sp-triplet-sigma-0.02', u'O2-sp-triplet-sigma-0.02', u'O-sp-triplet-sigma-0.01', u'O2-sp-triplet-sigma-0.01', u'O-sp-triplet-sigma-0.001', u'O2-sp-triplet-sigma-0.001', u'O-sp-singlet', u'O2-sp-singlet', u'O-square-box-origin', u'O-square-box-center', u'O-square-box-random', u'O-orthorhombic-box-origin', u'O-orthorhombic-box-center', u'O-orthorhombic-box-random', u'O-sp-triplet-lowsym', u'O2-sp-singlet-magmoms', u'O2-sp-triplet-magmoms', u'O-sp-triplet-lowsym-s', u'nh3-initial', u'nh3-final', u'O2-sp-triplet-s', u'benzene-pbe', u'benzene-pbe-d2', u'O_s', u'simple-co-gga', u'co-ados.bak', u'co-ados', u'CO', u'wgs', u'CO2', u'H2', u'H2O', u'CO-vib', u'CO2-vib', u'H2-vib', u'H2O-vib', u'Al-slab-unrelaxed', u'surfaces', u'Pt-slab-O-fcc', u'Pt-slab', u'Pt-slab-O-bridge', u'Pt-slab-O-hcp', u'Pt-slab-O-bridge-xy-constrained', u'Pt-slab-1x1', u'Pt-slab-1x1-O-fcc', u'Pt-slab-O-fcc-vib', u'Au-110', u'Au-110-missing-row', u'Ag-110', u'Ag-110-missing-row', u'Cu-110', u'Cu-110-missing-row', u'Al-slab-locpot', u'Al-Na-nodip', u'Al-Na-dip', u'Au-pbe', u'Au-pbe-d2', u'Au-benzene-pbe-d2', u'Al-slab-relaxed', u'Ag-kpts-2', u'Ag-kpts-3', u'Ag-kpts-4', u'Ag-kpts-5', u'Ag-kpts-6', u'Ag-kpts-8', u'Ag-kpts-10', u'Cu-sigma-0.001', u'Cu-sigma-0.05', u'Cu-sigma-0.1', u'Cu-sigma-0.2', u'Cu-sigma-0.5', u'Cu-3.5', u'Cu-3.55', u'Cu-3.6', u'Cu-3.65', u'Cu-3.7', u'Cu-3.75', u'Cu-bcc-2.75', u'Cu-bcc-2.8', u'Cu-bcc-2.85', u'Cu-bcc-2.9', u'Cu-bcc-2.95', u'Cu-bcc-3.0', u'Fe-bcc-fixedmagmom-0.00', u'Fe-bcc-fixedmagmom-2.00', u'Fe-bcc-fixedmagmom-8.00', u'Fe-bcc-sp-1', u'afm-feo', u'pd-ados', u'bulk-rh', u'atomic-rh', u'bulk-rh-kpts-3', u'bulk-rh-kpts-4', u'bulk-rh-kpts-6', u'bulk-rh-kpts-9', u'bulk-rh-kpts-12', u'bulk-rh-kpts-15', u'bulk-rh-kpts-18', u'atomic-rh-sp', u'Fe-bulk', u'Al-bulk', u'Ni-3.5', u'Ni-3.55', u'Ni-3.6', u'Ni-3.65', u'Ni-3.7', u'Ni-3.75', u'Cu2O', u'CuO', u'pd-dos-k8-ismear-5', u'pd-dos-k10-ismear-5', u'pd-dos-k12-ismear-5', u'pd-dos-k14-ismear-5', u'pd-dos-k16-ismear-5', u'pd-dos-k18-ismear-5', u'pd-dos-k20-ismear-5', u'Pd-LDA-3.75', u'Pd-LDA-3.8', u'Pd-LDA-3.85', u'Pd-LDA-3.9', u'Pd-LDA-3.95', u'Pd-LDA-4.0', u'Pd-LDA-4.05', u'Pd-LDA-4.1', u'Pd-GGA-PS-3.75', u'Pd-GGA-PS-3.8', u'Pd-GGA-PS-3.85', u'Pd-GGA-PS-3.9', u'Pd-GGA-PS-3.95', u'Pd-GGA-PS-4.0', u'Pd-GGA-PS-4.05', u'Pd-GGA-PS-4.1', u'Pd-GGA-AM-3.75', u'Pd-GGA-AM-3.8', u'Pd-GGA-AM-3.85', u'Pd-GGA-AM-3.9', u'Pd-GGA-AM-3.95', u'Pd-GGA-AM-4.0', u'Pd-GGA-AM-4.05', u'Pd-GGA-AM-4.1', u'Pd-GGA-RP-3.75', u'Pd-GGA-RP-3.8', u'Pd-GGA-RP-3.85', u'Pd-GGA-RP-3.9', u'Pd-GGA-RP-3.95', u'Pd-GGA-RP-4.0', u'Pd-GGA-RP-4.05', u'Pd-GGA-RP-4.1', u'Pd-GGA-PE-3.75', u'Pd-GGA-PE-3.8', u'Pd-GGA-PE-3.85', u'Pd-GGA-PE-3.9', u'Pd-GGA-PE-3.95', u'Pd-GGA-PE-4.0', u'Pd-GGA-PE-4.05', u'Pd-GGA-PE-4.1', u'Al-lda-vasp', u'Al-lda-ase', u'Fe-elastic', u'Au-fcc', u'Ag-fcc', u'Cu-fcc', u'Cu2O-U=4.0', u'CuO-U=4.0', u'Al-elastic', u'Ni-PBE', u'Cu-cls-0', u'CuPd-cls-0', u'Si-selfconsistent', u'Si-bandstructure', u'Ni-PBE0', u'Ni-HSE06', u'Si-bs-0', u'Si-bs-1', u'Si-bs-2', u'Al-c11--0.1', u'Al-c11--0.05', u'Al-c11-0', u'Al-c11-0.05', u'Al-c11-0.1', u'Al-c11--0.025', u'Al-c11-0.0', u'Al-c11-0.025', u'alloy', u'pd', u'cupd-1', u'cupd-2', u'cu', u'cu3pd-1', u'cu3pd-2', u'2.50-1.40', u'Ru', u'2.50-1.50', u'2.50-1.60', u'2.50-1.70', u'2.50-1.80', u'2.60-1.40', u'2.60-1.50', u'2.60-1.60', u'2.60-1.70', u'2.60-1.80', u'2.70-1.40', u'2.70-1.50', u'2.70-1.60', u'2.70-1.70', u'2.70-1.80', u'2.80-1.40', u'2.80-1.50', u'2.80-1.60', u'2.80-1.70', u'2.80-1.80', u'2.90-1.40', u'2.90-1.50', u'2.90-1.60', u'2.90-1.70', u'2.90-1.80', u'kpts-2', u'tio2', u'kpts-3', u'kpts-4', u'kpts-5', u'kpts-6', u'kpts-7', u'kpts-8', u'step1-0.90', u'step1-0.95', u'step1-1.00', u'step1-1.05', u'step1-1.10', u'step2-0.90', u'step2-0.95', u'step2-1.00', u'step2-1.05', u'step2-1.10', u'step3', u'step4', u'TiO2', u'rutile', u'rutile-28.0', u'rutile-30.0', u'rutile-32.0', u'rutile-34.0', u'rutile-36.0', u'anatase', u'anatase-30.0', u'anatase-33.0', u'anatase-35.0', u'anatase-37.0', u'anatase-39.0', u'3', u'Cu-layers', u'4', u'5', u'6', u'7', u'8', u'9', u'10', u'11', u'devel', u'lr-u', u'step1', u'step2--0.100', u'step2--0.050', u'step2--0.025', u'step2-0.025', u'step2-0.050', u'step2-0.100', u'step3--0.100', u'step3--0.050', u'step3--0.025', u'step3-0.025', u'step3-0.050', u'step3-0.100']
 :END:
 
 ** update a record
@@ -635,7 +813,7 @@ pprint.pprint(next(c))
 
 #+RESULTS:
 :RESULTS:
-{u'_id': ObjectId('58bf4a8d340e3bceec74d081'),
+{u'_id': ObjectId('58c0b94e340e3b2aec02af82'),
  u'special_tags': [u'initial-state', u'neb']}
 :END:
 
@@ -660,6 +838,7 @@ print(c.count())
 :END:
 
 * An example to walk directory and add calculations.
+
 This just defines a function that usually recognizes a Vasp directory (it fails on NEB directories), and if the directory is not in the database, it adds it.
 
 #+BEGIN_SRC python :results output org drawer
