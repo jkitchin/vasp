@@ -51,6 +51,25 @@ def mongo_atoms_doc(atoms):
 
     return json.loads(encode(d))
 
+def mongo_doc_atoms(doc):
+    """Return an Atoms object from a dictionary."""
+    atoms = Atoms([Atom(atom['symbol'],
+                                atom['position'],
+                                tag=atom['tag'],
+                                momentum=atom['momentum'],
+                                magmom=atom['magmom'],
+                                charge=atom['charge'])
+                           for atom in doc['atoms']['atoms']],
+                          cell=doc['atoms']['cell'])
+
+    from ase.calculators.singlepoint import SinglePointCalculator
+    results = doc['results']
+    calc = SinglePointCalculator(energy=results.get('energy', None),
+                                 forces=results.get('forces', None),
+                                 stress=results.get('stress', None),
+                                 atoms=atoms)
+    atoms.set_calculator(calc)
+    return atoms
 
 def mongo_doc(atoms, **kwargs):
         """atoms is an ase.atoms.Atoms object.
@@ -165,20 +184,4 @@ class MongoDatabase(MongoClient):
 
         cursor = self.collection.find(*args, **kwargs)
         for doc in cursor:
-            atoms = Atoms([Atom(atom['symbol'],
-                                atom['position'],
-                                tag=atom['tag'],
-                                momentum=atom['momentum'],
-                                magmom=atom['magmom'],
-                                charge=atom['charge'])
-                           for atom in doc['atoms']['atoms']],
-                          cell=doc['atoms']['cell'])
-
-            from ase.calculators.singlepoint import SinglePointCalculator
-            results = doc['results']
-            calc = SinglePointCalculator(energy=results.get('energy', None),
-                                         forces=results.get('forces', None),
-                                         stress=results.get('stress', None),
-                                         atoms=atoms)
-            atoms.set_calculator(calc)
-            yield atoms
+            yield mongo_doc_atoms(doc)
