@@ -19,7 +19,7 @@ from ase import Atoms, Atom
 from ase.io.jsonio import encode
 from vasp import Vasp
 import spglib
-
+from ase.constraints import dict2constraint
 
 def mongo_atoms_doc(atoms):
     """Return a dictionary of an Atoms object."""
@@ -52,7 +52,6 @@ def mongo_atoms_doc(atoms):
     return json.loads(encode(d))
 
 def mongo_doc_atoms(doc):
-    """Return an Atoms object from a dictionary."""
     atoms = Atoms([Atom(atom['symbol'],
                                 atom['position'],
                                 tag=atom['tag'],
@@ -60,7 +59,10 @@ def mongo_doc_atoms(doc):
                                 magmom=atom['magmom'],
                                 charge=atom['charge'])
                            for atom in doc['atoms']['atoms']],
-                          cell=doc['atoms']['cell'])
+                          cell=doc['atoms']['cell'],
+                          pbc=doc['atoms']['pbc'],
+                          info=doc['atoms']['info'],
+                          constraint=[dict2constraint(c) for c in doc['atoms']['constraints']])
 
     from ase.calculators.singlepoint import SinglePointCalculator
     results = doc['results']
