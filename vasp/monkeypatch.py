@@ -13,6 +13,12 @@ def monkeypatch_class(cls):
              'at line {f.func_code.co_firstlineno}')
         if func.__doc__ is None:
             func.__doc__ = ''
-        func.__doc__ += s.format(f=func)
+            # I am not happy about adding this try here, but some
+            # functions seem to be missing the func_code attribute and
+            # I am covering this here.
+            try:
+                func.__doc__ += s.format(f=func)
+            except:
+                pass
         return func
     return decorator

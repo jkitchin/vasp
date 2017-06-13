@@ -23,10 +23,12 @@ def algo(calc, val):
     """
     assert isinstance(val, str)
     assert (val.lower() in
-    [x.lower() for x in ["Normal", "VeryFast", "Fast", "Conjugate", "All",
-                         "Damped",
-                         "Subrot", "Eigenval", "None", "Nothing", "CHI", "GW0",
-                         "GW", "scGW0", "scGW"]])
+            [x.lower() for x in ["Normal", "VeryFast", "Fast", "Conjugate",
+                                 "All",
+                                 "Damped",
+                                 "Subrot", "Eigenval", "None", "Nothing",
+                                 "CHI",
+                                 "GW0", "GW", "scGW0", "scGW"]])
 
 
 def atoms(calc, val):
@@ -66,18 +68,21 @@ def encut(calc, val):
     http://cms.mpi.univie.ac.at/wiki/index.php/ENCUT
     """
     assert val > 0, 'encut must be greater than zero.'
-    assert (isinstance(val, int)
-            or isinstance(val, long)
-            or isinstance(val, float)),\
+    assert (isinstance(val, int) or
+            isinstance(val, long) or
+            isinstance(val, float)),\
         ('encut should be an int or float.'
          ' You provided {} ({}).'.format(val, type(val)))
 
 
 def gamma(calc, val):
-    """ GAMMA sets the k-points to be gamma centered.
-    Value must be a list of length 3 representing the shift from the gamma point.
+    """GAMMA sets the k-points to be gamma centered.
+
+    Value must be a list of length 3 representing the shift from the
+    gamma point.
 
     For no shift, use [0, 0, 0]
+
     """
     assert isinstance(val, list)
     assert len(val) == 3
@@ -185,18 +190,24 @@ def isym(calc, val):
 
 
 def ivdw(calc, val):
-    """ IVDW determines the approximate vdW correction methods used. (int)
+    """IVDW determines the approximate vdW correction methods used. (int)
 
     0    - no correction
     1|10 - DFT-D2 method of Grimme (available as of VASP.5.2.11)
     11   - zero damping DFT-D3 method of Grimme (available as of VASP.5.3.4)
     12   - DFT-D3 method with Becke-Jonson damping (available as of VASP.5.3.4)
     2    - Tkatchenko-Scheffler method (available as of VASP.5.3.3)
-    21   - Tkatchenko-Scheffler method with iterative Hirshfeld partitioning (available as of VASP.5.3.5)
-    202  - Many-body dispersion energy method (MBD@rSC) (available as of VASP.5.4.1)
-    4    - dDsC dispersion correction method (available as of VASP.5.4.1)
+
+    21 - Tkatchenko-Scheffler method with iterative Hirshfeld
+    partitioning (available as of VASP.5.3.5)
+
+    202 - Many-body dispersion energy method (MBD@rSC) (available as
+    of VASP.5.4.1)
+
+    4 - dDsC dispersion correction method (available as of VASP.5.4.1)
 
     http://cms.mpi.univie.ac.at/vasp/vasp/IVDW_approximate_vdW_correction_methods.html
+
     """
     assert val in [0, 1, 10, 11, 12, 2, 21, 202, 4]
 
@@ -278,9 +289,11 @@ def kpts_nintersections(calc, val):
 
 
 def kspacing(calc, val):
-    """KSPACING determines the number of k-points if the KPOINTS file is not present (float).
+    """KSPACING determines the number of k-points if the KPOINTS file is
+    not present (float).
 
     http://cms.mpi.univie.ac.at/vasp/vasp/KSPACING_tag_KGAMMA_tag.html
+
     """
     assert(isinstance(val, float))
 
@@ -314,7 +327,8 @@ def lsol(calc, val):
 
 
 def lreal(calc, val):
-    """LREAL determines whether the projection operators are evaluated in real-space or in reciprocal space. (boolean)
+    """LREAL determines whether the projection operators are evaluated in
+    real-space or in reciprocal space. (boolean)
 
     http://cms.mpi.univie.ac.at/wiki/index.php/LREAL
 
@@ -344,9 +358,11 @@ def magmom(calc, val):
 
 
 def maxmix(calc, val):
-    """MAXMIX specifies the maximum number steps stored in Broyden mixer (IMIX=4). (int)
+    """MAXMIX specifies the maximum number steps stored in Broyden mixer
+    (IMIX=4). (int)
 
     http://cms.mpi.univie.ac.at/wiki/index.php/MAXMIX
+
     """
 
     assert isinstance(val, int)
@@ -366,17 +382,21 @@ def nbands(calc, val):
 
 
 def ncore(calc, val):
-    """NCORE determines the number of compute cores that work on an individual orbital. (int)
+    """NCORE determines the number of compute cores that work on an
+    individual orbital. (int)
 
     http://cms.mpi.univie.ac.at/wiki/index.php/NCORE
+
     """
     assert isinstance(val, int)
 
 
 def nelm(calc, val):
-    """NELM sets the maximum number of electronic SC (selfconsistency) steps which may be performed. (int)
+    """NELM sets the maximum number of electronic SC (selfconsistency)
+    steps which may be performed. (int)
 
     http://cms.mpi.univie.ac.at/wiki/index.php/NELM
+
     """
 
     assert isinstance(val, int)
@@ -405,7 +425,8 @@ def nsw(calc, val):
 
 
 def potim(calc, val):
-    """POTIM sets the time step (MD) or step width scaling (ionic relaxations). (float)
+    """POTIM sets the time step (MD) or step width scaling (ionic
+    relaxations). (float)
 
     http://cms.mpi.univie.ac.at/wiki/index.php/POTIM
     """

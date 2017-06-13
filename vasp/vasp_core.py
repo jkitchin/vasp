@@ -18,18 +18,19 @@ from ase.io.jsonio import encode
 import json
 
 # internal modules
-import exceptions
-import validate
-from vasprc import VASPRC
-from vasp import log
+import vasp
+import vasp.exceptions
+from vasp import validate
+from .vasprc import VASPRC
+from .vasp import log
 
 
 def VaspExceptionHandler(calc, exc_type, exc_value, exc_traceback):
     """Handle exceptions."""
-    if exc_type == exceptions.VaspSubmitted:
+    if exc_type == vasp.exceptions.VaspSubmitted:
         print(exc_value)
         return None
-    elif exc_type == exceptions.VaspQueued:
+    elif exc_type == vasp.exceptions.VaspQueued:
         print(exc_value)
         return None
     elif exc_type == KeyError and exc_value.message == 'energy':
@@ -38,8 +39,18 @@ def VaspExceptionHandler(calc, exc_type, exc_value, exc_traceback):
         return np.array([[None, None, None] for atom in calc.get_atoms()])
     elif exc_type == KeyError and exc_value.message == 'stress':
         return np.array([None, None, None, None, None, None])
+    # This is the new ase 3.13 and Python3 exceptions below here.
+    elif (exc_type == ase.calculators.calculator.PropertyNotImplementedError and
+          exc_value.args[0] == 'energy not present in this calculation'):
+        return None
+    elif (exc_type == ase.calculators.calculator.PropertyNotImplementedError and
+          exc_value.args[0] == 'forces not present in this calculation'):
+        return np.array([[None, None, None] for atom in calc.get_atoms()])
+    elif (exc_type == ase.calculators.calculator.PropertyNotImplementedError and
+          exc_value.args[0] == 'stress not present in this calculation'):
+        return np.array([None, None, None, None, None, None])
 
-    print('Unhandled exception in Vasp')
+    print('Unhandled exception in Vasp: {}'.format(exc_type))
     import traceback
     import sys
     traceback.print_exception(exc_type, exc_value, exc_traceback,
@@ -58,7 +69,7 @@ class Vasp(FileIOCalculator, object):
     $VASP_PP_PATH/potpaw_GGA
 
     """
-    version = "0.9.3"
+    version = "1.0"
     name = 'VASP'
     command = None
     debug = None
@@ -123,7 +134,7 @@ class Vasp(FileIOCalculator, object):
     special_kwargs = ['xc',  # sets vasp tags for the exc-functional
                       'pp',  # determines where POTCARs are retrieved from
                       'setups',
-                      'kpts', # kpoints setup
+                      'kpts',  # kpoints setup
                       'gamma',
                       'kpts_nintersections',
                       'reciprocal',
@@ -250,7 +261,7 @@ class Vasp(FileIOCalculator, object):
         # system here.
 
         # Add default parameters if they aren't set otherwise.
-        for key, val in Vasp.default_parameters.iteritems():
+        for key, val in Vasp.default_parameters.items():
             if key not in kwargs and key not in self.parameters:
                 kwargs[key] = val
 
@@ -297,7 +308,7 @@ class Vasp(FileIOCalculator, object):
 
         # Finally run validate functions
         if VASPRC['validate']:
-            for key, val in self.parameters.iteritems():
+            for key, val in self.parameters.items():
                 if key in validate.__dict__:
                     f = validate.__dict__[key]
                     f(self, val)
@@ -394,12 +405,12 @@ class Vasp(FileIOCalculator, object):
         # stored and calculated here.  We check here to see if we are
         # consistent, and if not fix the issue. This should only occur
         # once.
-        if (self.resort is not None
-            and self.get_db('resort') is not None
-            and self.resort != list(self.get_db('resort'))):
-            ns =  [k[1] for k in
-                   sorted([[j, i]
-                           for i, j in enumerate(self.get_db('resort'))])]
+        if (self.resort is not None and
+            self.get_db('resort') is not None and
+            self.resort != list(self.get_db('resort'))):
+            ns = [k[1] for k in
+                  sorted([[j, i]
+                          for i, j in enumerate(self.get_db('resort'))])]
             from ase.db import connect
             with connect(os.path.join(self.directory, 'DB.db')) as con:
                 tatoms = con.get_atoms(id=1)
@@ -455,7 +466,7 @@ class Vasp(FileIOCalculator, object):
         cell = atoms.get_cell()
 
         A, B, C = [i for i in cell]
-        l = map(np.linalg.norm, cell)
+        l = list(map(np.linalg.norm, cell))
         a, b, c = l
         alpha = np.arccos(np.dot(B / b, C / c)) * 180 / np.pi
         beta = np.arccos(np.dot(A / a, C / c)) * 180 / np.pi
@@ -528,7 +539,7 @@ class Vasp(FileIOCalculator, object):
         #########################
         s += ['\nINPUT Parameters:']
         s += ['-----------------']
-        for key, value in self.parameters.iteritems():
+        for key, value in self.parameters.items():
             s += ['  {0:<10}: {1}'.format(key, value)]
 
         # Format pseudo-potential output
@@ -633,7 +644,7 @@ class Vasp(FileIOCalculator, object):
 
             file_params['ldau_luj'] = ldau_luj
 
-        if not {k: v for k, v in self.parameters.iteritems()
+        if not {k: v for k, v in self.parameters.items()
                 if v is not None} == file_params:
             new_keys = set(self.parameters.keys()) - set(file_params.keys())
             missing_keys = (set(file_params.keys()) -
@@ -643,7 +654,7 @@ class Vasp(FileIOCalculator, object):
             log.debug('params_on_file do not match.')
             log.debug('file-params: {}'.format(file_params))
             log.debug('compared to: {}'.format({k: v for k, v in
-                                                self.parameters.iteritems()
+                                                self.parameters.items()
                                                 if v is not None}))
             system_changes += ['params_on_file']
 
@@ -741,9 +752,9 @@ class Vasp(FileIOCalculator, object):
 
         # Check for NEB first.
         if (np.array([os.path.exists(os.path.join(self.directory, f))
-                      for f in ['INCAR', 'POTCAR']]).all()
-            and not os.path.exists(os.path.join(self.directory, 'POSCAR'))
-            and os.path.isdir(os.path.join(self.directory, '00'))):
+                      for f in ['INCAR', 'POTCAR']]).all() and
+            not os.path.exists(os.path.join(self.directory, 'POSCAR')) and
+            os.path.isdir(os.path.join(self.directory, '00'))):
             return Vasp.NEB
 
         # Some input does not exist
@@ -752,9 +763,9 @@ class Vasp(FileIOCalculator, object):
             return Vasp.EMPTY
 
         # Input files exist, but no jobid, and no output
-        if (np.array(base_input).all()
-            and self.get_db('jobid') is not None
-            and not os.path.exists(os.path.join(self.directory, 'OUTCAR'))):
+        if (np.array(base_input).all() and
+            self.get_db('jobid') is not None and
+            not os.path.exists(os.path.join(self.directory, 'OUTCAR'))):
             return Vasp.NEW
 
         # INPUT files exist, a jobid in the queue
@@ -1070,7 +1081,7 @@ class Vasp(FileIOCalculator, object):
                         pathtags=folders)
 
         d.update(parameters=self.parameters)
-        d.update(potcars=self.get_pseudopotentials())
+        d.update(potcars=list(self.get_pseudopotentials()))
         for prop in self.implemented_properties:
             val = self.results.get(prop, None)
             d[prop] = val

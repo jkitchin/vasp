@@ -8,12 +8,12 @@ monkey-patched onto the Vasp class as if it were defined in vasp.py.
 """
 import os
 import numpy as np
-import vasp
-from monkeypatch import monkeypatch_class
+from .vasp import Vasp, log
+from vasp.monkeypatch import monkeypatch_class
 from ase.calculators.calculator import FileIOCalculator
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def write_input(self, atoms=None, properties=None, system_changes=None):
     """Writes all input files required for a calculation."""
     # this creates the directory if needed
@@ -28,7 +28,7 @@ def write_input(self, atoms=None, properties=None, system_changes=None):
     self.write_db()
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def write_db(self,
              fname=None,
              atoms=None,
@@ -139,7 +139,7 @@ def write_db(self,
         db.write(atoms, key_value_pairs=keys, data=data)
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def write_poscar(self, fname=None):
     """Write the POSCAR file."""
     if fname is None:
@@ -151,7 +151,7 @@ def write_poscar(self, fname=None):
                symbol_count=self.symbol_count)
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def write_incar(self, incar=None):
     """Writes out the INCAR file.
 
@@ -169,7 +169,7 @@ def write_incar(self, incar=None):
 
     with open(incar, 'w') as f:
         f.write('INCAR created by Atomic Simulation Environment\n')
-        for key, val in d.iteritems():
+        for key, val in d.items():
             key = ' ' + key.upper()
             if val is None:
                 # Do not write out None values
@@ -189,7 +189,7 @@ def write_incar(self, incar=None):
                 f.write('{} = {}\n'.format(key, val))
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def write_kpoints(self, fname=None):
     """Write out the KPOINTS file.
 
@@ -286,7 +286,7 @@ def write_kpoints(self, fname=None):
                 f.write('0.0 0.0 0.0\n')
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def write_potcar(self, fname=None):
     """Writes the POTCAR file.
 
@@ -299,5 +299,8 @@ def write_potcar(self, fname=None):
     with open(fname, 'wb') as potfile:
         for _, pfile, _ in self.ppp_list:
             pfile = os.path.join(os.environ['VASP_PP_PATH'], pfile)
-            with open(pfile) as f:
+            if not os.path.exists(pfile):
+                raise Exception('{} does not exist', pfile)
+            with open(pfile, 'rb') as f:
                 potfile.write(f.read())
+                log.debug('Added pfile')

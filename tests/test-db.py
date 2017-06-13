@@ -34,4 +34,4 @@ def test0():
         data = con.get(1).data
         assert data['parameters']['sigma'] == 0.01
 
-    print 'done'
+    print('done')

@@ -37,13 +37,13 @@ from ase.io.vasp import write_vasp
 from ase.calculators.vasp import Vasp
 
 import vasp
-import exceptions
-from vasp import log
-from monkeypatch import monkeypatch_class
-from vasprc import VASPRC
+import vasp.exceptions
+from .vasp import log, Vasp
+from .monkeypatch import monkeypatch_class
+from .vasprc import VASPRC
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def get_neb(self, npi=1):
     """Returns images, energies if available or runs the job.
 
@@ -159,7 +159,7 @@ def get_neb(self, npi=1):
     return (self.neb, np.array(energies))
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def plot_neb(self, show=True):
     """Return a list of the energies and atoms objects for each image in
 
@@ -188,8 +188,8 @@ def plot_neb(self, show=True):
     plt.plot(xmax, -f(xmax), '* ', label='max')
     plt.xlabel('Image')
     plt.ylabel('Energy (eV)')
-    s = ['$\Delta E$ = {0:1.3f} eV'.format(float(energies[-1]
-                                                 - energies[0])),
+    s = ['$\Delta E$ = {0:1.3f} eV'.format(float(energies[-1] -
+                                                 energies[0])),
          '$E^\ddag$ = {0:1.3f} eV'.format(float(-f(xmax)))]
 
     plt.title('\n'.join(s))

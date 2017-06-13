@@ -6,11 +6,11 @@ import warnings
 import numpy as np
 from xml.etree import ElementTree
 import vasp
-from vasp import log
-from monkeypatch import monkeypatch_class
+from .vasp import log, Vasp
+from .monkeypatch import monkeypatch_class
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def get_db(self, *keys):
     """Retrieve values for each key in keys.
 
@@ -29,15 +29,15 @@ def get_db(self, *keys):
         try:
             at = con.get(id=1)
             for i, key in enumerate(keys):
-                vals[i] = (at.key_value_pairs.get(key, None)
-                           or at.data.get(key, None))
-        except KeyError, e:
-            if e.message == 'no match':
+                vals[i] = (at.key_value_pairs.get(key, None) or
+                           at.data.get(key, None))
+        except KeyError as e:
+            if e == 'no match':
                 pass
     return vals if len(vals) > 1 else vals[0]
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def get_beefens(self, n=-1):
     """Get the BEEFens 2000 ensemble energies from the OUTCAR.
     This only works with Vasp 5.3.5 compiled with libbeef.
@@ -61,7 +61,7 @@ def get_beefens(self, n=-1):
     return np.array(beefens[n])
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def get_ibz_k_points(self, cartesian=True):
     """Return the IBZ k-point list.
 
@@ -82,7 +82,7 @@ def get_ibz_k_points(self, cartesian=True):
         return kpts
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def get_occupation_numbers(self, kpt=0, spin=0):
     """Read occupation_numbers for KPT and spin.
 
@@ -109,7 +109,7 @@ def get_occupation_numbers(self, kpt=0, spin=0):
                          in tree.find(path)])
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def get_k_point_weights(self):
     """Return the k-point weights."""
     self.update()
@@ -122,7 +122,7 @@ def get_k_point_weights(self):
                          tree.find("kpoints/varray[@name='weights']")])
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def get_number_of_spins(self):
     """Returns number of spins.
     1 if not spin-polarized
@@ -135,7 +135,7 @@ def get_number_of_spins(self):
         return 1
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def get_eigenvalues(self, kpt=0, spin=1):
     """Return array of eigenvalues for kpt and spin."""
     self.update()
@@ -155,7 +155,7 @@ def get_eigenvalues(self, kpt=0, spin=1):
         return np.array([float(x.text.split()[0]) for x in fields])
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def get_fermi_level(self):
     """Return the Fermi level."""
     self.update()
@@ -170,7 +170,7 @@ def get_fermi_level(self):
         return float(tree.find(path).text)
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def get_ados(self, atom_index, orbital, spin=1, efermi=None):
     """Return Atom projected DOS for atom index, orbital and spin.
 
@@ -216,7 +216,7 @@ def get_ados(self, atom_index, orbital, spin=1, efermi=None):
     return [energy, ados]
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def get_elapsed_time(self):
     """Return elapsed calculation time in seconds from the OUTCAR file."""
 
@@ -239,7 +239,7 @@ def get_elapsed_time(self):
         return None
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def get_default_number_of_electrons(self, filename=None):
     """Return the default electrons for each species."""
     if filename is None:
@@ -259,7 +259,7 @@ def get_default_number_of_electrons(self, filename=None):
     return nelect
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def get_valence_electrons(self):
     """Return the number of valence electrons for the atoms.
     Calculated from the POTCAR file.
@@ -278,7 +278,7 @@ def get_valence_electrons(self):
     return nelectrons
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def get_volumetric_data(self, filename=None, **kwargs):
     """Read filename to read the volumetric data in it.
     Supported filenames are CHG, CHGCAR, and LOCPOT.
@@ -323,7 +323,7 @@ def get_volumetric_data(self, filename=None, **kwargs):
     return (x, y, z, data)
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def get_charge_density(self, spin=0, filename=None):
     """Returns x, y, and z coordinate and charge density arrays.
 
@@ -331,7 +331,7 @@ def get_charge_density(self, spin=0, filename=None):
     :param int spin: an integer
     :returns: x, y, z, charge density arrays
     :rtype: 3-d numpy arrays
-    Relies on :func:`ase.calculators.vasp.VaspChargeDensity`.
+    Relies on :func:`ase.calculators.VaspChargeDensity`.
     """
     self.update()
 
@@ -349,7 +349,8 @@ def get_charge_density(self, spin=0, filename=None):
     else:
         return None, None, None, None
 
-@monkeypatch_class(vasp.Vasp)
+
+@monkeypatch_class(Vasp)
 def get_local_potential(self):
     """Returns x, y, z, and local potential arrays
 
@@ -364,7 +365,7 @@ def get_local_potential(self):
     return x, y, z, data[0] * atoms.get_volume()
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def get_elf(self):
     """Returns x, y, z and electron localization function arrays."""
     assert self.parameters.get('lelf', None) is True,\
@@ -377,7 +378,7 @@ def get_elf(self):
     return x, y, z, data[0] * atoms.get_volume()
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def get_electron_density_center(self, spin=0, scaled=True):
     """Returns center of electron density.
     If scaled, use scaled coordinates, otherwise use cartesian
@@ -405,7 +406,7 @@ def get_electron_density_center(self, spin=0, scaled=True):
         return electron_density_center
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def get_dipole_vector(self, atoms=None):
     """Tries to return the dipole vector of the unit cell in atomic units.
 
@@ -472,7 +473,7 @@ def get_dipole_vector(self, atoms=None):
     return dipole_vector
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def get_dipole_moment(self, atoms=None):
     """Return dipole_moment.
 
@@ -490,7 +491,7 @@ def get_dipole_moment(self, atoms=None):
     return ((dv ** 2).sum()) ** 0.5 / Debye
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def get_pseudopotentials(self):
     """Return list of (symbol, path, git-hash) for each POTCAR."""
     symbols = [x[0] for x in self.ppp_list]
@@ -498,18 +499,19 @@ def get_pseudopotentials(self):
     hashes = []
     vasp_pp_path = os.environ['VASP_PP_PATH']
     for ppp in paths:
-        with open(os.path.join(vasp_pp_path, ppp), 'r') as f:
+        with open(os.path.join(vasp_pp_path, ppp), 'r',
+                  encoding='utf-8') as f:
             data = f.read()
 
-        s = sha1()
-        s.update("blob %u\0" % len(data))
-        s.update(data)
-        hashes.append(s.hexdigest())
+            s = sha1()
+            s.update("blob %u\0".format(len(data)).encode('utf-8'))
+            s.update(data.encode('utf-8'))
+            hashes.append(s.hexdigest())
 
     return zip(symbols, paths, hashes)
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def get_memory(self):
     """ Retrieves the recommended memory from the OUTCAR in GB.
 
@@ -535,7 +537,7 @@ def get_memory(self):
             return required_mem
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def get_orbital_occupations(self):
     """Read occuations from OUTCAR.
 
@@ -570,7 +572,7 @@ def get_orbital_occupations(self):
     return np.array(occupations)
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def get_number_of_ionic_steps(self):
     """Returns number of ionic steps from the OUTCAR."""
 
@@ -585,7 +587,7 @@ def get_number_of_ionic_steps(self):
     return nsteps
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def get_composition(self, basis=None):
     ''' Acquire the chemical composition of an atoms object
 
@@ -615,7 +617,7 @@ def get_composition(self, basis=None):
         return S
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def get_charges(self, atoms=None):
     '''
     Returns a list of cached charges from a previous
@@ -632,7 +634,7 @@ def get_charges(self, atoms=None):
         return None
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def get_program_info(self):
     """Return data about the vasp that was used for the calculation."""
     if not os.path.exists(os.path.join(self.directory, 'vasprun.xml')):

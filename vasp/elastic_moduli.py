@@ -1,11 +1,11 @@
 """Module to get elastic moduli from Vasp calculations."""
 import os
-import vasp
+from .vasp import Vasp
 import numpy as np
-from monkeypatch import monkeypatch_class
+from .monkeypatch import monkeypatch_class
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def get_elastic_moduli(self):
     """Returns the total elastic moduli in GPa.
 

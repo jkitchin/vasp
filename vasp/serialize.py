@@ -1,7 +1,7 @@
 """Properties for serializing vasp calculations."""
 import os
 from os.path import join
-import vasp as VASP
+from .vasp import Vasp
 
 
 def vasp(self):
@@ -29,7 +29,7 @@ def vasp(self):
 
     return s
 
-setattr(VASP.Vasp, 'vasp', property(vasp))
+setattr(Vasp, 'vasp', property(vasp))
 
 
 def vasp_json(self):
@@ -42,7 +42,7 @@ def vasp_json(self):
     os.unlink(json)
     return s
 
-setattr(VASP.Vasp, 'json', property(vasp_json))
+setattr(Vasp, 'json', property(vasp_json))
 
 
 def vasp_jsonpp(self):
@@ -56,4 +56,4 @@ def vasp_jsonpp(self):
     os.unlink(jsonf)
     return json.dumps(d, sort_keys=True, indent=4)
 
-setattr(VASP.Vasp, 'jsonpp', property(vasp_jsonpp))
+setattr(Vasp, 'jsonpp', property(vasp_jsonpp))

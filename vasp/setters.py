@@ -10,12 +10,12 @@ is passed back to the set function.
 """
 import numpy as np
 import vasp
-from vasp import log
-from monkeypatch import monkeypatch_class
+from .vasp import log, Vasp
+from .monkeypatch import monkeypatch_class
 from ase.calculators.calculator import FileIOCalculator
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def set(self, **kwargs):
     """Set parameters with keyword=value pairs.
 
@@ -47,7 +47,7 @@ def set(self, **kwargs):
 
     # we don't consider None values to be changed if the keyword was
     # not originally in the parameters.
-    cp = {k: v for k, v in changed_parameters.iteritems()
+    cp = {k: v for k, v in changed_parameters.items()
           if v is not None and k not in original_params}
 
     if cp != {}:
@@ -56,7 +56,7 @@ def set(self, **kwargs):
     return changed_parameters
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def set_ispin_dict(self, val):
     """Returns dictionary of changes for ispin change."""
     # there are two ways to get magmom in.
@@ -88,7 +88,7 @@ def set_ispin_dict(self, val):
         return d
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def set_rwigs_dict(self, val):
     """Return rwigs parameters in list form if val is a dict, or val
 otherwise."""
@@ -106,7 +106,7 @@ otherwise."""
     return d
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def set_ldau_luj_dict(self, val):
     """Set the ldau_luj parameters."""
     if 'setups' in self.parameters:
@@ -135,7 +135,7 @@ def set_ldau_luj_dict(self, val):
         return d
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def set_nbands(self, N=None, f=1.5):
     """Convenience function to set NBANDS to N or automatically compute
     nbands for non-spin-polarized calculations.
@@ -156,7 +156,7 @@ def set_nbands(self, N=None, f=1.5):
     self.set(nbands=nbands)
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def set_xc_dict(self, val):
     """Set xc parameter.
 
@@ -166,8 +166,8 @@ def set_xc_dict(self, val):
     d = {'xc': val.lower()}
     oxc = self.parameters.get('xc', None)
     if oxc:
-        for key in vasp.Vasp.xc_defaults[oxc.lower()]:
+        for key in Vasp.xc_defaults[oxc.lower()]:
             if key in self.parameters:
                 d[key] = None
-    d.update(vasp.Vasp.xc_defaults[val.lower()])
+    d.update(Vasp.xc_defaults[val.lower()])
     return d

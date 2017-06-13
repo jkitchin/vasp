@@ -61,8 +61,8 @@ def test1():
     calc.write_incar('INCAR')
 
     incar = calc.read_incar('INCAR')
-
-    assert incar['lwave'] is True
+    print(incar)
+    assert incar['lwave'] is False
     assert incar['nsw'] == 1
 
     calc.set(nsw=0)

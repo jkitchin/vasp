@@ -6,10 +6,10 @@ This assumes you use Torque.
 import os
 import subprocess
 import vasp
-from vasprc import VASPRC
-from vasp import log
-from exceptions import VaspSubmitted, VaspQueued
-from monkeypatch import monkeypatch_class
+from .vasprc import VASPRC
+from .vasp import log, Vasp
+from .exceptions import VaspSubmitted, VaspQueued
+from .monkeypatch import monkeypatch_class
 
 from ase.calculators.calculator import Calculator
 
@@ -24,16 +24,16 @@ def getstatusoutput(*args, **kwargs):
     """
     p = subprocess.Popen(*args, **kwargs)
     stdout, stderr = p.communicate()
-    return (p.returncode, stdout, stderr)
+    return (p.returncode, stdout.decode('utf-8'), stderr.decode('utf-8'))
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def jobid(self):
     """Return jobid for the calculation."""
     return self.get_db('jobid')
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def in_queue(self):
     """Return True or False if the directory has a job in the queue."""
     if self.get_db('jobid') is None:
@@ -47,7 +47,7 @@ def in_queue(self):
                                                 stdout=subprocess.PIPE,
                                                 stderr=subprocess.PIPE)
 
-        if str(jobid) in jobids_in_queue.split('\n'):
+        if jobid in str(jobids_in_queue).split('\n'):
             # get details on specific jobid in case it is complete
             status, output, err = getstatusoutput(['qstat', jobid],
                                                   stdout=subprocess.PIPE,
@@ -64,7 +64,7 @@ def in_queue(self):
             return False
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def calculate(self, atoms=None, properties=['energy'],
               system_changes=None):
     """Monkey patch to submit job through the queue.
@@ -81,9 +81,9 @@ def calculate(self, atoms=None, properties=['energy'],
         log.debug('mode is None. not running')
         return
 
-    if (not self.calculation_required(atoms, ['energy'])
-        and not self.check_state()):
-        print('No calculation_required.')
+    if (not self.calculation_required(atoms, ['energy']) and
+        not self.check_state()):
+        log.debug('No calculation_required.')
         self.read_results()
         return
 
@@ -114,11 +114,11 @@ def calculate(self, atoms=None, properties=['energy'],
             else:
                 # vanilla MPI run. multiprocessing does not work on more
                 # than one node, and you must specify in VASPRC to use it
-                if (VASPRC['queue.nodes'] > 1
-                    or (VASPRC['queue.nodes'] == 1
-                        and VASPRC['queue.ppn'] > 1
-                        and (VASPRC['multiprocessing.cores_per_process']
-                             == 'None'))):
+                if (VASPRC['queue.nodes'] > 1 or
+                    (VASPRC['queue.nodes'] == 1 and
+                     VASPRC['queue.ppn'] > 1 and
+                     (VASPRC['multiprocessing.cores_per_process'] ==
+                      'None'))):
                     s = 'queue.nodes = {0}'.format(VASPRC['queue.nodes'])
                     log.debug(s)
                     log.debug('queue.ppn = {0}'.format(VASPRC['queue.ppn']))
@@ -185,7 +185,7 @@ runvasp.py     # this is the vasp command
     cmdlist += ['-N', '{0}'.format(jobname),
                 '-l', 'walltime={0}'.format(VASPRC['queue.walltime']),
                 '-l', 'nodes={0}:ppn={1}'.format(VASPRC['queue.nodes'],
-                                              VASPRC['queue.ppn']),
+                                                 VASPRC['queue.ppn']),
                 '-l', 'mem={0}'.format(VASPRC['queue.mem'])]
     log.debug('{0}'.format(' '.join(cmdlist)))
     p = subprocess.Popen(cmdlist,
@@ -195,18 +195,18 @@ runvasp.py     # this is the vasp command
 
     log.debug(script)
 
-    out, err = p.communicate(script)
+    out, err = p.communicate(script.encode('utf-8'))
 
-    if out == '' or err != '':
+    if out == b'' or err != b'':
         raise Exception('something went wrong in qsub:\n\n{0}'.format(err))
 
-    self.write_db(data={'jobid': out.strip()})
+    self.write_db(data={'jobid': out.decode("utf-8").strip()})
 
     raise VaspSubmitted('{} submitted: {}'.format(self.directory,
-                                                  out.strip()))
+                                                  out.decode("utf-8").strip()))
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def set_memory(self,
                eff_loss=0.1):
     """ Sets the recommended memory needed for a VASP calculation
@@ -324,7 +324,7 @@ def set_memory(self,
     return memory
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def qdel(self, *options):
     """Delete job from the queue.
 
@@ -347,7 +347,7 @@ def qdel(self, *options):
     return '{} not in queue.'.format(self.directory)
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def qstat(self, *options):
     """Get queue status of the job.
 
@@ -369,7 +369,7 @@ def qstat(self, *options):
         print('{} not in queue.'.format(self.directory))
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def qalter(self, *options):
     """Run qalter on the jobid.
 
@@ -386,7 +386,7 @@ def qalter(self, *options):
     return status, output
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def xterm(self):
     """Open an xterm in the calculator directory."""
 
@@ -394,7 +394,7 @@ def xterm(self):
     os.system(cmd)
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def qoutput(self):
     """Print job output from the queue."""
     jobid = self.jobid()
@@ -415,7 +415,7 @@ def torque(cls):
     The jobid runs qstat on the job_status
     qdel will delete the job from the queue.
     """
-    jobids = [calc.jobid() for calc in vasp.Vasp.calculators]
+    jobids = [calc.jobid() for calc in Vasp.calculators]
 
     qstat = ['[[shell:qstat {}][{}]]'.format(jobid, jobid)
              for jobid in jobids]
@@ -423,7 +423,7 @@ def torque(cls):
             for jobid in jobids]
 
     dirs = [calc.directory
-            for calc in vasp.Vasp.calculators]
+            for calc in Vasp.calculators]
 
     s = '[[shell:xterm -e "cd {}; ls && /bin/bash"][{}]]'
     xterm = [s.format(d, os.path.relpath(d))
@@ -436,4 +436,4 @@ def torque(cls):
     return '\n'.join(['| {0} {1} | {2} | {3} |'.format(xt, dd, qs, qd)
                       for xt, qs, qd, dd in zip(xterm, qstat, qdel, dired)])
 
-vasp.Vasp.torque = classmethod(torque)
+Vasp.torque = classmethod(torque)

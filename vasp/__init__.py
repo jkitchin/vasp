@@ -1,1 +1,1 @@
-from vasp import Vasp
+from .vasp import Vasp

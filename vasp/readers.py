@@ -4,10 +4,10 @@ import os
 import re
 import numpy as np
 import vasp
-from vasp import log
+from .vasp import log, Vasp
 from ase.calculators.calculator import Parameters
-import exceptions
-from monkeypatch import monkeypatch_class
+import vasp.exceptions
+from .monkeypatch import monkeypatch_class
 import ase
 
 
@@ -26,7 +26,7 @@ def isfloat(s):
         return False
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def read_incar(self, fname=None):
     """Read fname (defaults to INCAR).
 
@@ -95,7 +95,7 @@ def read_incar(self, fname=None):
     return params
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def read_kpoints(self, fname=None):
     """Read KPOINTS file.
 
@@ -173,7 +173,7 @@ def read_kpoints(self, fname=None):
     return params
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def read_potcar(self, fname=None):
     """Read the POTCAR file to get the pp and setups.
 
@@ -219,7 +219,7 @@ def read_potcar(self, fname=None):
     return params
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def read_atoms(self):
     """Read the final atoms object from vasprun.xml
     and return the user defined order (unsort) if able.
@@ -255,7 +255,7 @@ def read_atoms(self):
     return atoms
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def read(self, restart=None):
     """Read the files in a calculation if they exist.
 
@@ -269,7 +269,7 @@ def read(self, restart=None):
     log.debug('Reading {}'.format(self.directory))
 
     # NEB is special and handled separately
-    if self.get_state() == vasp.Vasp.NEB:
+    if self.get_state() == Vasp.NEB:
         self.read_neb()
         return
 
@@ -289,14 +289,14 @@ def read(self, restart=None):
     # ones with the largest number of keys are compared first. This is
     # to avoid false matches of xc's with smaller number of equal
     # keys.
-    xc_keys = sorted(vasp.Vasp.xc_defaults,
-                     key=lambda k: len(vasp.Vasp.xc_defaults[k]),
+    xc_keys = sorted(Vasp.xc_defaults,
+                     key=lambda k: len(Vasp.xc_defaults[k]),
                      reverse=True)
 
     for ex in xc_keys:
         pd = {k: self.parameters.get(k, None)
-              for k in vasp.Vasp.xc_defaults[ex]}
-        if pd == vasp.Vasp.xc_defaults[ex]:
+              for k in Vasp.xc_defaults[ex]}
+        if pd == Vasp.xc_defaults[ex]:
             self.parameters['xc'] = ex
             break
 
@@ -350,7 +350,7 @@ def read(self, restart=None):
     self.read_results()
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def read_results(self):
     """Read energy, forces, stress, magmom and magmoms from output file.
 
@@ -361,11 +361,11 @@ def read_results(self):
     state = self.get_state()
     log.debug('state: {}. Reading results in {}.'.format(state,
                                                          self.directory))
-    if state == vasp.Vasp.NEB:
+    if state == Vasp.NEB:
         # This is handled in self.read()
         return
 
-    if state != vasp.Vasp.FINISHED:
+    if state != Vasp.FINISHED:
         self.results = {}
     else:
         # regular calculation that is finished
@@ -411,8 +411,8 @@ def read_results(self):
                     try:
                         magnetic_moment = float(line.split()[-1])
                     except:
-                        print 'magmom read error'
-                        print self.directory, line
+                        print('magmom read error')
+                        print(self.directory, line)
 
                 if line.rfind('magnetization (x)') > -1:
                     for m in range(len(atoms)):
@@ -424,7 +424,7 @@ def read_results(self):
         log.debug('Results at end: {}'.format(self.results))
 
 
-@monkeypatch_class(vasp.Vasp)
+@monkeypatch_class(Vasp)
 def read_neb(self):
     """Read an NEB calculator."""
     import glob
@@ -449,13 +449,13 @@ def read_neb(self):
         self.parameters.update(self.read_kpoints())
 
     # Update the xc functional
-    xc_keys = sorted(vasp.Vasp.xc_defaults,
-                     key=lambda k: len(vasp.Vasp.xc_defaults[k]),
+    xc_keys = sorted(Vasp.xc_defaults,
+                     key=lambda k: len(Vasp.xc_defaults[k]),
                      reverse=True)
 
     for ex in xc_keys:
         pd = {k: self.parameters.get(k, None)
-              for k in vasp.Vasp.xc_defaults[ex]}
-        if pd == vasp.Vasp.xc_defaults[ex]:
+              for k in Vasp.xc_defaults[ex]}
+        if pd == Vasp.xc_defaults[ex]:
             self.parameters['xc'] = ex
             break
