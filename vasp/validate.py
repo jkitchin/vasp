@@ -88,6 +88,18 @@ def gamma(calc, val):
     assert len(val) == 3
 
 
+def gga(calc, val):
+    """GGA sets the xc functional. (string)
+
+    https://cms.mpi.univie.ac.at/vasp/vasp/GGA_tag.html
+    """
+    assert isinstance(val, str)
+    assert val in ['91', 'PE', 'RP', 'AM', 'PS',
+                   # these are apparently undocumented
+                   # see vasp.Vasp.xc_defaults
+                   'RE', 'OR', 'BO', 'MK', 'ML', 'BF', 'B3']
+
+
 def ialgo(calc, val):
     """IALGO selects the algorithm used to optimize the orbitals. (int)
 
