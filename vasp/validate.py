@@ -69,7 +69,6 @@ def encut(calc, val):
     """
     assert val > 0, 'encut must be greater than zero.'
     assert (isinstance(val, int) or
-            isinstance(val, long) or
             isinstance(val, float)),\
         ('encut should be an int or float.'
          ' You provided {} ({}).'.format(val, type(val)))
@@ -229,7 +228,8 @@ def ldau_luj(calc, val):
     assert isinstance(val, dict)
     # this may not be the case for site-specific U. I think we need
     # setups for that.
-    assert len(val.keys()) == len(set([a.symbol for a in calc.get_atoms()]))
+    keys = list(val.keys())
+    assert len(keys) == len(set([a.symbol for a in calc.get_atoms()]))
 
 
 def ldauprint(calc, val):
@@ -374,7 +374,7 @@ def nbands(calc, val):
     http://cms.mpi.univie.ac.at/wiki/index.php/NBANDS
 
     """
-    assert isinstance(val, int) or isinstance(val, long)
+    assert isinstance(val, int)
 
     s = 'nbands = {} which is less than {}.'
     assert val > calc.get_valence_electrons() / 2, \
@@ -503,8 +503,9 @@ def spring(calc, val):
 def xc(calc, val):
     """Set exchange-correlation functional. (string)"""
     import vasp
-    assert val.lower() in vasp.Vasp.xc_defaults.keys(), \
-        "xc ({}) not in {}.".format(val, vasp.Vasp.xc_defaults.keys())
+    keys = list(vasp.Vasp.xc_defaults.keys())
+    assert val.lower() in keys, \
+        "xc ({}) not in {}.".format(val, keys)
 
 
 def keywords():
@@ -513,7 +514,7 @@ def keywords():
     Returns a lisp list for Emacs.
 
     """
-    import validate
+    from . import validate
 
     f = [validate.__dict__.get(a) for a in dir(validate)
          if isinstance(validate.__dict__.get(a), types.FunctionType)]
@@ -530,7 +531,7 @@ def keyword_alist():
     Returns the alist for use in Emacs.
 
     """
-    import validate
+    from . import validate
     f = [validate.__dict__.get(a) for a in dir(validate)
          if isinstance(validate.__dict__.get(a), types.FunctionType)]
 

@@ -173,7 +173,7 @@ def plot_neb(self, show=True):
     # minimum which corresponds to the barrier
     from scipy.interpolate import interp1d
     from scipy.optimize import fmin
-    f = interp1d(range(len(energies)),
+    f = interp1d(list(range(len(energies))),
                  -energies,
                  kind='cubic', bounds_error=False)
     x0 = len(energies) / 2.  # guess barrier is at half way

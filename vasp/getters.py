@@ -287,7 +287,7 @@ def get_volumetric_data(self, filename=None, **kwargs):
     if filename is None:
         filename = os.path.join(self.directory, 'CHG')
 
-    from VaspChargeDensity import VaspChargeDensity
+    from .VaspChargeDensity import VaspChargeDensity
 
     atoms = self.get_atoms()
     vd = VaspChargeDensity(filename)
@@ -415,7 +415,7 @@ def get_dipole_vector(self, atoms=None):
     """
     self.update()
 
-    from POTCAR import get_ZVAL
+    from .POTCAR import get_ZVAL
 
     if atoms is None:
         atoms = self.get_atoms()
@@ -508,7 +508,7 @@ def get_pseudopotentials(self):
             s.update(data.encode('utf-8'))
             hashes.append(s.hexdigest())
 
-    return zip(symbols, paths, hashes)
+    return list(zip(symbols, paths, hashes))
 
 
 @monkeypatch_class(Vasp)
@@ -609,7 +609,7 @@ def get_composition(self, basis=None):
         S[symbol] = float(symbols.count(symbol)) / len(atoms)
 
     if basis:
-        if basis in S.keys():
+        if basis in list(S.keys()):
             return S[basis]
         else:
             return 0.0

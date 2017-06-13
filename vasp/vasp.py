@@ -49,14 +49,14 @@ def tryit(func):
                     raise
 
     inner.__name__ = func.__name__
-    if hasattr(func, 'im_func'):
+    if hasattr(func, '__func__'):
         template = '''
 
         Wrapped in vasp.tryit.
 
         Defined at [[{0}::{1}]].'''
-        template = template.format(func.im_func.func_code.co_filename,
-                                   func.im_func.func_code.co_firstlineno)
+        template = template.format(func.__func__.__code__.co_filename,
+                                   func.__func__.__code__.co_firstlineno)
     else:
         template = '''
 

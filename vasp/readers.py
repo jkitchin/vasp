@@ -333,7 +333,8 @@ def read(self, restart=None):
             if 'End of Dataset' in line and i != len(lines) - 1:
                 symbols += [lines[i + 1].split()[1]]
 
-        self.parameters['rwigs'] = dict(zip(symbols, self.parameters['rwigs']))
+        szip = list(zip(symbols, self.parameters['rwigs']))
+        self.parameters['rwigs'] = dict(szip)
 
     # Now get the atoms
     atoms = self.read_atoms()
@@ -412,7 +413,7 @@ def read_results(self):
                         magnetic_moment = float(line.split()[-1])
                     except:
                         print('magmom read error')
-                        print(self.directory, line)
+                        print((self.directory, line))
 
                 if line.rfind('magnetization (x)') > -1:
                     for m in range(len(atoms)):

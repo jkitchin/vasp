@@ -84,7 +84,7 @@ def get_bandstructure(self,
 
     ax1 = plt.subplot(121)
     for i in range(nbands):
-        plt.plot(range(npoints), np.array(band_energies[i]) - ef)
+        plt.plot(list(range(npoints)), np.array(band_energies[i]) - ef)
 
     ax = plt.gca()
     ax.set_xticks([])  # no tick marks

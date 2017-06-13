@@ -24,6 +24,10 @@ from vasp import validate
 from .vasprc import VASPRC
 from .vasp import log
 
+# This is a temporary variable used below to avoid pep8 long line
+# errors
+nimp = ase.calculators.calculator.PropertyNotImplementedError
+
 
 def VaspExceptionHandler(calc, exc_type, exc_value, exc_traceback):
     """Handle exceptions."""
@@ -33,20 +37,14 @@ def VaspExceptionHandler(calc, exc_type, exc_value, exc_traceback):
     elif exc_type == vasp.exceptions.VaspQueued:
         print(exc_value)
         return None
-    elif exc_type == KeyError and exc_value.message == 'energy':
-        return None
-    elif exc_type == KeyError and exc_value.message == 'forces':
-        return np.array([[None, None, None] for atom in calc.get_atoms()])
-    elif exc_type == KeyError and exc_value.message == 'stress':
-        return np.array([None, None, None, None, None, None])
     # This is the new ase 3.13 and Python3 exceptions below here.
-    elif (exc_type == ase.calculators.calculator.PropertyNotImplementedError and
+    elif (exc_type == nimp and
           exc_value.args[0] == 'energy not present in this calculation'):
         return None
-    elif (exc_type == ase.calculators.calculator.PropertyNotImplementedError and
+    elif (exc_type == nimp and
           exc_value.args[0] == 'forces not present in this calculation'):
         return np.array([[None, None, None] for atom in calc.get_atoms()])
-    elif (exc_type == ase.calculators.calculator.PropertyNotImplementedError and
+    elif (exc_type == nimp and
           exc_value.args[0] == 'stress not present in this calculation'):
         return np.array([None, None, None, None, None, None])
 
@@ -223,7 +221,7 @@ class Vasp(FileIOCalculator, object):
         self.debug = debug
         if debug is not None:
             log.setLevel(debug)
-        self.exception_handler = exception_handler
+            self.exception_handler = exception_handler
 
         self.neb = None
         # We have to check for the type here this because an NEB uses
@@ -235,7 +233,7 @@ class Vasp(FileIOCalculator, object):
         elif atoms is not None:
             for a in atoms:
                 a.pbc = [True, True, True]
-            self.neb = True
+                self.neb = True
 
         # self.neb started as None, and will not be None if the code
         # above detects a list of atoms.
@@ -369,8 +367,8 @@ class Vasp(FileIOCalculator, object):
             ppp += [[symbol,
                      'potpaw_{}/{}{}/POTCAR'.format(pp, symbol, setup[1]),
                      count]]
-        # now the remaining atoms use default potentials
-        # First get the chemical symbols that remain
+            # now the remaining atoms use default potentials
+            # First get the chemical symbols that remain
         symbols = []
         for atom in atoms or []:
             if atom.symbol not in symbols:
@@ -414,14 +412,14 @@ class Vasp(FileIOCalculator, object):
             from ase.db import connect
             with connect(os.path.join(self.directory, 'DB.db')) as con:
                 tatoms = con.get_atoms(id=1)
-            self.write_db(atoms=tatoms, data={'resort': ns})
-            print('Fixed resort issue in {}. '
-                  'You should not see this message'
-                  ' again'.format(self.directory))
-            self.resort = ns
-            sort_indices = [k[1] for k in
-                            sorted([[j, i]
-                                    for i, j in enumerate(ns)])]
+                self.write_db(atoms=tatoms, data={'resort': ns})
+                print('Fixed resort issue in {}. '
+                      'You should not see this message'
+                      ' again'.format(self.directory))
+                self.resort = ns
+                sort_indices = [k[1] for k in
+                                sorted([[j, i]
+                                        for i, j in enumerate(ns)])]
 
         self.ppp_list = ppp
         self.atoms_sorted = atoms[sort_indices]
@@ -607,10 +605,10 @@ class Vasp(FileIOCalculator, object):
                 if 'End of Dataset' in line and i != len(lines) - 1:
                     symbols += [lines[i + 1].split()[1]]
 
-            file_params['rwigs'] = dict(zip(symbols,
-                                            file_params['rwigs']))
-        file_params.update(self.read_potcar())
-        file_params.update(self.read_kpoints())
+            file_params['rwigs'] = dict(list(zip(symbols,
+                                                 file_params['rwigs'])))
+            file_params.update(self.read_potcar())
+            file_params.update(self.read_kpoints())
 
         xc_keys = sorted(Vasp.xc_defaults,
                          key=lambda k: len(Vasp.xc_defaults[k]),
@@ -644,7 +642,7 @@ class Vasp(FileIOCalculator, object):
 
             file_params['ldau_luj'] = ldau_luj
 
-        if not {k: v for k, v in self.parameters.items()
+        if not {k: v for k, v in list(self.parameters.items())
                 if v is not None} == file_params:
             new_keys = set(self.parameters.keys()) - set(file_params.keys())
             missing_keys = (set(file_params.keys()) -
@@ -654,7 +652,7 @@ class Vasp(FileIOCalculator, object):
             log.debug('params_on_file do not match.')
             log.debug('file-params: {}'.format(file_params))
             log.debug('compared to: {}'.format({k: v for k, v in
-                                                self.parameters.items()
+                                                list(self.parameters.items())
                                                 if v is not None}))
             system_changes += ['params_on_file']
 
@@ -912,12 +910,12 @@ class Vasp(FileIOCalculator, object):
             if key in validate.__dict__:
                 f = validate.__dict__[key]
                 d = f.__doc__ or 'No docstring found.'
-                print('{} = {}:'.format(key, self.parameters[key]))
+                print(('{} = {}:'.format(key, self.parameters[key])))
                 if long:
-                    print('  ' + d)
+                    print(('  ' + d))
                 else:
-                    print('  ' + d.split('\n')[0])
-                print('')
+                    print(('  ' + d.split('\n')[0]))
+                    print('')
 
     @property
     def ready(self):
@@ -1112,7 +1110,7 @@ class Vasp(FileIOCalculator, object):
         if self.neb:
             images, energies = self.get_neb()
             d['energy'] = energies
-            from mongo import mongo_atoms_doc
+            from .mongo import mongo_atoms_doc
             d['images'] = [mongo_atoms_doc(atoms) for atoms in images]
 
-        return json.loads(encode(d))
+            return json.loads(encode(d))
