@@ -33,12 +33,6 @@ def VaspExceptionHandler(calc, exc_type, exc_value, exc_traceback):
     elif exc_type == vasp.exceptions.VaspQueued:
         print(exc_value)
         return None
-    elif exc_type == KeyError and exc_value.message == 'energy':
-        return None
-    elif exc_type == KeyError and exc_value.message == 'forces':
-        return np.array([[None, None, None] for atom in calc.get_atoms()])
-    elif exc_type == KeyError and exc_value.message == 'stress':
-        return np.array([None, None, None, None, None, None])
     # This is the new ase 3.13 and Python3 exceptions below here.
     elif (exc_type == ase.calculators.calculator.PropertyNotImplementedError and
           exc_value.args[0] == 'energy not present in this calculation'):
