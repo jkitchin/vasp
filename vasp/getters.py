@@ -287,7 +287,7 @@ def get_volumetric_data(self, filename=None, **kwargs):
     if filename is None:
         filename = os.path.join(self.directory, 'CHG')
 
-    from VaspChargeDensity import VaspChargeDensity
+    from .VaspChargeDensity import VaspChargeDensity
 
     atoms = self.get_atoms()
     vd = VaspChargeDensity(filename)
