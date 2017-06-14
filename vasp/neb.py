@@ -78,22 +78,29 @@ def get_neb(self, npi=1):
                 break
 
     if calc_required:
+        log.debug('NEB calculation required')
         # this creates the directories and files if needed.  write out
         # all the images, including initial and final
         if not os.path.isdir(self.directory):
             os.makedirs(self.directory)
 
         self.set(images=len(self.neb) - 2)
+
         self.write_incar()
+        log.debug('Wrote incar')
         self.write_kpoints()
+        log.debug('Wrote kpoints')
         self.write_potcar()
-        self.write_db()
+        log.debug('Wrote potcar')
+        # This is hanging
+        # self.write_db(); log.debug('Wrote db')
 
         for i, atoms in enumerate(self.neb):
             # zero-padded directory name
             image_dir = os.path.join(self.directory, str(i).zfill(2))
             if not os.path.isdir(image_dir):
                 # create if needed.
+                log.debug('Creating {}'.format(image_dir))
                 os.makedirs(image_dir)
                 write_vasp('{0}/POSCAR'.format(image_dir),
                            atoms[self.resort],
@@ -105,13 +112,12 @@ def get_neb(self, npi=1):
         # seem to be a way to do that short of cloning the whole
         # calculation into the end-point directories.
 
+        log.debug('Writing initial state db')
         self.write_db(os.path.join(self.directory,
                                    '00/DB.db'),
                       self.neb[0])
 
-        # print(self.neb)
-        # import sys
-        # sys.exit()
+        log.debug('Writing final state db')
         self.write_db(os.path.join(self.directory,
                                    '{:02}/DB.db'.format(len(self.neb) - 1)),
                       self.neb[-1])
@@ -206,64 +212,3 @@ def plot_neb(self, show=True):
         view(tatoms)
         plt.show()
     return p
-
-
-def read_neb_calculator():
-    """Read calculator from the current working directory.
-
-    Static method that returns a :mod:`jasp.Jasp` calculator.
-    """
-    log.debug('Entering read_neb_calculator in {0}'.format(os.getcwd()))
-
-    calc = Vasp()
-    calc.vaspdir = os.getcwd()
-    calc.read_incar()
-    calc.read_kpoints()
-
-    if calc.in_queue():
-        return ([None for i in range(calc.int_params['images'] + 2)],
-                [None for i in range(calc.int_params['images'] + 2)])
-
-    # set default functional
-    # if both gga and xc are not specified
-    if calc.string_params['gga'] is None:
-        if calc.input_params['xc'] is None:
-            calc.input_params['xc'] = 'PBE'
-
-    images = []
-    log.debug('calc.int_params[images] = %i', calc.int_params['images'])
-    # Add 2 to IMAGES flag from INCAR to get
-    # first and last images
-    for i in range(calc.int_params['images'] + 2):
-        log.debug('reading neb calculator: 0%i', i)
-        cwd = os.getcwd()
-
-        os.chdir('{0}'.format(str(i).zfill(2)))
-        if os.path.exists('CONTCAR'):
-            f = open('CONTCAR')
-            if f.read() == '':
-                log.debug('CONTCAR was empty, vasp probably still running')
-                fname = 'POSCAR'
-            else:
-                fname = 'CONTCAR'
-        else:
-            fname = 'POSCAR'
-
-        atoms = read(fname, format='vasp')
-
-        f = open('ase-sort.dat')
-        sort, resort = [], []
-        for line in f:
-            s, r = [int(x) for x in line.split()]
-            sort.append(s)
-            resort.append(r)
-
-        images += [atoms[resort]]
-        os.chdir(cwd)
-
-    log.debug('len(images) = %i', len(images))
-
-    calc.neb_images = images
-    calc.neb_nimages = len(images) - 2
-    calc.neb = True
-    return calc

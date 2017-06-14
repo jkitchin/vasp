@@ -270,6 +270,7 @@ def read(self, restart=None):
 
     # NEB is special and handled separately
     if self.get_state() == Vasp.NEB:
+        log.debug('About to read an NEB')
         self.read_neb()
         return
 
@@ -428,17 +429,21 @@ def read_results(self):
 @monkeypatch_class(Vasp)
 def read_neb(self):
     """Read an NEB calculator."""
+    log.debug('Reading and NEB')
     import glob
-    atoms = []
-    atoms += [ase.io.read('{}/00/POSCAR'.format(self.directory))]
+    images = []
+    images += [ase.io.read('{}/00/POSCAR'.format(self.directory))]
+    log.debug(glob.glob('{}/0[0-9]/CONTCAR'.format(self.directory)))
     for p in glob.glob('{}/0[0-9]/CONTCAR'.format(self.directory)):
-        atoms += [ase.io.read(p)]
-    atoms += [ase.io.read('{}/0{}/POSCAR'.format(self.directory,
-                                                 len(atoms)))]
-    self.neb = atoms
+        log.debug('Adding image {}'.format(p))
+        images += [ase.io.read(p)]
+    images += [ase.io.read('{}/0{}/POSCAR'.format(self.directory,
+                                                  len(images)))]
+    log.debug('We got these images: {}'.format(images))
+    self.neb = images
     self.parameters = {}
-    self.set(images=(len(atoms) - 2))
-    self.atoms = atoms[0].copy()
+    self.set(images=(len(images) - 2))
+    self.atoms = images[0].copy()
     self.atoms.set_calculator(self)
     for a in self.neb:
         a.set_calculator(self)
