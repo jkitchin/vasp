@@ -2,7 +2,7 @@
 
 #+BEGIN_SRC python
 from vasp import Vasp
-from ase.lattice.surface import fcc111
+from ase.build.surface import fcc111
 import logging
 log = logging.getLogger('Vasp')
 #log.setLevel(logging.DEBUG)
@@ -22,16 +22,16 @@ print(atoms[40])
 #+END_SRC
 
 #+RESULTS:
-: Atom('Pd', [3.8480751032171918, 2.2216871967043419, 14.378507106479852], tag=1, magmom=0.0, index=40)
+: Atom('Pd', [5.1307668042895891, 4.4433743934086838, 14.378507106479852], tag=1, index=40)
 
 #+BEGIN_SRC python
 from vasp import Vasp
 calc = Vasp('impurity-calc')
-print calc.get_atoms()[40]
+print(calc.get_atoms()[40])
 #+END_SRC
 
 #+RESULTS:
-: Atom('Pd', [5.1307668042895891, 4.4433743934086838, 14.378507106479852], magmom=0.0, index=40)
+: Atom('Pd', [5.1307668042895891, 4.4433743934086838, 14.378507106479852], tag=1, magmom=0.0, index=40)
 
 * Jakes test
 
@@ -49,24 +49,24 @@ from ase.visualize import view
 calc = Vasp('aupd-order-test')
 atoms =  calc.get_atoms()
 
-pprint.pprint(zip(atoms.get_chemical_symbols(), atoms.positions))
+pprint.pprint(list(zip(atoms.get_chemical_symbols(), atoms.positions)))
 #+END_SRC
 
 #+RESULTS:
 #+begin_example
 [('Au', array([ 2.47949597,  1.43153767,  6.16442523])),
  ('Au', array([ 0.        ,  0.        ,  6.16442523])),
- ('Pd', array([ 4.958992  ,  2.86307537,  6.16442523])),
  ('Au', array([ 1.65299733,  2.86307537,  8.5021165 ])),
+ ('Au', array([  3.33214096,   2.86689032,  10.8415704 ])),
+ ('Pd', array([ 4.958992  ,  2.86307537,  6.16442523])),
  ('Pd', array([ 4.13249332,  1.43153767,  8.5021165 ])),
  ('Pd', array([ 1.65299731,  0.        ,  8.5021165 ])),
- ('Au', array([  3.30599465,   2.86307537,  10.83980777])),
- ('Au', array([  0.82649866,   1.43153767,  10.83980777])),
- ('Pd', array([  3.30599467,   0.        ,  10.83980777])),
- ('Au', array([  2.47949597,   1.43153767,  13.17749904])),
- ('Au', array([  0.        ,   0.        ,  13.17749904])),
- ('Pd', array([  4.958992  ,   2.86307537,  13.17749904])),
- ('H', array([  1.65299733,   2.86307537,  14.17749896]))]
+ ('Au', array([  0.81997979,   1.4250799 ,  10.83870857])),
+ ('Au', array([  2.50297468,   1.38777715,  13.26446536])),
+ ('Au', array([  0.01348385,   0.02618709,  13.27659468])),
+ ('Pd', array([  3.30478173e+00,   9.81967566e-03,   1.08556544e+01])),
+ ('Pd', array([  4.97557906,   2.85850208,  13.21567517])),
+ ('H', array([  1.5794409 ,   2.85284793,  14.03375268]))]
 #+end_example
 
 
@@ -75,7 +75,7 @@ import pprint
 from ase.db import connect
 with connect('aupd-order-test/DB.db') as con:
     atoms = con.get_atoms(id=1)
-    pprint.pprint(zip(atoms.get_chemical_symbols(), atoms.positions))
+    pprint.pprint(list(zip(atoms.get_chemical_symbols(), atoms.positions)))
 #+END_SRC
 
 #+RESULTS:
@@ -104,7 +104,7 @@ from ase.db import connect
 with connect('aupd-order-test/DB.db') as con:
     atoms = con.get_atoms(id=1)
 
-pprint.pprint(zip(atoms.get_chemical_symbols(), atoms.positions))
+pprint.pprint(list(zip(atoms.get_chemical_symbols(), atoms.positions)))
 
 from vasp import Vasp
 
@@ -137,11 +137,11 @@ from ase.db import connect
 with connect('aupd-order-test/DB.db') as con:
     atoms = con.get_atoms(id=1)
 
-pprint.pprint(zip(atoms.get_chemical_symbols(), atoms.positions))
-print ''
+pprint.pprint(list(zip(atoms.get_chemical_symbols(), atoms.positions)))
+print('')
 calc = Vasp('sort-1')
 atoms =  calc.get_atoms()
-pprint.pprint(zip(atoms.get_chemical_symbols(), atoms.positions))
+pprint.pprint(list(zip(atoms.get_chemical_symbols(), atoms.positions)))
 #+END_SRC
 
 #+RESULTS:

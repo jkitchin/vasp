@@ -91,7 +91,9 @@ def calculate(self, atoms=None, properties=['energy'],
     # implementation to set the atoms attribute.
     Calculator.calculate(self, atoms, properties, system_changes)
 
-    self.write_input(atoms, properties, system_changes)
+    if not self.neb:
+        # NEB input is already written.
+        self.write_input(atoms, properties, system_changes)
     if self.parameters.get('luse_vdw', False):
         kernel = os.path.join(self.directory, 'vdw_kernel.bindat')
         if not os.path.exists(kernel):

@@ -1,6 +1,7 @@
 """Calculate bandstructure diagrams in jasp"""
 from .vasp import Vasp
 from .monkeypatch import monkeypatch_class
+from ase.dft import DOS
 
 import os
 import numpy as np

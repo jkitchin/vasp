@@ -123,7 +123,7 @@ def write_db(self,
                     dbatoms = db.get_atoms(id=1)
                     data.update(dbatoms.data)
                     keys.update(dbatoms.key_value_pairs)
-                except AttributeError:
+                except (AttributeError, KeyError):
                     pass
             os.unlink(fname)
 
