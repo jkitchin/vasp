@@ -146,7 +146,9 @@ def images(calc, val):
 
     """
     assert isinstance(val, int)
-    assert val == len(calc.neb) - 2
+    assert val == len(calc.neb) - 2, '{}\nlen(calc.neb) == {}, expected {}'.format(calc.neb,
+                                                                                   len(calc.neb),
+                                                                                   (len(calc.neb) - 2))
 
 
 def isif(calc, val):
