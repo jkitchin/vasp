@@ -112,10 +112,11 @@ def write_db(self,
                  'resort': self.resort,
                  'parameters': self.parameters,
                  'ppp_list': self.ppp_list})
+    log.debug('data = {}'.format(data))
 
     # Only relevant for writing single entry DB file.
     if overwrite:
-
+        log.debug('overwriting db')
         if os.path.exists(fname):
             # Get any current data and keywords.
             with connect(fname) as db:
@@ -134,9 +135,16 @@ def write_db(self,
             if k in data:
                 del data[k]
 
+    log.debug('writing db')
+
     # Generate the db file
-    with connect(fname) as db:
+    with connect(fname, use_lock_file=False) as db:
+        log.debug('db handle: {}'.format(db))
         db.write(atoms, key_value_pairs=keys, data=data)
+
+    log.debug('Done with db')
+
+    return None
 
 
 @monkeypatch_class(Vasp)

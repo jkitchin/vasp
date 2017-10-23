@@ -1107,10 +1107,10 @@ class Vasp(FileIOCalculator, object):
             d['run-date'] = rd
             d['run-time'] = rt
 
-        if self.neb:
-            images, energies = self.get_neb()
-            d['energy'] = energies
-            from .mongo import mongo_atoms_doc
-            d['images'] = [mongo_atoms_doc(atoms) for atoms in images]
+        #if self.neb:
+        #    images, energies = self.get_neb()
+        #    d['energy'] = energies
+        #    from .mongo import mongo_atoms_doc
+        #    d['images'] = [mongo_atoms_doc(atoms) for atoms in images]
 
-            return json.loads(encode(d))
+        return json.loads(encode(d))

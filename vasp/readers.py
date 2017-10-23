@@ -429,17 +429,23 @@ def read_results(self):
 @monkeypatch_class(Vasp)
 def read_neb(self):
     """Read an NEB calculator."""
-    log.debug('Reading and NEB')
+    log.debug('Reading an NEB')
     import glob
     images = []
-    images += [ase.io.read('{}/00/POSCAR'.format(self.directory))]
-    log.debug(glob.glob('{}/0[0-9]/CONTCAR'.format(self.directory)))
-    for p in glob.glob('{}/0[0-9]/CONTCAR'.format(self.directory)):
-        log.debug('Adding image {}'.format(p))
-        images += [ase.io.read(p)]
-    images += [ase.io.read('{}/0{}/POSCAR'.format(self.directory,
-                                                  len(images)))]
+    #images += [ase.io.read('{}/00/POSCAR'.format(self.directory))]
+    #log.debug(glob.glob('{}/0[0-9]/CONTCAR'.format(self.directory)))
+    for p in glob.glob('{}/0[0-9]*'.format(self.directory)):
+        log.debug('Looking at {}'.format(p))
+        CONTCAR = os.path.join(p, 'CONTCAR')
+        POSCAR = os.path.join(p, 'POSCAR')
+        if os.path.exists(CONTCAR):
+            log.debug('Adding image {}'.format(CONTCAR))
+            images += [ase.io.read(CONTCAR)]
+        elif os.path.exists(POSCAR):
+            images += [ase.io.read(POSCAR)]
+
     log.debug('We got these images: {}'.format(images))
+
     self.neb = images
     self.parameters = {}
     self.set(images=(len(images) - 2))
@@ -465,3 +471,4 @@ def read_neb(self):
         if pd == Vasp.xc_defaults[ex]:
             self.parameters['xc'] = ex
             break
+    log.debug('Done reading neb.')

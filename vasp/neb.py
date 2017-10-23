@@ -92,8 +92,10 @@ def get_neb(self, npi=1):
         log.debug('Wrote kpoints')
         self.write_potcar()
         log.debug('Wrote potcar')
+
         # This is hanging
-        # self.write_db(); log.debug('Wrote db')
+        self.write_db();
+        log.debug('Wrote db')
 
         for i, atoms in enumerate(self.neb):
             # zero-padded directory name
