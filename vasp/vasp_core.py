@@ -32,11 +32,11 @@ def VaspExceptionHandler(calc, exc_type, exc_value, exc_traceback):
     elif exc_type == exceptions.VaspQueued:
         print(exc_value)
         return None
-    elif exc_type == KeyError and exc_value.message == 'energy':
+    elif exc_type == ase.calculators.calculator.PropertyNotImplementedError and 'energy' in exc_value.message:
         return None
-    elif exc_type == KeyError and exc_value.message == 'forces':
+    elif exc_type == ase.calculators.calculator.PropertyNotImplementedError and 'forces' in exc_value.message:
         return np.array([[None, None, None] for atom in calc.get_atoms()])
-    elif exc_type == KeyError and exc_value.message == 'stress':
+    elif exc_type == ase.calculators.calculator.PropertyNotImplementedError and 'stresses' in exc_value.message:
         return np.array([None, None, None, None, None, None])
 
     print('Unhandled exception in Vasp')

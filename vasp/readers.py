@@ -383,7 +383,7 @@ def read_results(self):
         forces = atoms.get_forces()  # needs to be resorted
         try:
             stress = atoms.get_stress()
-        except NotImplementedError:
+        except PropertyNotImplementedError:
             # e.g. ISIF=0, stress is not computed
             stress = np.array([np.nan] * 6)
 
