@@ -607,8 +607,8 @@ class Vasp(FileIOCalculator, object):
 
             file_params['rwigs'] = dict(list(zip(symbols,
                                                  file_params['rwigs'])))
-            file_params.update(self.read_potcar())
-            file_params.update(self.read_kpoints())
+        file_params.update(self.read_potcar())
+        file_params.update(self.read_kpoints())
 
         xc_keys = sorted(Vasp.xc_defaults,
                          key=lambda k: len(Vasp.xc_defaults[k]),
