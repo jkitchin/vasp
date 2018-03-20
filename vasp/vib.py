@@ -50,13 +50,15 @@ def get_vibrational_modes(self,
 
     atoms = self.get_atoms()
 
-    if hasattr(atoms, 'constraints') and self.parameters['ibrion'] == 5:
+    if hasattr(atoms, 'constraints') and self.parameters['ibrion'] >= 5:
         # count how many modes to get.
         NMODES = 0
         f = open(os.path.join(self.directory, 'OUTCAR'))
         for line in f:
             if ('f' in line and 'THz' in line and 'cm-1' in line):
                 NMODES += 1
+            elif 'Eigenvectors after division' in line:
+                break
         f.close()
     else:
         NMODES = 3 * len(atoms)
@@ -280,7 +282,7 @@ def get_infrared_intensities(self):
 
         i += 1  # skip the frequency line
         i += 1  # skip the xyz line
-        for k in range(3):
+        for k in range(len(atoms)):
             fields = [float(x) for x in alllines[i].split()]
             mode.append(fields[3:])
             i += 1
@@ -300,14 +302,20 @@ def get_infrared_intensities(self):
     # alpha, beta are the cartesian polarizations
     # l is the atom number
     # e_beta is the eigenvector of the mode
-
+    
+    if len(atoms.constraints)>0 and self.parameters['ibrion'] >= 5:
+        fixed=atoms.constraints[0].get_indices()
+        k=[atom.index for atom in atoms if atom.index not in fixed]    
+    else:
+        k=[atom.index for atom in atoms]
+        
     intensities = []
 
     for mode in range(len(EIGENVECTORS)):
         S = 0  # This is the triple sum
         for alpha in [0, 1, 2]:
             s = 0
-            for l in [0, 1, 2]:  # this is the atom number
+            for l in k:  # this is the atom number
                 for beta in [0, 1, 2]:
                     e = EIGENVECTORS[mode][l]
                     Zab = BORN_MATRICES[l][alpha][beta]
