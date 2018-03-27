@@ -36,27 +36,47 @@ def jobid(self):
 @monkeypatch_class(Vasp)
 def in_queue(self):
     """Return True or False if the directory has a job in the queue."""
-    if self.get_db('jobid') is None:
+    # if self.get_db('jobid') is None:
+    if self.jobid() is None:
         log.debug('jobid not found for calculation.')
         return False
     else:
         # get the jobid
-        jobid = self.get_db('jobid')
+        # jobid = self.get_db('jobid')
+        jobid = self.jobid()
         # see if jobid is in queue
-        _, jobids_in_queue, _ = getstatusoutput('qselect',
+        # for PBS
+        # cmd_joblist = 'qselect'
+        # cmd_jobstat = 'qstat'
+        # for LSF
+        cmd_joblist = 'bjobs'
+        cmd_jobstat = cmd_joblist
+
+        _, jobids_in_queue, _ = getstatusoutput(cmd_joblist,
                                                 stdout=subprocess.PIPE,
                                                 stderr=subprocess.PIPE)
-
-        if jobid in str(jobids_in_queue).split('\n'):
+        # for PBS
+        # if jobid in str(jobids_in_queue).split('\n'):
+        # for LSF
+        if any(jobid in job for job in str(jobids_in_queue).split('\n')):
             # get details on specific jobid in case it is complete
-            status, output, err = getstatusoutput(['qstat', jobid],
+            status, output, err = getstatusoutput([cmd_jobstat, jobid],
                                                   stdout=subprocess.PIPE,
                                                   stderr=subprocess.PIPE)
             if status == 0:
                 lines = output.split('\n')
-                fields = lines[2].split()
-                job_status = fields[4]
-                if job_status == 'C':
+                # for PBS
+                # fields = lines[2].split()
+                # job_status = fields[4]
+                # if job_status == 'C':
+                #     return False
+                # else:
+                #     return True
+
+                # for LSF
+                fields = lines[1].split()
+                job_status = fields[1]
+                if 'C' in job_status:
                     return False
                 else:
                     return True
@@ -75,7 +95,8 @@ def calculate(self, atoms=None, properties=['energy'],
     log.debug('In queue: {}'.format(self.in_queue()))
     if self.in_queue():
         raise VaspQueued('{} Queued: {}'.format(self.directory,
-                                                self.get_db('jobid')))
+                                                self.jobid()))
+                                                # self.get_db('jobid')))
 
     if VASPRC['mode'] is None:
         log.debug('mode is None. not running')
@@ -169,43 +190,97 @@ def calculate(self, atoms=None, properties=['energy'],
     # if you get here, a job is getting submitted
     CWD = os.getcwd()
     VASPDIR = self.directory
-    script = """
-#!/bin/bash
-cd {CWD}  # this is the current working directory
-cd {VASPDIR}  # this is the vasp directory
-runvasp.py     # this is the vasp command
-#end""".format(**locals())
+    jobname = os.path.basename(VASPDIR)
+    # old_script = """
+# #!/bin/bash
+# cd {CWD}  # this is the current working directory
+# cd {VASPDIR}  # this is the vasp directory
+# runvasp.py     # this is the vasp command
+# #end""".format(**locals())
+    script = f"""
+#BSUB -J {VASPRC['queue.command']}
+#BSUB -L {VASPRC['queue.shell']}
+#BSUB -W {VASPRC['queue.walltime']}
+#BSUB -n {VASPRC['queue.nodes']}
+#BSUB -R "span[ptile={VASPRC['queue.ppn']}]"
+#BSUB -R "rusage[mem={VASPRC['queue.mem']}]"
+#BSUB -M {VASPRC['queue.mem']}
+#BSUB -o {VASPDIR}.out%J
 
-    jobname = VASPDIR
-    log.debug('{0} will be the jobname.'.format(jobname))
-    log.debug('-l nodes={0}:ppn={1}'.format(VASPRC['queue.nodes'],
-                                            VASPRC['queue.ppn']))
+cd {CWD}
+cd {VASPDIR}
 
-    cmdlist = ['{0}'.format(VASPRC['queue.command'])]
-    cmdlist += ['-o', VASPDIR]
-    cmdlist += [option for option in VASPRC['queue.options'].split()]
-    cmdlist += ['-N', '{0}'.format(jobname),
-                '-l', 'walltime={0}'.format(VASPRC['queue.walltime']),
-                '-l', 'nodes={0}:ppn={1}'.format(VASPRC['queue.nodes'],
-                                                 VASPRC['queue.ppn']),
-                '-l', 'mem={0}'.format(VASPRC['queue.mem'])]
-    log.debug('{0}'.format(' '.join(cmdlist)))
-    p = subprocess.Popen(cmdlist,
-                         stdin=subprocess.PIPE,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
+mpirun {VASPRC['vasp.executable.parallel']}
+"""
+    log.debug(f'{jobname} will be the jobname.')
+    log.debug(f'nodes={VASPRC["queue.nodes"]}:ppn={VASPRC["queue.ppn"]}')
+    # log.debug('-l nodes={0}:ppn={1}'.format(VASPRC['queue.nodes'],
+    #                                         VASPRC['queue.ppn']))
 
+    # cmdlist = ['{0}'.format(VASPRC['queue.command'])]
+    # cmdlist += ['-o', VASPDIR]
+    # cmdlist += [option for option in VASPRC['queue.options'].split()]
+    # cmdlist += ['-N', '{0}'.format(jobname),
+    #             '-l', 'walltime={0}'.format(VASPRC['queue.walltime']),
+    #             '-l', 'nodes={0}:ppn={1}'.format(VASPRC['queue.nodes'],
+    #                                              VASPRC['queue.ppn']),
+    #             '-l', 'mem={0}'.format(VASPRC['queue.mem'])]
+
+
+    # commands = '''
+    # {command}
+    # -J {jobname}
+    # -L {shell}
+    # -W {walltime}
+    # -n {nodes}
+    # -R "span[ptile={ppn}]"
+    # -R "rusage[mem={mem}]"
+    # -M {mem}
+    # -o {jobname}.out%J
+    # mpirun {executable}
+    # '''.format(command=VASPRC['queue.command'],
+    #            executable=VASPRC['vp'],
+    #            jobname=jobname,
+    #            shell=VASPRC['queue.shell'],
+    #            walltime=VASPRC['queue.walltime'],
+    #            nodes=VASPRC['queue.nodes'],
+    #            ppn=VASPRC['queue.ppn'],
+    #            mem=VASPRC['queue.mem']).strip()
+    # cmdlist = commands.split()
+    # cmdlist = ['bsub']
+    # log.debug('{0}'.format(' '.join(cmdlist)))
+    # p = subprocess.Popen(cmdlist,
+    #                      stdin=subprocess.PIPE,
+    #                      stdout=subprocess.PIPE,
+    #                      stderr=subprocess.PIPE)
+    cmdlist = [VASPRC['queue.command']]
+    log.debug(VASPRC['queue.command'])
     log.debug(script)
+    res = subprocess.run(cmdlist,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE,
+                         input=script, encoding='utf-8')
+    log.debug(str(res))
+    out = res.stdout
+    err = res.stderr
+    log.debug(f'\nstdout:\n{out}\nstderr:\n{err}')
 
-    out, err = p.communicate(script.encode('utf-8'))
+    # out, err = p.communicate(script.encode('utf-8'))
 
-    if out == b'' or err != b'':
-        raise Exception('something went wrong in qsub:\n\n{0}'.format(err))
+    # if out == b'' or err != b'':
+    #     # raise Exception('something went wrong in qsub:\n\n{0}'.format(err))
+    #     raise Exception('something went wrong in job submission:\n\n{0}'.format(err))
 
-    self.write_db(data={'jobid': out.decode("utf-8").strip()})
-
-    raise VaspSubmitted('{} submitted: {}'.format(self.directory,
-                                                  out.decode("utf-8").strip()))
+    # self.write_db(data={'jobid': out.decode("utf-8").strip()})
+    if out == '' or 'error' in err.lower():
+        raise Exception('something went wrong in job submission:\n\n{err}')
+    i_end = out.find('>')
+    jobid = out[5: i_end]
+    self.write_db(data={'jobid': jobid})
+    # return 0
+    raise VaspSubmitted(f'{jobname} submitted: {jobid}')
+    # raise VaspSubmitted('{} submitted: {}'.format(self.directory,
+    #                                               out.strip()))
 
 
 @monkeypatch_class(Vasp)
@@ -338,8 +413,12 @@ def qdel(self, *options):
     is equivalent to the shell-command 'qdel -p jobid'.
     """
     if self.in_queue():
-        jobid = self.get_db('jobid')
-        cmd = ['qdel'] + list(options) + [jobid]
+        # jobid = self.get_db('jobid')
+        jobid = self.jobid()
+        # for PBS
+        # cmd = ['qdel'] + list(options) + [jobid]
+        # for LSF
+        cmd = ['bkill'] + list(options) + [jobid]
         status, output, err = getstatusoutput(cmd,
                                               stdout=subprocess.PIPE,
                                               stderr=subprocess.PIPE)
@@ -357,8 +436,12 @@ def qstat(self, *options):
 
     """
     if self.in_queue():
-        jobid = self.get_db('jobid')
-        cmd = ['qstat'] + list(options) + [jobid]
+        # jobid = self.get_db('jobid')
+        jobid = self.jobid()
+        # for PBS
+        # cmd = ['qstat'] + list(options) + [jobid]
+        # for LSF
+        cmd = ['bjobs'] + list(options) + [jobid]
 
         status, output, err = getstatusoutput(cmd,
                                               stdout=subprocess.PIPE,
@@ -379,7 +462,8 @@ def qalter(self, *options):
     >>> calc.qalter('-l', 'walltime=10:00:00')
 
     """
-    jobid = self.get_db('jobid')
+    # jobid = self.get_db('jobid')
+    jobid = self.jobid()
     cmd = ['qalter'] + list(options) + [jobid]
 
     status, output, err = getstatusoutput(cmd,

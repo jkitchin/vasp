@@ -374,7 +374,7 @@ def read_results(self):
         if not os.path.exists(os.path.join(self.directory,
                                            'vasprun.xml')):
             exc = 'No vasprun.xml in {}'.format(self.directory)
-            raise exceptions.VaspNotFinished(exc)
+            raise vasp.exceptions.VaspNotFinished(exc)
 
         # this has a single-point calculator on it. but no tags.
         atoms = ase.io.read(os.path.join(self.directory,
