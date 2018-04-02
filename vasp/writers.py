@@ -182,19 +182,16 @@ def write_incar(self, incar=None):
             if val is None:
                 # Do not write out None values
                 # It is how we delete tags
-                pass
+                continue
             # I am very unhappy about this special case.
             elif key == ' RWIGS':
-                s = ' '.join([str(val[x[0]]) for x in self.ppp_list])
-                f.write('{} = {}\n'.format(key, s))
+                val = ' '.join(str(val[x[0]]) for x in self.ppp_list)
             elif isinstance(val, bool):
-                s = '.TRUE.' if val else '.FALSE.'
-                f.write('{} = {}\n'.format(key, s))
-            elif isinstance(val, list) or isinstance(val, tuple):
-                s = ' '.join([str(x) for x in val])
-                f.write('{} = {}\n'.format(key, s))
-            else:
-                f.write('{} = {}\n'.format(key, val))
+                val = '.TRUE.' if val else '.FALSE.'
+            # elif isinstance(val, list) or isinstance(val, tuple):
+            elif hasattr(val, '__iter__'):
+                val = ' '.join(str(x) for x in val)
+            f.write(f'{key} = {val}\n')
 
 
 @monkeypatch_class(Vasp)
@@ -237,14 +234,15 @@ def write_kpoints(self, fname=None):
         NKPTS = len(p['kpts'])
 
     # figure out the mode
-    if NKPTS == 0 and not p.get('gamma', None):
-        MODE = 'm'  # automatic monkhorst-pack
-    elif NKPTS == 0 and p.get('gamma', None):
-        MODE = 'g'  # automatic gamma monkhorst pack
+    if NKPTS == 0:
+        if p.get('gamma'):
+            MODE = 'g'  # automatic gamma monkhorst-pack
+        else:
+            MODE = 'm'  # automatic monkhorst-pack
     # we did not trigger automatic kpoints
     elif p.get('kpts_nintersections', None) is not None:
         MODE = 'l'
-    elif p.get('reciprocal', None) is True:
+    elif p.get('reciprocal', None) == True:
         MODE = 'r'
     else:
         MODE = 'c'
@@ -261,37 +259,39 @@ def write_kpoints(self, fname=None):
         # line 3
         if MODE in ['m', 'g']:
             if MODE == 'm':
-                f.write('Monkhorst-Pack\n')  # line 3
+                f.write('Monkhorst-Pack\n')
             elif MODE == 'g':
                 f.write('Gamma\n')
         elif MODE in ['c', 'k']:
             f.write('Cartesian\n')
-        elif MODE in ['l']:
+        elif MODE == 'l':
             f.write('Line-mode\n')
         else:
             f.write('Reciprocal\n')
 
-        # line 4
+        # kpoints lines
+        points = list()
         if MODE in ['m', 'g']:
-            f.write('{0} {1} {2}\n'.format(*p.get('kpts', (1, 1, 1))))
+            points.append(p.get('kpts', (1, 1, 1)))
+            if p.get('gamma'):
+                points.append(p['gamma'])
+            else:
+                points.append(['0.0'] * 3)
         elif MODE in ['c', 'k', 'r']:
-            for n in range(NKPTS):
-                # I assume you know to provide the weights
-                f.write('{0} {1} {2} {3}\n'.format(*p['kpts'][n]))
-        elif MODE in ['l']:
-            if p.get('reciprocal', None) is False:
-                f.write('Cartesian\n')
-            else:
+            points.append(p['kpts'])
+            if any(len(point) != 4 for point in points):
+                raise ValueError('Kpoint ERROR: weights must be provided')
+        elif MODE == 'l':
+            if p.get('reciprocal'):
                 f.write('Reciprocal\n')
-            for n in range(NKPTS):
-                f.write('{0} {1} {2}\n'.format(*p['kpts'][n]))
-
-        # line 5 - only if we are in automatic mode
-        if MODE in ['m', 'g']:
-            if p.get('gamma', None):
-                f.write('{0} {1} {2}\n'.format(*p['gamma']))
             else:
-                f.write('0.0 0.0 0.0\n')
+                f.write('Cartesian\n')
+            points.append(p['kpts'])
+
+
+        for point in points:
+            text = ' '.join(map(str, point)) + '\n'
+            f.write(text)
 
 
 @monkeypatch_class(Vasp)

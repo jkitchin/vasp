@@ -120,165 +120,132 @@ def calculate(self, atoms=None, properties=['energy'],
         if not os.path.exists(kernel):
             os.symlink(VASPRC['vdw_kernel.bindat'], kernel)
 
+    # only queue mode is enabled
+    # TODO: modify run mode
+
     # if we are in the queue and vasp is called or if we want to use
     # mode='run' , we should just run the job. First, we consider how.
-    if 'PBS_O_WORKDIR' in os.environ or VASPRC['mode'] == 'run':
-        if 'PBS_NODEFILE' in os.environ:
-            # we are in the queue. determine if we should run serial
-            # or parallel
-            NPROCS = len(open(os.environ['PBS_NODEFILE']).readlines())
-            log.debug('Found {0} PROCS'.format(NPROCS))
-            if NPROCS == 1:
-                # no question. running in serial.
-                vaspcmd = VASPRC['vasp.executable.serial']
-                log.debug('NPROCS = 1. running in serial')
-                exitcode = os.system(vaspcmd)
-                return exitcode
-            else:
-                # vanilla MPI run. multiprocessing does not work on more
-                # than one node, and you must specify in VASPRC to use it
-                if (VASPRC['queue.nodes'] > 1 or
-                    (VASPRC['queue.nodes'] == 1 and
-                     VASPRC['queue.ppn'] > 1 and
-                     (VASPRC['multiprocessing.cores_per_process'] ==
-                      'None'))):
-                    s = 'queue.nodes = {0}'.format(VASPRC['queue.nodes'])
-                    log.debug(s)
-                    log.debug('queue.ppn = {0}'.format(VASPRC['queue.ppn']))
-                    mpc = VASPRC['multiprocessing.cores_per_process']
-                    log.debug('multiprocessing.cores_per_process'
-                              '= {0}'.format(mpc))
-                    log.debug('running vanilla MPI job')
+    # if 'PBS_O_WORKDIR' in os.environ or VASPRC['mode'] == 'run':
+    #     if 'PBS_NODEFILE' in os.environ:
+    #         # we are in the queue. determine if we should run serial
+    #         # or parallel
+    #         NPROCS = len(open(os.environ['PBS_NODEFILE']).readlines())
+    #         log.debug('Found {0} PROCS'.format(NPROCS))
+    #         if NPROCS == 1:
+    #             # no question. running in serial.
+    #             vaspcmd = VASPRC['vasp.executable.serial']
+    #             log.debug('NPROCS = 1. running in serial')
+    #             exitcode = os.system(vaspcmd)
+    #             return exitcode
+    #         else:
+    #             # vanilla MPI run. multiprocessing does not work on more
+    #             # than one node, and you must specify in VASPRC to use it
+    #             if (VASPRC['queue.nodes'] > 1 or
+    #                 (VASPRC['queue.nodes'] == 1 and
+    #                  VASPRC['queue.ppn'] > 1 and
+    #                  (VASPRC['multiprocessing.cores_per_process'] ==
+    #                   'None'))):
+    #                 s = 'queue.nodes = {0}'.format(VASPRC['queue.nodes'])
+    #                 log.debug(s)
+    #                 log.debug('queue.ppn = {0}'.format(VASPRC['queue.ppn']))
+    #                 mpc = VASPRC['multiprocessing.cores_per_process']
+    #                 log.debug('multiprocessing.cores_per_process'
+    #                           '= {0}'.format(mpc))
+    #                 log.debug('running vanilla MPI job')
 
-                    log.debug('MPI NPROCS = {}'.format(NPROCS))
-                    vaspcmd = VASPRC['vasp.executable.parallel']
-                    parcmd = 'mpirun -np %i %s' % (NPROCS, vaspcmd)
-                    exitcode = os.system(parcmd)
-                    return exitcode
-                else:
-                    # we need to run an MPI job on cores_per_process
-                    if VASPRC['multiprocessing.cores_per_process'] == 1:
-                        log.debug('running single core multiprocessing job')
-                        vaspcmd = VASPRC['vasp.executable.serial']
-                        exitcode = os.system(vaspcmd)
-                    elif VASPRC['multiprocessing.cores_per_process'] > 1:
-                        log.debug('running mpi multiprocessing job')
-                        NPROCS = VASPRC['multiprocessing.cores_per_process']
+    #                 log.debug('MPI NPROCS = {}'.format(NPROCS))
+    #                 vaspcmd = VASPRC['vasp.executable.parallel']
+    #                 parcmd = 'mpirun -np %i %s' % (NPROCS, vaspcmd)
+    #                 exitcode = os.system(parcmd)
+    #                 return exitcode
+    #             else:
+    #                 # we need to run an MPI job on cores_per_process
+    #                 if VASPRC['multiprocessing.cores_per_process'] == 1:
+    #                     log.debug('running single core multiprocessing job')
+    #                     vaspcmd = VASPRC['vasp.executable.serial']
+    #                     exitcode = os.system(vaspcmd)
+    #                 elif VASPRC['multiprocessing.cores_per_process'] > 1:
+    #                     log.debug('running mpi multiprocessing job')
+    #                     NPROCS = VASPRC['multiprocessing.cores_per_process']
 
-                        vaspcmd = VASPRC['vasp.executable.parallel']
-                        parcmd = 'mpirun -np %i %s' % (NPROCS, vaspcmd)
-                        exitcode = os.system(parcmd)
-                        return exitcode
-        else:
-            # probably running at cmd line, in serial.
-            try:
-                cwd = os.getcwd()
-                os.chdir(self.directory)
-                vaspcmd = VASPRC['vasp.executable.serial']
-                status, output, err = getstatusoutput(vaspcmd,
-                                                      stdout=subprocess.PIPE,
-                                                      stderr=subprocess.PIPE)
-                if status == 0:
-                    self.read_results()
-                    return True
-                else:
-                    return output
-            finally:
-                os.chdir(cwd)
-        # end
+    #                     vaspcmd = VASPRC['vasp.executable.parallel']
+    #                     parcmd = 'mpirun -np %i %s' % (NPROCS, vaspcmd)
+    #                     exitcode = os.system(parcmd)
+    #                     return exitcode
+    #     else:
+    #         # probably running at cmd line, in serial.
+    #         try:
+    #             cwd = os.getcwd()
+    #             os.chdir(self.directory)
+    #             vaspcmd = VASPRC['vasp.executable.serial']
+    #             status, output, err = getstatusoutput(vaspcmd,
+    #                                                   stdout=subprocess.PIPE,
+    #                                                   stderr=subprocess.PIPE)
+    #             if status == 0:
+    #                 self.read_results()
+    #                 return True
+    #             else:
+    #                 return output
+    #         finally:
+    #             os.chdir(cwd)
+    #     # end
 
     # if you get here, a job is getting submitted
     CWD = os.getcwd()
     VASPDIR = self.directory
-    jobname = os.path.basename(VASPDIR)
-    # old_script = """
-# #!/bin/bash
-# cd {CWD}  # this is the current working directory
-# cd {VASPDIR}  # this is the vasp directory
-# runvasp.py     # this is the vasp command
-# #end""".format(**locals())
+
+    jobname = VASPRC.get('queue.jobname')
+    if not jobname:
+        jobname = os.path.basename(VASPDIR)
+
     script = f"""
-#BSUB -J {VASPRC['queue.command']}
+#BSUB -J {jobname}
 #BSUB -L {VASPRC['queue.shell']}
 #BSUB -W {VASPRC['queue.walltime']}
 #BSUB -n {VASPRC['queue.nodes']}
 #BSUB -R "span[ptile={VASPRC['queue.ppn']}]"
 #BSUB -R "rusage[mem={VASPRC['queue.mem']}]"
 #BSUB -M {VASPRC['queue.mem']}
-#BSUB -o {VASPDIR}.out%J
+#BSUB -o {os.path.join(VASPDIR, jobname)}.out%J
 
 cd {CWD}
 cd {VASPDIR}
 
 mpirun {VASPRC['vasp.executable.parallel']}
 """
+
     log.debug(f'{jobname} will be the jobname.')
     log.debug(f'nodes={VASPRC["queue.nodes"]}:ppn={VASPRC["queue.ppn"]}')
-    # log.debug('-l nodes={0}:ppn={1}'.format(VASPRC['queue.nodes'],
-    #                                         VASPRC['queue.ppn']))
 
-    # cmdlist = ['{0}'.format(VASPRC['queue.command'])]
-    # cmdlist += ['-o', VASPDIR]
-    # cmdlist += [option for option in VASPRC['queue.options'].split()]
-    # cmdlist += ['-N', '{0}'.format(jobname),
-    #             '-l', 'walltime={0}'.format(VASPRC['queue.walltime']),
-    #             '-l', 'nodes={0}:ppn={1}'.format(VASPRC['queue.nodes'],
-    #                                              VASPRC['queue.ppn']),
-    #             '-l', 'mem={0}'.format(VASPRC['queue.mem'])]
-
-
-    # commands = '''
-    # {command}
-    # -J {jobname}
-    # -L {shell}
-    # -W {walltime}
-    # -n {nodes}
-    # -R "span[ptile={ppn}]"
-    # -R "rusage[mem={mem}]"
-    # -M {mem}
-    # -o {jobname}.out%J
-    # mpirun {executable}
-    # '''.format(command=VASPRC['queue.command'],
-    #            executable=VASPRC['vp'],
-    #            jobname=jobname,
-    #            shell=VASPRC['queue.shell'],
-    #            walltime=VASPRC['queue.walltime'],
-    #            nodes=VASPRC['queue.nodes'],
-    #            ppn=VASPRC['queue.ppn'],
-    #            mem=VASPRC['queue.mem']).strip()
-    # cmdlist = commands.split()
-    # cmdlist = ['bsub']
-    # log.debug('{0}'.format(' '.join(cmdlist)))
-    # p = subprocess.Popen(cmdlist,
-    #                      stdin=subprocess.PIPE,
-    #                      stdout=subprocess.PIPE,
-    #                      stderr=subprocess.PIPE)
     cmdlist = [VASPRC['queue.command']]
+
     log.debug(VASPRC['queue.command'])
     log.debug(script)
+
     res = subprocess.run(cmdlist,
                          stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE,
                          input=script, encoding='utf-8')
+
     log.debug(str(res))
+
     out = res.stdout
     err = res.stderr
-    log.debug(f'\nstdout:\n{out}\nstderr:\n{err}')
 
-    # out, err = p.communicate(script.encode('utf-8'))
+    log.debug(f'\nstdout:\n{out}\nstderr:\n{err}')
 
     # if out == b'' or err != b'':
     #     # raise Exception('something went wrong in qsub:\n\n{0}'.format(err))
     #     raise Exception('something went wrong in job submission:\n\n{0}'.format(err))
 
-    # self.write_db(data={'jobid': out.decode("utf-8").strip()})
+    # LSF sends account info through stderr
     if out == '' or 'error' in err.lower():
-        raise Exception('something went wrong in job submission:\n\n{err}')
+        raise Exception(f'something went wrong in job submission:\n\n{err}')
+
     i_end = out.find('>')
     jobid = out[5: i_end]
     self.write_db(data={'jobid': jobid})
-    # return 0
-    raise VaspSubmitted(f'{jobname} submitted: {jobid}')
+    raise VaspSubmitted(f'{jobname} submitted: {jobid}\n\n{err}')
     # raise VaspSubmitted('{} submitted: {}'.format(self.directory,
     #                                               out.strip()))
 
