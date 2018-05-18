@@ -5,13 +5,13 @@ class methods are actually imported at the end.
 
 """
 
-import logging
+# import logging
 import os
-import subprocess
+# import subprocess
 import warnings
 import numpy as np
 import ase
-from ase.calculators.calculator import Calculator
+# from ase.calculators.calculator import Calculator
 from ase.calculators.calculator import FileIOCalculator
 from ase.io import read
 from ase.io.jsonio import encode
@@ -427,6 +427,50 @@ class Vasp(FileIOCalculator, object):
                               else atoms[x[0]].symbol,
                               x[2]) for x in ppp]
 
+    def read_convergence(self):
+        """Method that checks whether a calculation has converged."""
+        converged = None
+        # First check electronic convergence
+        for line in open('OUTCAR', 'r'):
+            if 0:  # vasp always prints that!
+                if line.rfind('aborting loop') > -1:  # scf failed
+                    raise RuntimeError(line.strip())
+                    break
+            if line.rfind('EDIFF  ') > -1:
+                ediff = float(line.split()[2])
+            if line.rfind('total energy-change') > -1:
+                # I saw this in an atomic oxygen calculation. it
+                # breaks this code, so I am checking for it here.
+                if 'MIXING' in line:
+                    continue
+                split = line.split(':')
+                a = float(split[1].split('(')[0])
+                b = split[1].split('(')[1][0:-2]
+                # sometimes this line looks like (second number wrong format!):
+                # energy-change (2. order) :-0.2141803E-08  ( 0.2737684-111)
+                # we are checking still the first number so
+                # let's "fix" the format for the second one
+                if 'e' not in b.lower():
+                    # replace last occurrence of - (assumed exponent) with -e
+                    bsplit = b.split('-')
+                    bsplit[-1] = 'e' + bsplit[-1]
+                    b = '-'.join(bsplit).replace('-e', 'e-')
+                b = float(b)
+                if [abs(a), abs(b)] < [ediff, ediff]:
+                    converged = True
+                else:
+                    converged = False
+                    continue
+        # Then if ibrion in [1,2,3] check whether ionic relaxation
+        # condition been fulfilled
+        if ((self.int_params['ibrion'] in [1, 2, 3] and
+             self.int_params['nsw'] not in [0])):
+            if not self.read_relaxed():
+                converged = False
+            else:
+                converged = True
+        return converged
+
     def _repr_html_(self):
         """Output function for Jupyter notebooks."""
         from ase.io import write
@@ -678,9 +722,8 @@ class Vasp(FileIOCalculator, object):
 
         if self.calculation_required(atoms, ['energy']):
             return self.calculate(atoms)
-        else:
-            self.read_results()
 
+        self.read_results()
         return True
 
     def calculation_required(self, atoms=None, properties=['energy']):
@@ -693,11 +736,6 @@ class Vasp(FileIOCalculator, object):
         if system_changes:
             log.debug('Calculation needed for {}'.format(system_changes))
             return True
-        for name in properties:
-            if name not in self.results:
-                log.debug('{} not in {}. Calc required.'.format(name,
-                                                                self.results))
-                return True
 
         # if the calculation is finished we do not need to run.
         if os.path.exists(self.outcar):
@@ -705,6 +743,12 @@ class Vasp(FileIOCalculator, object):
                 lines = f.readlines()
                 if 'Voluntary context switches:' in lines[-1]:
                     return False
+
+        for name in properties:
+            if name not in self.results:
+                log.debug('{} not in {}. Calc required.'.format(name,
+                                                                self.results))
+                return True
 
     def clone(self, newdir, set_label=True):
         """Copy the calculation directory to newdir and set label to
@@ -746,55 +790,49 @@ class Vasp(FileIOCalculator, object):
         # We do not check for KPOINTS here. That file may not exist if
         # the kspacing incar parameter is used.
         base_input = [os.path.exists(os.path.join(self.directory, f))
-                       for f in ['INCAR', 'POSCAR', 'POTCAR']]
+                      for f in ['INCAR', 'POSCAR', 'POTCAR']]
 
         # Check for NEB first.
-        if (np.array([os.path.exists(os.path.join(self.directory, f))
-                      for f in ['INCAR', 'POTCAR']]).all() and
-            not os.path.exists(os.path.join(self.directory, 'POSCAR')) and
+        if (os.path.exists(self.incar) and
+            os.path.exists(self.potcar) and
+            not os.path.exists(self.poscar) and
             os.path.isdir(os.path.join(self.directory, '00'))):
             return Vasp.NEB
 
         # Some input does not exist
-        if False in base_input:
+        elif False in base_input:
             # some input file is missing
             return Vasp.EMPTY
 
         # Input files exist, but no jobid, and no output
-        if (np.array(base_input).all() and
-            self.get_db('jobid') is not None and
-            not os.path.exists(os.path.join(self.directory, 'OUTCAR'))):
+        elif (all(base_input) and
+            self.get_db('jobid') is None and
+            # not os.path.exists(os.path.join(self.directory, 'OUTCAR'))):
+            not os.path.exists(self.outcar)):
             return Vasp.NEW
 
         # INPUT files exist, a jobid in the queue
-        if self.in_queue():
+        elif self.in_queue():
             return Vasp.QUEUED
 
-        # Not in queue, and finished
-        if not self.in_queue():
+        # Not in queue
+        elif not self.in_queue():
             if os.path.exists(self.outcar):
                 with open(self.outcar) as f:
                     lines = f.readlines()
-                    if 'Voluntary context switches:' in lines[-1]:
-                        return Vasp.FINISHED
-
-        # Not in queue, and not finished
-        if not self.in_queue():
-            if os.path.exists(self.outcar):
-                with open(self.outcar) as f:
-                    lines = f.readlines()
-                    if 'Voluntary context switches:' not in lines[-1]:
-                        return Vasp.NOTFINISHED
+                # Finished
+                if 'Voluntary context switches:' in lines[-1]:
+                    return Vasp.FINISHED
+                # Not finished and empty CONTCAR
+                elif os.path.exists(self.contcar):
+                    with open(self.contcar) as f:
+                        text = f.read()
+                    if not text:
+                        return Vasp.EMPTYCONTCAR
+            # No outcar
             else:
                 return Vasp.NOTFINISHED
-
-        # Not in queue, and not finished, with empty contcar
-        if not self.in_queue():
-            if os.path.exists(self.contcar):
-                with open(self.contcar) as f:
-                    if f.read() == '':
-                        return Vasp.EMPTYCONTCAR
-
+        # never getting here
         return Vasp.UNKNOWN
 
     @property

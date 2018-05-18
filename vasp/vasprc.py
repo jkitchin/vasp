@@ -18,18 +18,21 @@ import os
 
 vs = '/opt/kitchingroup/vasp-5.3.5/bin/vasp-vtst-serial-beef'
 vp = '/home-research/zhongnanxu/opt/vasp-5.3.5/bin/vasp-vtst-beef-parallel'
+vs = '/scratch/group/balbuena/bin/vasp'
+vp = '/scratch/group/balbuena/bin/vasp'
 
 # default settings
 VASPRC = {'vasp.executable.serial': vs,
           'vasp.executable.parallel': vp,
           'mode': 'queue',  # other value is 'run'
-          'queue.command': 'qsub',
-          'queue.options': '-joe',
-          'queue.walltime': '168:00:00',
-          'queue.nodes': 1,
-          'queue.ppn': 1,
-          'queue.mem': '2GB',
-          'queue.jobname': 'None',
+          'queue.command': 'bsub',
+          'queue.options': '',
+          'queue.shell': '/bin/bash',
+          'queue.walltime': '00:05',
+          'queue.nodes': 6,
+          'queue.ppn': 6,
+          'queue.mem': '2560',
+          'queue.jobname': '',
           'multiprocessing.cores_per_process': 'None',
           'vdw_kernel.bindat':
           '/opt/kitchingroup/vasp-5.3.5/vdw_kernel.bindat',
@@ -53,8 +56,8 @@ def read_configuration(fname='.vasprc'):
             if '#' in line:
                 # take the part before the first #
                 line = line.split('#')[0]
-            key, value = line.split('=')
-            VASPRC[key.strip()] = value.strip()
+            key, value = map(str.strip, line.split('='))
+            VASPRC[key] = value
 
 # these are the possible paths to config files, in order of increasing
 # priority

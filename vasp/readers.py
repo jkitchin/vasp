@@ -48,18 +48,15 @@ def read_incar(self, fname=None):
         lines = f.readlines()
 
     # The first line is a comment
-    for line in lines[1:]:
-        line = line.strip()
-        if ";" in line:
-            raise Exception('; found. that is not supported.')
-        if '#' in line:
-            raise Exception('# found. that is not supported.')
-        if line == '':
-            continue
+    comment_chars = '[#!;]'  # regex for comment recognition
+    for line in map(str.strip, lines[1:]):
+        if not line: continue
+        if re.search(comment_chars, line):
+            # ignore anything after the comment character
+            line = re.split(comment_chars, line)[0]
 
-        key, val = line.split('=')
-        key = key.strip().lower()
-        val = val.strip()
+        key, val = map(str.strip, line.split('='))
+        key = key.lower()
         # now we need some logic
         if val == '.TRUE.':
             val = True
@@ -71,9 +68,9 @@ def read_incar(self, fname=None):
             val = int(val)
         elif isfloat(val):
             val = float(val)
-        elif len(val.split(' ')) > 1:
+        elif len(val.split()) > 1:
             # this is some kind of list separated by spaces
-            val = val.split(' ')
+            val = val.split()
             val = [int(x) if re.match('^[-+]?\d+$', x)
                    else float(x) for x in val]
         else:
@@ -374,7 +371,7 @@ def read_results(self):
         if not os.path.exists(os.path.join(self.directory,
                                            'vasprun.xml')):
             exc = 'No vasprun.xml in {}'.format(self.directory)
-            raise exceptions.VaspNotFinished(exc)
+            raise vasp.exceptions.VaspNotFinished(exc)
 
         # this has a single-point calculator on it. but no tags.
         atoms = ase.io.read(os.path.join(self.directory,
