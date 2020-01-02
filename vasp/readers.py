@@ -243,6 +243,11 @@ def read_atoms(self):
                                'vasprun.xml')
     if os.path.exists(vasprun_xml):
         atoms = ase.io.read(vasprun_xml)
+        # added from issue #56
+        for atom in atoms:                  # Patch for X <--> Xe
+            if atom.symbol == 'X':
+                atom.symbol = 'Xe'
+        # end issue #56 add
         if resort is not None:
             atoms = atoms[resort]
         atoms.set_tags(tags)
