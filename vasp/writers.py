@@ -178,16 +178,22 @@ def write_incar(self, incar=None):
     with open(incar, 'w') as f:
         f.write('INCAR created by Atomic Simulation Environment\n')
         for key, val in d.items():
+            print(f'"{key}", {val}, {type(val)}')
             key = ' ' + key.upper()
             if val is None:
                 # Do not write out None values
                 # It is how we delete tags
                 continue
-            # I am very unhappy about this special case.
+            # I am very unhappy about this special case. [2020-08-10 Mon] why is
+            # there an extra space in front? You get the wrong result without
+            # it.
             elif key == ' RWIGS':
                 val = ' '.join(str(val[x[0]]) for x in self.ppp_list)
             elif isinstance(val, bool):
                 val = '.TRUE.' if val else '.FALSE.'
+            # Added [2020-08-10 Mon] for issue #57.
+            elif isinstance(val, str):
+                pass
             # elif isinstance(val, list) or isinstance(val, tuple):
             elif hasattr(val, '__iter__'):
                 val = ' '.join(str(x) for x in val)
