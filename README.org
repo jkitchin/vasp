@@ -1,6 +1,8 @@
 #+TITLE: A new ASE interface to Vasp
 #+date: May 4, 2016
 
+*Update*: May 20, 2022. I am going to archive this repo. I don't think this code works with current versions of ASE, and we aren't actively using or supporting it. You can still fork the repo, and if someone feels strongly about maintaining it, I am happy to pass the baton. My sense is that the era when it made sense to run Vasp this way has passed though, and a new design is warranted.
+
 * Why?
 To make it compliant with the FileIOCalculator in ase, and hopefully simplify it.
 
