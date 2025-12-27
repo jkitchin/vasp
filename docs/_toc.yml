@@ -1,0 +1,57 @@
+# Table of contents
+# https://jupyterbook.org/customize/toc.html
+
+format: jb-book
+root: index
+parts:
+  - caption: Getting Started
+    chapters:
+      - file: getting-started/installation
+      - file: getting-started/quickstart
+      - file: getting-started/configuration
+
+  - caption: Tutorials
+    chapters:
+      - file: tutorials/beginner
+        sections:
+          - file: tutorials/01_getting_started
+          - file: tutorials/02_convergence
+          - file: tutorials/03_relaxation
+          - file: tutorials/04_equation_of_state
+          - file: tutorials/05_density_of_states
+      - file: tutorials/intermediate
+        sections:
+          - file: tutorials/06_band_structure
+          - file: tutorials/07_magnetism
+          - file: tutorials/08_surfaces
+          - file: tutorials/09_adsorption
+          - file: tutorials/10_reactions
+      - file: tutorials/advanced
+        sections:
+          - file: tutorials/11_phonons
+          - file: tutorials/12_dft_plus_u
+          - file: tutorials/13_hybrid_functionals
+          - file: tutorials/14_van_der_waals
+          - file: tutorials/15_workflows
+          - file: tutorials/16_neb
+
+  - caption: User Guide
+    chapters:
+      - file: guide/calculator
+      - file: guide/parameters
+      - file: guide/runners
+      - file: guide/recipes
+      - file: guide/analysis
+      - file: guide/claude-code
+
+  - caption: API Reference
+    chapters:
+      - file: api/vasp
+      - file: api/runners
+      - file: api/recipes
+      - file: api/parameters
+
+  - caption: Development
+    chapters:
+      - file: development/contributing
+      - file: development/changelog

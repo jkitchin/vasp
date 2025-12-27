@@ -1,5 +1,28 @@
-# Ignore compiled python
-*.pyc
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+
+# Testing
+.coverage
+.pytest_cache/
+htmlcov/
+.tox/
+.nox/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
 
 # Ignore large/proprietary VASP files
 CHG
