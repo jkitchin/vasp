@@ -79,6 +79,7 @@ Repository = "https://github.com/jkitchin/vasp.git"
 Issues = "https://github.com/jkitchin/vasp/issues"
 
 [project.scripts]
+vasp-claude = "vasp.cli:main"
 vasp-status = "vasp.cli:status_command"
 
 [tool.hatch.build.targets.wheel]
