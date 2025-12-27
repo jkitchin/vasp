@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "python -c \"import vasp; print(f'vasp-ase v{vasp.__version__} loaded')\" 2>/dev/null || echo 'Note: vasp-ase not installed. Run: pip install -e .'",
+        "timeout": 5000
+      }
+    ],
+    "PreToolUse": [],
+    "PostToolUse": [],
+    "Stop": []
+  }
+}
