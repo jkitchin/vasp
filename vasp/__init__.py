@@ -9,7 +9,9 @@ Features:
 - Result parsing from output files
 - Pluggable execution backends (local, SLURM, Kubernetes)
 - Non-blocking async execution with exception-based signaling
-- Workflow tool integration (Prefect, Dask, etc.)
+- Workflow tool integration (Prefect, Dask, Parsl, Covalent)
+- Parameter presets for common calculation types
+- quacc-style recipes for automated workflows
 
 Example:
     >>> from ase.build import bulk
@@ -38,9 +40,26 @@ Non-blocking usage:
     ...     energy = calc.potential_energy
     ... except VaspSubmitted as e:
     ...     print(f"Job submitted: {e.jobid}")
+
+Using parameter presets:
+    >>> from vasp.parameters import get_vdw_params, get_ldau_params
+    >>>
+    >>> # Add D3-BJ dispersion correction
+    >>> vdw = get_vdw_params('d3bj')
+    >>> calc = Vasp(..., **vdw)
+    >>>
+    >>> # DFT+U for Fe oxide
+    >>> ldau = get_ldau_params(['Fe', 'O'], {'Fe': 4.0})
+    >>> calc = Vasp(..., **ldau)
+
+Using recipes:
+    >>> from vasp.recipes import relax_job, static_job, phonon_flow
+    >>>
+    >>> result = relax_job(atoms, relax_cell=True)
+    >>> phonons = phonon_flow(result.atoms, supercell_matrix=(2, 2, 2))
 """
 
-__version__ = '1.0.0'
+__version__ = '2.0.0'
 __author__ = 'John Kitchin'
 
 # Main calculator class

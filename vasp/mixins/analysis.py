@@ -325,6 +325,260 @@ class AnalysisMixin:
 
         return grid_points, data
 
+    def read_doscar(self) -> dict:
+        """Read density of states from DOSCAR.
+
+        Returns:
+            Dict with:
+            - 'energy': Energy grid in eV
+            - 'total_dos': Total DOS
+            - 'integrated_dos': Integrated DOS
+            - 'fermi': Fermi energy
+            - 'projected': Projected DOS per atom (if LORBIT set)
+
+        Raises:
+            FileNotFoundError: If DOSCAR not found.
+        """
+        doscar = os.path.join(self.directory, 'DOSCAR')
+
+        if not os.path.exists(doscar):
+            raise FileNotFoundError(f"DOSCAR not found in {self.directory}")
+
+        with open(doscar) as f:
+            lines = f.readlines()
+
+        # First line: NIONS, NIONS, JOBPAR, NCDIJ
+        # Line 6: EMAX, EMIN, NEDOS, EFERMI, 1.0
+        header_parts = lines[5].split()
+        emax = float(header_parts[0])
+        emin = float(header_parts[1])
+        nedos = int(header_parts[2])
+        efermi = float(header_parts[3])
+
+        result = {
+            'fermi': efermi,
+            'emax': emax,
+            'emin': emin,
+            'nedos': nedos,
+        }
+
+        # Parse total DOS (starts at line 6)
+        energies = []
+        total_dos = []
+        integrated_dos = []
+
+        for i in range(nedos):
+            line = lines[6 + i]
+            parts = line.split()
+            energies.append(float(parts[0]))
+            total_dos.append(float(parts[1]))
+            if len(parts) > 2:
+                integrated_dos.append(float(parts[2]))
+
+        result['energy'] = np.array(energies)
+        result['total_dos'] = np.array(total_dos)
+        if integrated_dos:
+            result['integrated_dos'] = np.array(integrated_dos)
+
+        # Check for projected DOS (LORBIT != 0)
+        pdos_start = 6 + nedos
+        if len(lines) > pdos_start + 1:
+            # Parse projected DOS for each atom
+            natoms = len(self.atoms)
+            projected = []
+
+            for atom_idx in range(natoms):
+                atom_start = pdos_start + 1 + atom_idx * (nedos + 1)
+                if atom_start >= len(lines):
+                    break
+
+                atom_dos = []
+                for i in range(nedos):
+                    if atom_start + 1 + i >= len(lines):
+                        break
+                    parts = lines[atom_start + 1 + i].split()
+                    # Format depends on LORBIT value
+                    # LORBIT=10: s, p, d
+                    # LORBIT=11: s, px, py, pz, dxy, dyz, etc.
+                    atom_dos.append([float(x) for x in parts[1:]])
+
+                if atom_dos:
+                    projected.append(np.array(atom_dos))
+
+            if projected:
+                result['projected'] = projected
+
+        return result
+
+    def read_procar(self, kpoint: int = 0, band: int = 0) -> dict:
+        """Read projected band character from PROCAR.
+
+        Requires LORBIT=11 or LORBIT=12.
+
+        Args:
+            kpoint: K-point index (0-based).
+            band: Band index (0-based).
+
+        Returns:
+            Dict with:
+            - 'kpoints': K-point coordinates
+            - 'weights': K-point weights
+            - 'energies': Band energies [nkpts, nbands]
+            - 'occupations': Occupations [nkpts, nbands]
+            - 'projections': Orbital projections [nkpts, nbands, natoms, norbitals]
+
+        Raises:
+            FileNotFoundError: If PROCAR not found.
+        """
+        procar = os.path.join(self.directory, 'PROCAR')
+
+        if not os.path.exists(procar):
+            raise FileNotFoundError(f"PROCAR not found in {self.directory}")
+
+        with open(procar) as f:
+            content = f.read()
+
+        # Parse header
+        header_match = re.search(
+            r'# of k-points:\s*(\d+)\s*# of bands:\s*(\d+)\s*# of ions:\s*(\d+)',
+            content
+        )
+
+        if not header_match:
+            raise ValueError("Could not parse PROCAR header")
+
+        nkpts = int(header_match.group(1))
+        nbands = int(header_match.group(2))
+        nions = int(header_match.group(3))
+
+        result = {
+            'nkpts': nkpts,
+            'nbands': nbands,
+            'nions': nions,
+            'kpoints': [],
+            'weights': [],
+            'energies': np.zeros((nkpts, nbands)),
+            'occupations': np.zeros((nkpts, nbands)),
+        }
+
+        # Parse k-points
+        kpt_pattern = r'k-point\s+(\d+)\s*:\s*([\d.\s-]+)\s+weight\s*=\s*([\d.]+)'
+        for match in re.finditer(kpt_pattern, content):
+            kpt_coords = [float(x) for x in match.group(2).split()]
+            weight = float(match.group(3))
+            result['kpoints'].append(kpt_coords)
+            result['weights'].append(weight)
+
+        result['kpoints'] = np.array(result['kpoints'])
+        result['weights'] = np.array(result['weights'])
+
+        # Parse band energies
+        band_pattern = r'band\s+(\d+)\s*#\s*energy\s+([\d.E+-]+)\s*#\s*occ\.\s*([\d.E+-]+)'
+        band_matches = list(re.finditer(band_pattern, content))
+
+        for i, match in enumerate(band_matches):
+            kpt_idx = i // nbands
+            band_idx = i % nbands
+            if kpt_idx < nkpts:
+                result['energies'][kpt_idx, band_idx] = float(match.group(2))
+                result['occupations'][kpt_idx, band_idx] = float(match.group(3))
+
+        return result
+
+    def get_work_function(self, axis: int = 2) -> float:
+        """Calculate work function from LOCPOT.
+
+        For a slab calculation with vacuum, calculates the difference
+        between vacuum level and Fermi level.
+
+        Args:
+            axis: Surface normal direction (0=x, 1=y, 2=z).
+
+        Returns:
+            Work function in eV.
+
+        Raises:
+            FileNotFoundError: If LOCPOT not found.
+        """
+        grid, potential = self.get_local_potential()
+
+        # Average potential along surface normal
+        axes_to_avg = [i for i in range(3) if i != axis]
+        avg_potential = np.mean(potential, axis=tuple(axes_to_avg))
+
+        # Find vacuum level (maximum in vacuum region)
+        # Assumes slab is centered
+        n_points = len(avg_potential)
+        edge_region = n_points // 4
+
+        vacuum_left = np.mean(avg_potential[:edge_region])
+        vacuum_right = np.mean(avg_potential[-edge_region:])
+        vacuum_level = (vacuum_left + vacuum_right) / 2
+
+        # Get Fermi level from results
+        fermi = self.results.get('fermi_level')
+        if fermi is None:
+            fermi = self._read_fermi_from_vasprun()
+
+        return vacuum_level - fermi
+
+    def get_band_gap_from_doscar(self, tol: float = 0.01) -> float:
+        """Calculate band gap from DOSCAR.
+
+        Args:
+            tol: DOS threshold for finding band edges.
+
+        Returns:
+            Band gap in eV (0 for metals).
+        """
+        dos_data = self.read_doscar()
+
+        energy = dos_data['energy']
+        dos = dos_data['total_dos']
+        fermi = dos_data['fermi']
+
+        # Shift to Fermi level
+        energy = energy - fermi
+
+        # Find occupied and unoccupied regions
+        below_fermi = energy < 0
+        above_fermi = energy > 0
+
+        # Find VBM (highest energy below Fermi with non-zero DOS)
+        occ_mask = below_fermi & (dos > tol)
+        if not np.any(occ_mask):
+            return 0.0  # Metal
+
+        vbm_idx = np.where(occ_mask)[0][-1]
+        vbm = energy[vbm_idx]
+
+        # Find CBM (lowest energy above Fermi with non-zero DOS)
+        unocc_mask = above_fermi & (dos > tol)
+        if not np.any(unocc_mask):
+            return 0.0  # Metal
+
+        cbm_idx = np.where(unocc_mask)[0][0]
+        cbm = energy[cbm_idx]
+
+        gap = cbm - vbm
+        return max(0.0, gap)
+
+    def get_elf(self) -> tuple[np.ndarray, np.ndarray]:
+        """Read electron localization function from ELFCAR.
+
+        Returns:
+            Tuple of (grid_points, elf) arrays.
+
+        Raises:
+            FileNotFoundError: If ELFCAR not found.
+        """
+        elfcar = os.path.join(self.directory, 'ELFCAR')
+
+        if not os.path.exists(elfcar):
+            raise FileNotFoundError(f"ELFCAR not found in {self.directory}")
+
+        return self._read_volumetric_file(elfcar)
+
 
 # Import re for elastic moduli parsing
 import re

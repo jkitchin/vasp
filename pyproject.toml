@@ -4,33 +4,36 @@ build-backend = "hatchling.build"
 
 [project]
 name = "vasp-ase"
-version = "1.0.0"
-description = "ASE calculator interface for VASP (Vienna Ab initio Simulation Package)"
+version = "2.0.0"
+description = "Modern ASE calculator interface for VASP with workflow integration"
 readme = "README.org"
 license = "GPL-3.0-or-later"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [
     { name = "John Kitchin", email = "jkitchin@andrew.cmu.edu" }
 ]
-keywords = ["vasp", "ase", "dft", "computational-chemistry", "materials-science"]
+keywords = [
+    "vasp", "ase", "dft", "computational-chemistry", "materials-science",
+    "workflow", "automation", "phonons", "machine-learning"
+]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Chemistry",
     "Topic :: Scientific/Engineering :: Physics",
 ]
 
 dependencies = [
-    "numpy>=1.20",
+    "numpy>=1.22",
     "ase>=3.22",
-    "scipy>=1.7",
+    "scipy>=1.8",
 ]
 
 [project.optional-dependencies]
@@ -44,11 +47,21 @@ slurm = []  # No extra deps needed
 kubernetes = [
     "kubernetes>=28.0",
 ]
+phonons = [
+    "phonopy>=2.20",
+]
+workflows = [
+    # Workflow engines (user chooses one)
+    # "prefect>=2.0",
+    # "dask>=2023.0",
+    # "parsl>=2023.0",
+    # "covalent>=0.220",
+]
 plotting = [
     "matplotlib>=3.5",
 ]
 all = [
-    "vasp-ase[dev,kubernetes,plotting]",
+    "vasp-ase[dev,kubernetes,phonons,plotting]",
 ]
 
 [project.urls]
