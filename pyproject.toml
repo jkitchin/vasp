@@ -60,8 +60,16 @@ workflows = [
 plotting = [
     "matplotlib>=3.5",
 ]
+docs = [
+    "jupyter-book>=1.0.0",
+    "sphinx>=7.0.0",
+    "sphinx-autodoc-typehints>=2.0.0",
+    "myst-nb>=1.0.0",
+    "sphinxcontrib-bibtex>=2.6.0",
+    "sphinx-design>=0.5.0",
+]
 all = [
-    "vasp-ase[dev,kubernetes,phonons,plotting]",
+    "vasp-ase[dev,kubernetes,phonons,plotting,docs]",
 ]
 
 [project.urls]

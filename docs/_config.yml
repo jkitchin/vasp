@@ -1,0 +1,68 @@
+# Jupyter Book configuration
+# https://jupyterbook.org/customize/config.html
+
+title: VASP-ASE Interface
+author: John Kitchin
+copyright: "2024"
+logo: _static/logo.png
+
+# Force re-execution of notebooks on each build
+execute:
+  execute_notebooks: 'off'  # Don't execute notebooks (examples need VASP)
+
+# Define the name of the latex output file for PDF builds
+latex:
+  latex_documents:
+    targetname: vasp-ase.tex
+
+# Add a bibtex file so that we can create citations
+bibtex_bibfiles:
+  - references.bib
+
+# Information about where the book exists on the web
+repository:
+  url: https://github.com/jkitchin/vasp
+  path_to_book: docs
+  branch: main
+
+# Add GitHub buttons to your book
+html:
+  use_issues_button: true
+  use_repository_button: true
+  use_edit_page_button: true
+  home_page_in_navbar: true
+
+  # Add analytics (optional)
+  # google_analytics_id: G-XXXXXXXXXX
+
+# Launch button settings
+launch_buttons:
+  notebook_interface: classic
+  binderhub_url: ""
+
+# Sphinx configuration
+sphinx:
+  extra_extensions:
+    - sphinx.ext.autodoc
+    - sphinx.ext.napoleon
+    - sphinx.ext.viewcode
+    - sphinx.ext.intersphinx
+  config:
+    intersphinx_mapping:
+      python:
+        - "https://docs.python.org/3/"
+        - null
+      numpy:
+        - "https://numpy.org/doc/stable/"
+        - null
+      ase:
+        - "https://wiki.fysik.dtu.dk/ase/"
+        - null
+    autodoc_member_order: bysource
+    autodoc_typehints: description
+    napoleon_google_docstring: true
+    napoleon_numpy_docstring: true
+    html_theme_options:
+      repository_url: "https://github.com/jkitchin/vasp"
+      use_repository_button: true
+      use_issues_button: true
