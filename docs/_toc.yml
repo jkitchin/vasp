@@ -33,6 +33,7 @@ parts:
           - file: tutorials/13_hybrid_functionals
           - file: tutorials/14_van_der_waals
           - file: tutorials/15_workflows
+          - file: tutorials/16_neb
 
   - caption: User Guide
     chapters:

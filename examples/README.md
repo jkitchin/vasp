@@ -39,6 +39,7 @@ A progressive collection of examples demonstrating the vasp-ase interface, from 
 | `13_hybrid_functionals/` | HSE06 | 10 min | Band gap with hybrid functional |
 | `14_van_der_waals/` | Dispersion corrections | 3 min | Graphite interlayer binding |
 | `15_workflows/` | Automated pipelines | 5 min | Using recipes for high-throughput |
+| `16_neb/` | Nudged elastic band | 15 min | Transition states and reaction barriers |
 
 ## Running Examples
 
