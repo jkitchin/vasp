@@ -100,11 +100,57 @@ runner = MockRunner(results=mock)
 calc = Vasp(atoms=atoms, runner=runner, ...)
 ```
 
-## Claude Code Commands
+## Claude Code Integration
 
-Use these slash commands for common tasks:
-- `/docs` - Open documentation
-- `/examples` - List available examples
-- `/tutorial <n>` - View a specific tutorial
-- `/test` - Run the test suite
-- `/new-example` - Create a new example
+### Global Installation
+
+Install Claude Code skills globally (works from any project):
+
+```bash
+vasp-claude install    # Install skills
+vasp-claude status     # Check installation
+vasp-claude uninstall  # Remove skills
+```
+
+### Project Commands
+
+Use these slash commands when working in this repository:
+
+| Command | Description |
+|---------|-------------|
+| `/docs` | Open documentation |
+| `/examples` | List all examples |
+| `/tutorial <n>` | View tutorial n (1-16) |
+| `/test` | Run test suite |
+| `/new-example` | Create new example |
+| `/architecture` | Review codebase |
+| `/lint` | Run code quality checks |
+| `/build-docs` | Build Jupyter Book |
+| `/status` | Project status |
+
+### Job Monitoring Commands
+
+| Command | Description |
+|---------|-------------|
+| `/watch-job <dir>` | Monitor VASP job status |
+| `/fix-job <dir>` | Diagnose and fix failed job |
+| `/vasp-help <topic>` | Parameter reference |
+
+### Global Commands (after `vasp-claude install`)
+
+These work from any project:
+
+| Command | Description |
+|---------|-------------|
+| `/vasp-help <topic>` | VASP parameter help |
+| `/vasp-watch-job <dir>` | Monitor running job |
+| `/vasp-fix-job <dir>` | Auto-fix failed job |
+| `/vasp-examples` | List tutorials |
+| `/vasp-tutorial <n>` | View tutorial |
+
+### Skills
+
+Claude automatically uses these skills:
+- **vasp** - General VASP calculation help
+- **job-watcher** - Job monitoring and troubleshooting
+- **troubleshoot** - Error diagnosis and fixes

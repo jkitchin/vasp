@@ -42,6 +42,7 @@ parts:
       - file: guide/runners
       - file: guide/recipes
       - file: guide/analysis
+      - file: guide/claude-code
 
   - caption: API Reference
     chapters:

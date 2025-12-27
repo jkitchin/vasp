@@ -68,3 +68,25 @@ calc = Vasp(atoms=atoms, runner=runner, ...)
 from vasp import Vasp, __version__
 print(f"vasp-ase version: {__version__}")
 ```
+
+## Claude Code Integration
+
+Install global Claude Code skills for AI-assisted VASP calculations:
+
+```bash
+vasp-claude install
+```
+
+This installs:
+- Global VASP skill (Claude automatically helps with DFT)
+- `/vasp-help` command for parameter reference
+- `/vasp-watch-job` and `/vasp-fix-job` for job monitoring
+- Tutorial and documentation commands
+
+Check installation status:
+
+```bash
+vasp-claude status
+```
+
+See the [Claude Code Guide](../guide/claude-code.md) for details.
