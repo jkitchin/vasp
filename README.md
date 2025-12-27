@@ -2,7 +2,6 @@
 
 [![Tests](https://github.com/jkitchin/vasp/actions/workflows/tests.yml/badge.svg)](https://github.com/jkitchin/vasp/actions/workflows/tests.yml)
 [![codecov](https://codecov.io/gh/jkitchin/vasp/branch/main/graph/badge.svg)](https://codecov.io/gh/jkitchin/vasp)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
 A modern Python interface for VASP (Vienna Ab initio Simulation Package) through ASE (Atomic Simulation Environment).
 
