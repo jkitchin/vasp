@@ -22,10 +22,10 @@ vasp/
 │   │   └── decorators.py    # @job, @flow, @subflow decorators
 │   ├── database/            # Vector database for embeddings
 │   └── tests/               # Test suite
-├── examples/                # 20 progressive tutorials
+├── examples/                # 21 progressive tutorials
 │   ├── 01_getting_started/  # Basic energy calculation
 │   ├── ...
-│   └── 20_interactive_mode/ # Interactive VASP sessions
+│   └── 21_cluster_expansion/ # Interactive VASP sessions
 ├── docs/                    # Jupyter Book documentation
 └── .claude/                 # Claude Code configuration
 ```

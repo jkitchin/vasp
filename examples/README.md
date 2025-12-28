@@ -44,6 +44,7 @@ A progressive collection of examples demonstrating the vasp-ase interface, from 
 | `18_3d_visualization/` | Volumetric data | 5 min | Charge density, potential, ELF |
 | `19_pseudopotentials/` | POTCAR selection | 5 min | Choosing the right pseudopotentials |
 | `20_interactive_mode/` | Interactive VASP | 10 min | Persistent process for fast optimization |
+| `21_cluster_expansion/` | Cluster expansion | 10 min | Ni-Al CE with ICET and SQS |
 
 ## Running Examples
 
