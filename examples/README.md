@@ -42,6 +42,7 @@ A progressive collection of examples demonstrating the vasp-ase interface, from 
 | `16_neb/` | Nudged elastic band | 15 min | Transition states and reaction barriers |
 | `17_vibrations/` | Molecular vibrations | 5 min | IR/Raman frequencies for molecules |
 | `18_3d_visualization/` | Volumetric data | 5 min | Charge density, potential, ELF |
+| `19_pseudopotentials/` | POTCAR selection | 5 min | Choosing the right pseudopotentials |
 
 ## Running Examples
 
