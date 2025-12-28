@@ -19,6 +19,7 @@ from .local import LocalRunner
 from .mock import MockRunner, MockResults
 from .slurm import SlurmRunner
 from .kubernetes import KubernetesRunner
+from .interactive import InteractiveRunner, InteractiveResults
 
 __all__ = [
     'Runner',
@@ -29,6 +30,8 @@ __all__ = [
     'MockResults',
     'SlurmRunner',
     'KubernetesRunner',
+    'InteractiveRunner',
+    'InteractiveResults',
 ]
 
 # Optional runners imported on demand
@@ -41,3 +44,8 @@ def get_kubernetes_runner():
     """Get KubernetesRunner class (requires kubernetes package)."""
     from .kubernetes import KubernetesRunner
     return KubernetesRunner
+
+def get_interactive_runner():
+    """Get InteractiveRunner class for persistent VASP sessions."""
+    from .interactive import InteractiveRunner
+    return InteractiveRunner
