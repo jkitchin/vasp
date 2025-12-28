@@ -47,7 +47,7 @@ A progressive collection of examples demonstrating the vasp-ase interface, from 
 ## Running Examples
 
 Each directory contains:
-- `run.py` - Main executable script
+- `run.py` or `tutorial.ipynb` - Main executable script or notebook
 - `README.md` - Detailed explanation
 - Optional: `analyze.py` - Post-processing script
 
@@ -55,6 +55,9 @@ To run an example:
 ```bash
 cd examples/01_getting_started
 python run.py
+
+# Or for notebook-based examples:
+jupyter notebook tutorial.ipynb
 ```
 
 ## Tips for Fast Calculations
