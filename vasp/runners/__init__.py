@@ -20,6 +20,7 @@ from .mock import MockRunner, MockResults
 from .slurm import SlurmRunner
 from .kubernetes import KubernetesRunner
 from .interactive import InteractiveRunner, InteractiveResults
+from .socket_io import SocketServer, SocketClient, SocketConfig
 
 __all__ = [
     'Runner',
@@ -32,6 +33,9 @@ __all__ = [
     'KubernetesRunner',
     'InteractiveRunner',
     'InteractiveResults',
+    'SocketServer',
+    'SocketClient',
+    'SocketConfig',
 ]
 
 # Optional runners imported on demand
