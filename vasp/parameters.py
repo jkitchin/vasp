@@ -83,7 +83,15 @@ def get_vdw_params(method: str) -> dict[str, Any]:
     key = method.lower().replace('_', '-')
     if key not in VDW_METHODS:
         available = ', '.join(sorted(VDW_METHODS.keys()))
-        raise ValueError(f"Unknown vdW method '{method}'. Available: {available}")
+        raise ValueError(
+            f"Unknown vdW method '{method}'.\n"
+            f"Available methods: {available}\n\n"
+            f"Examples:\n"
+            f"  get_vdw_params('d3bj')  # DFT-D3 with BJ damping (recommended)\n"
+            f"  get_vdw_params('d2')    # DFT-D2\n"
+            f"  get_vdw_params('ts')    # Tkatchenko-Scheffler\n\n"
+            f"See: https://www.vasp.at/wiki/index.php/IVDW"
+        )
     return VDW_METHODS[key].copy()
 
 
@@ -289,7 +297,16 @@ def get_hybrid_params(
     key = functional.lower()
     if key not in HYBRID_FUNCTIONALS:
         available = ', '.join(sorted(HYBRID_FUNCTIONALS.keys()))
-        raise ValueError(f"Unknown hybrid functional '{functional}'. Available: {available}")
+        raise ValueError(
+            f"Unknown hybrid functional '{functional}'.\n"
+            f"Available functionals: {available}\n\n"
+            f"Examples:\n"
+            f"  get_hybrid_params('hse06')  # HSE06 (recommended for semiconductors)\n"
+            f"  get_hybrid_params('pbe0')   # PBE0 (25% exact exchange)\n"
+            f"  get_hybrid_params('b3lyp')  # B3LYP\n\n"
+            f"Note: Hybrid calculations are computationally expensive!\n"
+            f"See: https://www.vasp.at/wiki/index.php/Hybrid_functionals"
+        )
 
     params = HYBRID_FUNCTIONALS[key].copy()
 
@@ -398,7 +415,15 @@ def get_mlff_params(
     """
     mode_key = mode.lower()
     if mode_key not in MLFF_MODES:
-        raise ValueError(f"Unknown MLFF mode '{mode}'. Use: train, select, run, refit")
+        raise ValueError(
+            f"Unknown MLFF mode '{mode}'.\n"
+            f"Valid modes: train, select, run, refit\n\n"
+            f"Examples:\n"
+            f"  get_mlff_params('train')  # Train new MLFF during MD\n"
+            f"  get_mlff_params('run')    # Use existing MLFF for MD\n"
+            f"  get_mlff_params('select') # Select structures for training\n\n"
+            f"See: https://www.vasp.at/wiki/index.php/Category:Machine_learning"
+        )
 
     params = {
         'ml_lmlff': True,
@@ -461,7 +486,16 @@ def get_md_params(
     key = ensemble.lower()
     if key not in MD_ENSEMBLES:
         available = ', '.join(sorted(MD_ENSEMBLES.keys()))
-        raise ValueError(f"Unknown ensemble '{ensemble}'. Available: {available}")
+        raise ValueError(
+            f"Unknown MD ensemble '{ensemble}'.\n"
+            f"Available ensembles: {available}\n\n"
+            f"Examples:\n"
+            f"  get_md_params('nve')          # Constant energy (microcanonical)\n"
+            f"  get_md_params('nvt-nose')     # Nosé-Hoover thermostat\n"
+            f"  get_md_params('nvt-langevin') # Langevin thermostat\n"
+            f"  get_md_params('npt')          # Constant pressure\n\n"
+            f"See: https://www.vasp.at/wiki/index.php/Molecular_dynamics"
+        )
 
     params = {
         'ibrion': 0,  # MD
@@ -524,7 +558,15 @@ def get_phonon_params(
             'isym': 0,
         }
     else:
-        raise ValueError(f"Unknown phonon method '{method}'. Use: dfpt, finite-diff, phonopy")
+        raise ValueError(
+            f"Unknown phonon method '{method}'.\n"
+            f"Valid methods: dfpt, finite-diff, phonopy\n\n"
+            f"Examples:\n"
+            f"  get_phonon_params('dfpt')       # Density functional perturbation theory\n"
+            f"  get_phonon_params('finite-diff') # Finite differences (IBRION=5/6)\n"
+            f"  get_phonon_params('phonopy')    # For use with Phonopy package\n\n"
+            f"See: https://www.vasp.at/wiki/index.php/Phonons"
+        )
 
 
 # =============================================================================
@@ -587,7 +629,16 @@ def get_gw_params(
     key = algo.lower()
     if key not in algo_map:
         available = ', '.join(sorted(algo_map.keys()))
-        raise ValueError(f"Unknown GW algorithm '{algo}'. Available: {available}")
+        raise ValueError(
+            f"Unknown GW algorithm '{algo}'.\n"
+            f"Available algorithms: {available}\n\n"
+            f"Examples:\n"
+            f"  get_gw_params('gw0')   # Single-shot GW (G0W0)\n"
+            f"  get_gw_params('scgw0') # Self-consistent GW0\n"
+            f"  get_gw_params('evgw')  # Eigenvalue-only self-consistent GW\n\n"
+            f"Note: GW calculations are very expensive!\n"
+            f"See: https://www.vasp.at/wiki/index.php/GW_calculations"
+        )
 
     params = {
         'algo': algo_map[key],
@@ -682,5 +733,14 @@ def get_preset(name: str) -> dict[str, Any]:
     """
     if name not in CALCULATION_PRESETS:
         available = ', '.join(sorted(CALCULATION_PRESETS.keys()))
-        raise ValueError(f"Unknown preset '{name}'. Available: {available}")
+        raise ValueError(
+            f"Unknown preset '{name}'.\n"
+            f"Available presets: {available}\n\n"
+            f"Examples:\n"
+            f"  get_preset('static')         # Single-point energy\n"
+            f"  get_preset('relax')          # Geometry optimization (ions only)\n"
+            f"  get_preset('relax-cell')     # Full relaxation (ions + cell)\n"
+            f"  get_preset('dos')            # Density of states\n"
+            f"  get_preset('band-structure') # Band structure calculation\n"
+        )
     return CALCULATION_PRESETS[name].copy()

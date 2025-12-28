@@ -1,146 +1,230 @@
 #!/usr/bin/env python
-import os
-from vasp import Vasp
-from vasp.vasprc import VASPRC
+"""Summarize VASP calculations.
+
+This script provides a quick summary of VASP calculations in one or more
+directories. It can display results in various formats and visualize structures.
+"""
+
 import argparse
+import json
+import os
+import sys
+from pathlib import Path
+
+from ase.visualize import view as ase_view
+from vasp import Vasp
+from vasp.exceptions import VaspException
 
 
-# this should not start calculations
-VASPRC['mode'] = None
-
-parser = argparse.ArgumentParser(description='summarize vasp calculations')
-
-parser.add_argument('-d', '--debug', action='store_true',
-                    help = 'turn debug on')
-
-parser.add_argument('--describe', action='store_true',
-                    help='describe parameters')
-
-parser.add_argument('--vasp', action='store_true',
-                    help = 'prints vasp input files')
-
-parser.add_argument('-j', '--json', action='store_true',
-                    help = 'prints json representation')
-
-parser.add_argument('--jsonpp', action='store_true',
-                    help = 'pretty-prints json representation')
-
-parser.add_argument('-v', '--verbose', action='store_true',
-                    help = 'Be verbose where it makes sense.')
-
-parser.add_argument('dirs', nargs='*',
-                    default = ['.'],
-                    help='directories to summarize')
-
-parser.add_argument('-t', '--plot-trajectory', action='store_true',
-                    help = 'plot trajectory')
-
-parser.add_argument('-p', '--plot', action='store_true',
-                    help = 'plot in ag')
-
-parser.add_argument('-m', '--mongo', action='store_true',
-                    help='Add to mongo db')
-
-parser.add_argument('--mongo-rm', action='store_true',
-                    help='Remove from mongo.')
-
-parser.add_argument('--add-tags', nargs='+',
-                    help='Add tags to mongo-entry')
-
-parser.add_argument('--remove-tags', nargs='+',
-                    help='Remove tags from mongo-entry')
-
-parser.add_argument('--show-db', action='store_true',
-                    help='Show entry in mongo db')
+def format_energy(energy, natoms):
+    """Format energy output."""
+    if energy is None:
+        return "Energy: Not available"
+    return f"Energy: {energy:.6f} eV ({energy/natoms:.6f} eV/atom)"
 
 
+def format_forces(forces):
+    """Format forces output."""
+    if forces is None:
+        return "Forces: Not available"
+    fmax = (forces**2).sum(axis=1).max()**0.5
+    return f"Max force: {fmax:.6f} eV/Å"
 
-args = parser.parse_args()
 
-if args.debug:
-    import logging
-    debug = logging.DEBUG
-else:
-    debug = None
+def format_stress(stress):
+    """Format stress output."""
+    if stress is None:
+        return "Stress: Not available"
+    # Convert to GPa (VASP stress is in kB)
+    stress_gpa = stress * 0.1
+    pressure = -stress_gpa[:3].mean()
+    return f"Pressure: {pressure:.3f} GPa"
 
-for d in args.dirs:
-    if not os.path.isdir(d):
-        raise Exception('{0} does not exist!'.format(d))
 
-    print(d)
-    calc = Vasp(d, debug=debug)
+def print_summary(calc, verbose=False):
+    """Print a summary of the calculation."""
+    try:
+        atoms = calc.atoms
+        if atoms is None:
+            print("  No structure found")
+            return
 
-    # plot trajectory
-    if args.plot_trajectory:
-        calc.view(index=None)
+        print(f"  Formula: {atoms.get_chemical_formula()}")
+        print(f"  Atoms: {len(atoms)}")
 
-    # plot final atoms image
-    if args.plot:
-        calc.view(index=-1)
-        
-    if args.vasp:
-        print(calc.vasp)
-    elif args.json:
-        print(calc.json)
-    elif args.jsonpp:
-        print(calc.jsonpp)
-    elif args.describe:
-        calc.describe(long=args.verbose)
+        # Try to get results
+        try:
+            energy = calc.results.get('energy')
+            forces = calc.results.get('forces')
+            stress = calc.results.get('stress')
+
+            print(f"  {format_energy(energy, len(atoms))}")
+            if verbose and forces is not None:
+                print(f"  {format_forces(forces)}")
+            if verbose and stress is not None:
+                print(f"  {format_stress(stress)}")
+
+            # Check convergence
+            converged = calc.results.get('converged', None)
+            if converged is not None:
+                status = "Converged" if converged else "NOT CONVERGED"
+                print(f"  Status: {status}")
+
+        except (VaspException, FileNotFoundError) as e:
+            print(f"  Results not available: {e}")
+
+    except Exception as e:
+        print(f"  Error reading calculation: {e}")
+
+
+def print_parameters(calc, verbose=False):
+    """Print calculation parameters."""
+    print("\nParameters:")
+    params = calc.parameters
+
+    # Key parameters to always show
+    key_params = ['xc', 'encut', 'kpts', 'ismear', 'sigma']
+
+    for key in key_params:
+        if key in params:
+            print(f"  {key}: {params[key]}")
+
+    if verbose:
+        print("\nAll parameters:")
+        for key, value in sorted(params.items()):
+            if key not in key_params:
+                print(f"  {key}: {value}")
+
+
+def print_json(calc, pretty=False):
+    """Print JSON representation of results."""
+    data = {
+        'directory': calc.directory,
+        'parameters': calc.parameters,
+        'results': calc.results,
+    }
+
+    if calc.atoms:
+        data['formula'] = calc.atoms.get_chemical_formula()
+        data['natoms'] = len(calc.atoms)
+        data['positions'] = calc.atoms.positions.tolist()
+        data['cell'] = calc.atoms.cell.tolist()
+        data['symbols'] = calc.atoms.get_chemical_symbols()
+
+    if pretty:
+        print(json.dumps(data, indent=2, default=str))
     else:
-        print(calc)
+        print(json.dumps(data, default=str))
 
 
-        # add to mongo
-    if args.mongo:
-        from vasp.mongo import MongoDatabase
-        db = MongoDatabase()
-        if db.find({"calculator.path": calc.directory}).count() == 0:
-            atoms = calc.get_atoms()
-            iid = db.write(db.mongo_doc(atoms))
-            print('Added entry {}'.format(iid))
+def main():
+    """Main entry point."""
+    parser = argparse.ArgumentParser(
+        description='Summarize VASP calculations',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  vaspsum                    # Summarize current directory
+  vaspsum calc1 calc2        # Summarize multiple directories
+  vaspsum -v .               # Verbose output
+  vaspsum --json calc1       # JSON output
+  vaspsum --view .           # View structure
+  vaspsum --trajectory .     # View trajectory
+        """
+    )
 
-    if args.add_tags:
-        from vasp.mongo import MongoDatabase
-        db = MongoDatabase()
+    parser.add_argument(
+        'dirs',
+        nargs='*',
+        default=['.'],
+        help='Directories to summarize (default: current directory)'
+    )
 
-        if db.find({"calculator.path": calc.directory}).count() == 0:
-            atoms = calc.get_atoms()
-            iid = db.write(db.mongo_doc(atoms), tags=args.add_tags)
-            print('Added entry {}'.format(iid))
-        else:
-            db.collection.update({"calculator.path": calc.directory},
-                                 {'$addToSet': {'tags': {'$each': args.add_tags}}})
+    parser.add_argument(
+        '-v', '--verbose',
+        action='store_true',
+        help='Show detailed information'
+    )
+
+    parser.add_argument(
+        '--params', '--describe',
+        action='store_true',
+        help='Show calculation parameters'
+    )
+
+    parser.add_argument(
+        '--json',
+        action='store_true',
+        help='Output in JSON format'
+    )
+
+    parser.add_argument(
+        '--json-pretty', '--jsonpp',
+        action='store_true',
+        help='Output in pretty-printed JSON format'
+    )
+
+    parser.add_argument(
+        '--view', '-p',
+        action='store_true',
+        help='View final structure'
+    )
+
+    parser.add_argument(
+        '--trajectory', '-t',
+        action='store_true',
+        help='View full trajectory'
+    )
+
+    args = parser.parse_args()
+
+    # Process each directory
+    for directory in args.dirs:
+        if not os.path.isdir(directory):
+            print(f"Error: {directory} does not exist!", file=sys.stderr)
+            continue
+
+        print(f"\n{directory}")
+        print("=" * 60)
+
+        try:
+            # Load calculation
+            calc = Vasp(directory)
+
+            # Output in requested format
+            if args.json or args.json_pretty:
+                print_json(calc, pretty=args.json_pretty)
+            elif args.params:
+                print_summary(calc, verbose=args.verbose)
+                print_parameters(calc, verbose=args.verbose)
+            else:
+                print_summary(calc, verbose=args.verbose)
+
+            # Visualization
+            if args.view and calc.atoms:
+                ase_view(calc.atoms)
+
+            if args.trajectory and calc.atoms:
+                # Try to read trajectory
+                try:
+                    from ase.io import read
+                    outcar = os.path.join(directory, 'OUTCAR')
+                    if os.path.exists(outcar):
+                        traj = read(outcar, index=':')
+                        ase_view(traj)
+                    else:
+                        print("  Warning: OUTCAR not found for trajectory")
+                        ase_view(calc.atoms)
+                except Exception as e:
+                    print(f"  Warning: Could not read trajectory: {e}")
+                    ase_view(calc.atoms)
+
+        except Exception as e:
+            print(f"Error processing {directory}: {e}", file=sys.stderr)
+            if args.verbose:
+                import traceback
+                traceback.print_exc()
 
 
-    if args.remove_tags:
-        from vasp.mongo import MongoDatabase
-        db = MongoDatabase()
-
-        if db.find({"calculator.path": calc.directory}).count() == 0:
-            atoms = calc.get_atoms()
-            iid = db.write(db.mongo_doc(atoms))
-            print('Added entry {}'.format(iid))
-        else:
-            db.collection.update({"calculator.path": calc.directory},
-                                 {'$pullAll': {'tags': args.remove_tags}})
-
-
-    if args.show_db:
-        from vasp.mongo import MongoDatabase
-        db = MongoDatabase()
-        import pprint
-        pprint
-
-        c = db.find({"calculator.path": calc.directory})
-
-        if c.count() == 0:
-            print('No entry found')
-        else:
-            print('Found {} entries.'.format(c.count()))
-            for entry in c:
-                pprint.pprint(entry)
-
-    if args.mongo_rm:
-        from vasp.mongo import MongoDatabase
-        db = MongoDatabase()
-        db.collection.remove({"calculator.path": calc.directory})
+if __name__ == '__main__':
+    main()

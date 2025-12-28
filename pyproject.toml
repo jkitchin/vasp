@@ -42,6 +42,8 @@ dev = [
     "pytest-cov>=4.0",
     "mypy>=1.0",
     "ruff>=0.1",
+    "build>=1.0",
+    "twine>=4.0",
 ]
 slurm = []  # No extra deps needed
 kubernetes = [

@@ -52,7 +52,17 @@ class IOMixin:
             self.atoms = atoms
 
         if self.atoms is None:
-            raise ValueError("No atoms specified for calculation")
+            raise ValueError(
+                "No atoms specified for calculation.\n\n"
+                "Atoms must be provided either:\n"
+                "  1. At initialization: calc = Vasp('dir', atoms=atoms, ...)\n"
+                "  2. As a property: calc.atoms = atoms\n"
+                "  3. When calling write_input: calc.write_input(atoms=atoms)\n\n"
+                "Example:\n"
+                "  from ase.build import bulk\n"
+                "  atoms = bulk('Si')\n"
+                "  calc = Vasp('si-calc', atoms=atoms, xc='PBE')\n"
+            )
 
         # Ensure directory exists
         os.makedirs(self.directory, exist_ok=True)
@@ -185,7 +195,18 @@ class IOMixin:
 
                 if not os.path.exists(pot_file):
                     raise FileNotFoundError(
-                        f"POTCAR not found for {symbol} at {pot_file}"
+                        f"POTCAR not found for element '{symbol}'.\n"
+                        f"Searched: {pot_file}\n"
+                        f"PP path: {pp_path}\n"
+                        f"PP type: {pp}\n\n"
+                        f"Solutions:\n"
+                        f"  1. Set VASP_PP_PATH environment variable:\n"
+                        f"     export VASP_PP_PATH=/path/to/vasp/potentials\n"
+                        f"  2. Or specify pp_path in runner:\n"
+                        f"     runner = LocalRunner(pp_path='/path/to/potentials')\n"
+                        f"  3. Ensure directory structure is:\n"
+                        f"     $VASP_PP_PATH/potpaw_{pp}/{symbol}/POTCAR\n\n"
+                        f"See: https://www.vasp.at/wiki/index.php/POTCAR"
                     )
 
                 with open(pot_file) as pf:
