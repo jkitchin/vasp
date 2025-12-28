@@ -359,3 +359,31 @@ class TestBinaryProtocol:
         recovered = unpacked * HARTREE_TO_EV / BOHR_TO_ANGSTROM
 
         assert np.allclose(recovered, forces)
+
+    def test_stress_to_virial_conversion(self):
+        """Test stress (Voigt) to virial (3x3) conversion."""
+        # Stress in Voigt notation: xx, yy, zz, yz, xz, xy (eV/Å³)
+        stress = np.array([0.1, 0.2, 0.3, 0.01, 0.02, 0.03])
+        volume = 100.0  # Å³
+
+        # Convert to virial: V_ij = -σ_ij * V
+        virial = np.zeros((3, 3))
+        virial[0, 0] = -stress[0] * volume  # xx
+        virial[1, 1] = -stress[1] * volume  # yy
+        virial[2, 2] = -stress[2] * volume  # zz
+        virial[1, 2] = virial[2, 1] = -stress[3] * volume  # yz
+        virial[0, 2] = virial[2, 0] = -stress[4] * volume  # xz
+        virial[0, 1] = virial[1, 0] = -stress[5] * volume  # xy
+
+        # Check symmetry
+        assert np.allclose(virial, virial.T)
+
+        # Check diagonal values
+        assert virial[0, 0] == pytest.approx(-10.0)  # -0.1 * 100
+        assert virial[1, 1] == pytest.approx(-20.0)  # -0.2 * 100
+        assert virial[2, 2] == pytest.approx(-30.0)  # -0.3 * 100
+
+        # Check off-diagonal
+        assert virial[1, 2] == pytest.approx(-1.0)  # -0.01 * 100
+        assert virial[0, 2] == pytest.approx(-2.0)  # -0.02 * 100
+        assert virial[0, 1] == pytest.approx(-3.0)  # -0.03 * 100

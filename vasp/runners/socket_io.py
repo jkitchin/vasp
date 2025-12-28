@@ -466,11 +466,25 @@ class SocketClient:
         forces = self._results["forces"] * EV_TO_HARTREE * BOHR_TO_ANGSTROM
         self._socket.sendall(forces.astype(">f8").tobytes())
 
-        # Virial (zero if no stress)
+        # Virial (convert from stress if available)
         virial = np.zeros((3, 3))
         if self._results.get("stress") is not None:
-            # Convert stress to virial
-            pass  # TODO: stress -> virial conversion
+            # VASP stress is in eV/Å³ (Voigt: xx, yy, zz, yz, xz, xy)
+            # Virial = -stress * volume, in Hartree
+            stress = self._results["stress"]
+            volume = self._atoms.get_volume()  # Å³
+
+            # Convert Voigt to 3x3 tensor
+            # Voigt order: xx, yy, zz, yz, xz, xy
+            virial[0, 0] = -stress[0] * volume  # xx
+            virial[1, 1] = -stress[1] * volume  # yy
+            virial[2, 2] = -stress[2] * volume  # zz
+            virial[1, 2] = virial[2, 1] = -stress[3] * volume  # yz
+            virial[0, 2] = virial[2, 0] = -stress[4] * volume  # xz
+            virial[0, 1] = virial[1, 0] = -stress[5] * volume  # xy
+
+            # Convert eV -> Hartree
+            virial *= EV_TO_HARTREE
         self._socket.sendall(virial.astype(">f8").tobytes())
 
         # Extra bytes (empty)
