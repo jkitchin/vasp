@@ -40,11 +40,16 @@ A progressive collection of examples demonstrating the vasp-ase interface, from 
 | `14_van_der_waals/` | Dispersion corrections | 3 min | Graphite interlayer binding |
 | `15_workflows/` | Automated pipelines | 5 min | Using recipes for high-throughput |
 | `16_neb/` | Nudged elastic band | 15 min | Transition states and reaction barriers |
+| `17_vibrations/` | Molecular vibrations | 5 min | IR/Raman frequencies for molecules |
+| `18_3d_visualization/` | Volumetric data | 5 min | Charge density, potential, ELF |
+| `19_pseudopotentials/` | POTCAR selection | 5 min | Choosing the right pseudopotentials |
+| `20_interactive_mode/` | Interactive VASP | 10 min | Persistent process for fast optimization |
+| `21_cluster_expansion/` | Cluster expansion | 10 min | Ni-Al CE with ICET and SQS |
 
 ## Running Examples
 
 Each directory contains:
-- `run.py` - Main executable script
+- `run.py` or `tutorial.ipynb` - Main executable script or notebook
 - `README.md` - Detailed explanation
 - Optional: `analyze.py` - Post-processing script
 
@@ -52,6 +57,9 @@ To run an example:
 ```bash
 cd examples/01_getting_started
 python run.py
+
+# Or for notebook-based examples:
+jupyter notebook tutorial.ipynb
 ```
 
 ## Tips for Fast Calculations
@@ -77,7 +85,7 @@ from vasp import Vasp
 from vasp.runners import LocalRunner
 
 runner = LocalRunner(
-    command="mpirun -np 4 vasp_std",
-    pp_path="/path/to/potpaw_PBE"
+    vasp_command="vasp_std",
+    mpi_command="mpirun -np 4",
 )
 ```

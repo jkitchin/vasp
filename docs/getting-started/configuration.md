@@ -4,9 +4,65 @@
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `ASE_VASP_COMMAND` | VASP executable | `mpirun -np 4 vasp_std` |
 | `VASP_PP_PATH` | Pseudopotential directory | `/opt/vasp/potpaw_PBE` |
-| `VASP_WORKFLOW_ENGINE` | Workflow engine | `prefect`, `dask`, `parsl` |
+| `ASE_VASP_COMMAND` | VASP executable (optional) | `mpirun -np 4 vasp_std` |
+
+## Pseudopotential Setup
+
+### Obtaining POTCARs
+
+VASP pseudopotentials (POTCARs) are **only available to licensed VASP users**. They are not open source and cannot be redistributed.
+
+To obtain POTCARs:
+1. Purchase a VASP license from [https://www.vasp.at/](https://www.vasp.at/)
+2. Download the `potpaw_PBE.tgz` archive from the VASP portal
+3. Extract to a permanent location
+
+### Directory Structure
+
+Set `VASP_PP_PATH` to point to your pseudopotential directory:
+
+```bash
+export VASP_PP_PATH=/opt/vasp/potentials
+```
+
+Expected structure:
+
+```
+$VASP_PP_PATH/
+├── potpaw_PBE/           # PBE functional (most common)
+│   ├── Si/
+│   │   └── POTCAR
+│   ├── Si_sv/            # Semi-core variant
+│   │   └── POTCAR
+│   ├── Fe/
+│   │   └── POTCAR
+│   ├── Fe_pv/            # p-valence variant
+│   │   └── POTCAR
+│   └── ...
+├── potpaw_LDA/           # LDA functional
+└── potpaw_GGA/           # Old GGA (rarely used)
+```
+
+### Selecting Variants
+
+Use the `setups` parameter to select POTCAR variants:
+
+```python
+from vasp import Vasp
+
+calc = Vasp(
+    'my_calc',
+    atoms=atoms,
+    setups={
+        'Fe': 'pv',   # Use Fe_pv (includes 3p electrons)
+        'Li': 'sv',   # Use Li_sv (includes 1s electron)
+        'O': '',      # Use standard O
+    },
+)
+```
+
+See [Example 19: Pseudopotential Selection](../../examples/19_pseudopotentials/) for detailed guidance on choosing variants.
 
 ## Runner Configuration
 
@@ -16,10 +72,33 @@
 from vasp.runners import LocalRunner
 
 runner = LocalRunner(
-    command="mpirun -np 4 vasp_std",
-    pp_path="/path/to/potpaw_PBE",
-    scratch_dir="/tmp/vasp",
+    vasp_command='vasp_std',       # VASP executable
+    mpi_command='mpirun -np 4',    # MPI launcher (optional)
+    background=False,              # Wait for completion
 )
+```
+
+### Interactive Runner
+
+For geometry optimizations with wavefunction reuse:
+
+```python
+from vasp.runners import InteractiveRunner
+
+runner = InteractiveRunner(
+    vasp_command='vasp_std',
+    mpi_command='mpirun -np 4',
+    timeout=3600,
+)
+
+# Use as context manager
+with runner:
+    results = runner.start('calc/', atoms)
+    for step in range(100):
+        if converged(results.forces):
+            break
+        atoms.positions = update(atoms, results.forces)
+        results = runner.step(atoms)
 ```
 
 ### SLURM Runner
@@ -33,15 +112,13 @@ runner = SlurmRunner(
     ntasks_per_node=32,
     time='4:00:00',
     account='my_project',
-    qos='normal',
 )
 ```
 
 ### Kubernetes Runner
 
 ```python
-from vasp import get_kubernetes_runner
-KubernetesRunner = get_kubernetes_runner()
+from vasp.runners import KubernetesRunner
 
 runner = KubernetesRunner(
     namespace='vasp-jobs',
@@ -51,39 +128,22 @@ runner = KubernetesRunner(
 )
 ```
 
-## Pseudopotential Configuration
+## Quick Start
 
-The calculator automatically finds pseudopotentials in:
-
-1. `VASP_PP_PATH` environment variable
-2. `~/.vasp/potpaw_PBE/` default location
-
-Directory structure:
-
-```
-$VASP_PP_PATH/
-├── potpaw_PBE/
-│   ├── Si/POTCAR
-│   ├── Si_sv/POTCAR
-│   ├── Fe/POTCAR
-│   └── ...
-├── potpaw_GGA/
-└── potpaw_LDA/
-```
-
-## Workflow Engine
-
-Set the workflow engine for HPC integration:
+Minimal setup:
 
 ```bash
-export VASP_WORKFLOW_ENGINE=prefect
-```
+# 1. Set pseudopotential path
+export VASP_PP_PATH=/path/to/potentials
 
-Then recipes become workflow tasks:
+# 2. Run calculation
+python -c "
+from ase.build import bulk
+from vasp import Vasp
 
-```python
-from vasp.recipes import relax_job
-
-# Now decorated with @prefect.task
-result = relax_job(atoms)
+atoms = bulk('Si')
+calc = Vasp('si_test', atoms=atoms, encut=300, kpts=(4,4,4))
+energy = calc.potential_energy
+print(f'Energy: {energy:.4f} eV')
+"
 ```

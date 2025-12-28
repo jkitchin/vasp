@@ -1,5 +1,10 @@
 # VASP-ASE Interface
 
+[![Tests](https://github.com/jkitchin/vasp/actions/workflows/tests.yml/badge.svg)](https://github.com/jkitchin/vasp/actions/workflows/tests.yml)
+[![codecov](https://codecov.io/gh/jkitchin/vasp/branch/main/graph/badge.svg)](https://codecov.io/gh/jkitchin/vasp)
+
+> **⚠️ ALPHA SOFTWARE**: This project is under active development and not ready for production use. APIs may change without notice. This notice will be removed when the project reaches stable release.
+
 A modern Python interface for VASP (Vienna Ab initio Simulation Package) through ASE (Atomic Simulation Environment).
 
 ## Features
@@ -111,6 +116,19 @@ Then use commands like `/vasp-help`, `/vasp-watch-job`, `/vasp-fix-job` from any
 ## Documentation
 
 Full documentation available at the [project docs](https://github.com/jkitchin/vasp).
+
+## Related Projects
+
+This project is part of a growing ecosystem of LLM agents for atomistic simulation:
+
+| Project | Description | Reference |
+|---------|-------------|-----------|
+| [DREAMS](https://arxiv.org/abs/2507.14267) | Multi-agent DFT simulation framework | Wang & Viswanathan, 2025 |
+| [AtomAgents](https://github.com/lamm-mit/AtomAgents) | Physics-aware alloy design with LAMMPS | Ghafarollahi & Buehler, 2025 |
+| [LangSim](https://github.com/jan-janssen/LangSim) | LLM interface for atomistic simulation with pyiron | Janssen, 2024 |
+| [El Agente](https://doi.org/10.1016/j.matt.2025.102263) | Autonomous quantum chemistry workflows | Zou & Aspuru-Guzik, 2025 |
+
+See [references.bib](references.bib) for full citations.
 
 ## License
 
