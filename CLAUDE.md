@@ -9,17 +9,23 @@ vasp/
 ├── vasp/                    # Main package
 │   ├── __init__.py          # Vasp calculator class
 │   ├── parameters.py        # Parameter presets (VdW, DFT+U, HSE06, etc.)
-│   ├── runners.py           # Execution backends (Local, SLURM, Kubernetes)
+│   ├── runners/             # Execution backends
+│   │   ├── local.py         # LocalRunner for direct execution
+│   │   ├── interactive.py   # InteractiveRunner for persistent VASP
+│   │   ├── socket_io.py     # Socket server/client (i-PI protocol)
+│   │   ├── slurm.py         # SLURM cluster runner
+│   │   └── kubernetes.py    # Kubernetes runner
 │   ├── recipes/             # Workflow recipes (quacc-style)
 │   │   ├── core.py          # static_job, relax_job, double_relax_flow
 │   │   ├── slabs.py         # Surface calculation recipes
 │   │   ├── phonons.py       # Phonon calculation recipes
 │   │   └── decorators.py    # @job, @flow, @subflow decorators
+│   ├── database/            # Vector database for embeddings
 │   └── tests/               # Test suite
-├── examples/                # 16 progressive tutorials
+├── examples/                # 20 progressive tutorials
 │   ├── 01_getting_started/  # Basic energy calculation
 │   ├── ...
-│   └── 16_neb/              # Nudged elastic band
+│   └── 20_interactive_mode/ # Interactive VASP sessions
 ├── docs/                    # Jupyter Book documentation
 └── .claude/                 # Claude Code configuration
 ```
@@ -28,8 +34,9 @@ vasp/
 
 - `vasp/__init__.py` - Main `Vasp` calculator class
 - `vasp/parameters.py` - Preset functions: `get_vdw_params()`, `get_ldau_params()`, `get_hybrid_params()`
-- `vasp/runners.py` - `LocalRunner`, `MockRunner`, `SlurmRunner`, `KubernetesRunner`
+- `vasp/runners/` - Execution backends: `LocalRunner`, `InteractiveRunner`, `SocketServer`, `SlurmRunner`
 - `vasp/recipes/core.py` - `static_job`, `relax_job`, `double_relax_flow`
+- `vasp/database/` - Vector database with per-atom embeddings
 
 ## Development Commands
 
@@ -79,7 +86,7 @@ ruff check .
 
 1. **Beginner (01-05)**: Energy, convergence, relaxation, EOS, DOS
 2. **Intermediate (06-10)**: Bands, magnetism, surfaces, adsorption, reactions
-3. **Advanced (11-16)**: Phonons, DFT+U, HSE06, vdW, workflows, NEB
+3. **Advanced (11-20)**: Phonons, DFT+U, HSE06, vdW, workflows, NEB, vibrations, visualization, pseudopotentials, interactive mode
 
 ## Code Style
 

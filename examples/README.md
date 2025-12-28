@@ -43,6 +43,7 @@ A progressive collection of examples demonstrating the vasp-ase interface, from 
 | `17_vibrations/` | Molecular vibrations | 5 min | IR/Raman frequencies for molecules |
 | `18_3d_visualization/` | Volumetric data | 5 min | Charge density, potential, ELF |
 | `19_pseudopotentials/` | POTCAR selection | 5 min | Choosing the right pseudopotentials |
+| `20_interactive_mode/` | Interactive VASP | 10 min | Persistent process for fast optimization |
 
 ## Running Examples
 
@@ -83,7 +84,7 @@ from vasp import Vasp
 from vasp.runners import LocalRunner
 
 runner = LocalRunner(
-    command="mpirun -np 4 vasp_std",
-    pp_path="/path/to/potpaw_PBE"
+    vasp_command="vasp_std",
+    mpi_command="mpirun -np 4",
 )
 ```
