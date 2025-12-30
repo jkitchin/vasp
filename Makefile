@@ -1,4 +1,4 @@
-.PHONY: help install install-dev test test-coverage lint typecheck format clean clean-all build publish publish-test docs docs-build docs-serve example examples examples-clean
+.PHONY: help install install-dev test test-coverage lint typecheck format clean clean-all build publish publish-test docs docs-build docs-serve tutorial tutorials tutorials-clean
 
 # Default target
 help:
@@ -20,9 +20,9 @@ help:
 	@echo "  publish        Publish to PyPI"
 	@echo "  docs-build     Build Jupyter Book documentation"
 	@echo "  docs-serve     Build and serve documentation locally"
-	@echo "  example EX=x   Run a single example (by name or number)"
-	@echo "  examples       Run all 21 examples"
-	@echo "  examples-clean Clear notebook outputs"
+	@echo "  tutorial T=x   Run a single tutorial (by name or number)"
+	@echo "  tutorials      Run all 21 tutorials"
+	@echo "  tutorials-clean Clear notebook outputs"
 	@echo ""
 
 # Installation targets
@@ -123,44 +123,44 @@ status:
 	@echo "Uncommitted changes:"
 	@git diff --shortstat
 
-# Example targets (all examples are now Jupyter notebooks)
-NOTEBOOKS := $(sort $(wildcard examples/*/tutorial.ipynb))
+# Tutorial targets (notebooks are in docs/tutorials/)
+NOTEBOOKS := $(sort $(wildcard docs/tutorials/*.ipynb))
 
-examples:
-	@echo "Running all example notebooks..."
+tutorials:
+	@echo "Running all tutorial notebooks..."
 	@for nb in $(NOTEBOOKS); do \
-		name=$$(dirname $$nb | xargs basename); \
+		name=$$(basename $$nb .ipynb); \
 		echo "  [$$name] Running..."; \
 		jupyter nbconvert --to notebook --execute --inplace "$$nb" || exit 1; \
 	done
-	@echo "All examples completed."
+	@echo "All tutorials completed."
 
-# Run a single example: make example EX=01 or EX=getting_started
-example:
-ifdef EX
-	@nb=$$(ls examples/$(EX)/tutorial.ipynb examples/$(EX)_*/tutorial.ipynb examples/*_$(EX)/tutorial.ipynb 2>/dev/null | head -1); \
+# Run a single tutorial: make tutorial T=01 or T=getting_started
+tutorial:
+ifdef T
+	@nb=$$(ls docs/tutorials/$(T)*.ipynb docs/tutorials/*$(T)*.ipynb 2>/dev/null | head -1); \
 	if [ -z "$$nb" ]; then \
-		echo "Error: No example found matching '$(EX)'"; \
+		echo "Error: No tutorial found matching '$(T)'"; \
 		echo ""; \
-		echo "Available examples:"; \
-		ls -d examples/[0-9][0-9]_* 2>/dev/null | sed 's|examples/||'; \
+		echo "Available tutorials:"; \
+		ls docs/tutorials/*.ipynb 2>/dev/null | xargs -n1 basename | sed 's/.ipynb//'; \
 		exit 1; \
 	fi; \
 	echo "Running $$nb..."; \
 	jupyter nbconvert --to notebook --execute --inplace "$$nb"
 else
-	@echo "Usage: make example EX=<name>"
+	@echo "Usage: make tutorial T=<name>"
 	@echo ""
 	@echo "Examples:"
-	@echo "  make example EX=01"
-	@echo "  make example EX=getting_started"
-	@echo "  make example EX=01_getting_started"
+	@echo "  make tutorial T=01"
+	@echo "  make tutorial T=getting_started"
+	@echo "  make tutorial T=01_getting_started"
 	@echo ""
-	@echo "Available examples:"
-	@ls -d examples/[0-9][0-9]_* 2>/dev/null | sed 's|examples/||'
+	@echo "Available tutorials:"; \
+	ls docs/tutorials/*.ipynb 2>/dev/null | xargs -n1 basename | sed 's/.ipynb//'
 endif
 
-examples-clean:
+tutorials-clean:
 	@echo "Clearing notebook outputs..."
 	@for nb in $(NOTEBOOKS); do \
 		echo "  Clearing $$nb..."; \
