@@ -3,15 +3,15 @@
 import pytest
 
 from vasp.exceptions import (
+    VaspEmptyOutput,
+    VaspError,
     VaspException,
-    VaspSubmitted,
+    VaspNotConverged,
+    VaspNotFinished,
     VaspQueued,
     VaspRunning,
-    VaspNotFinished,
-    VaspNotConverged,
-    VaspError,
-    VaspEmptyOutput,
     VaspSetupError,
+    VaspSubmitted,
     VaspWarning,
 )
 
@@ -148,7 +148,7 @@ class TestVaspWarning:
         """Test basic warning."""
         with pytest.warns(VaspWarning):
             import warnings
-            warnings.warn("Check ENCUT setting", VaspWarning)
+            warnings.warn("Check ENCUT setting", VaspWarning, stacklevel=2)
 
 
 class TestExceptionHierarchy:

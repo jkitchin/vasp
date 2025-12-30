@@ -27,13 +27,13 @@ import os
 import re
 import subprocess
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import numpy as np
 
-from .base import Runner, JobState, JobStatus
-from ..exceptions import VaspSetupError, VaspError
+from ..exceptions import VaspError, VaspSetupError
+from .base import JobState, JobStatus, Runner
 
 if TYPE_CHECKING:
     from ase import Atoms
@@ -154,7 +154,7 @@ class InteractiveRunner(Runner):
                 bufsize=1,  # Line buffered
             )
         except Exception as e:
-            raise VaspError(f"Failed to start VASP: {e}")
+            raise VaspError(f"Failed to start VASP: {e}") from e
 
         # Read initial SCF results
         return self._read_results()
@@ -400,7 +400,7 @@ class InteractiveRunner(Runner):
             converged=True,
         )
 
-    def __enter__(self) -> 'InteractiveRunner':
+    def __enter__(self) -> InteractiveRunner:
         """Context manager entry."""
         return self
 

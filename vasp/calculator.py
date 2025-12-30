@@ -11,23 +11,21 @@ from __future__ import annotations
 
 import logging
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
-from ase.calculators.calculator import Calculator, all_changes
+from ase.calculators.calculator import Calculator
 
 from .exceptions import (
-    VaspException,
-    VaspSubmitted,
+    VaspNotConverged,
+    VaspNotFinished,
     VaspQueued,
     VaspRunning,
-    VaspNotFinished,
-    VaspNotConverged,
-    VaspSetupError,
+    VaspSubmitted,
 )
-from .mixins import IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin
-from .runners import Runner, LocalRunner, JobState, JobStatus
+from .mixins import AnalysisMixin, DynamicsMixin, ElectronicMixin, IOMixin
+from .runners import JobState, JobStatus, LocalRunner, Runner
 
 if TYPE_CHECKING:
     from ase import Atoms

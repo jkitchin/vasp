@@ -1,17 +1,21 @@
 """Tests for recipe module."""
 
-import os
-import pytest
 import numpy as np
-
+import pytest
 from ase import Atoms
 from ase.build import bulk, fcc111
 
-from vasp.recipes.decorators import job, flow, subflow, WORKFLOW_ENGINE
-from vasp.recipes.core import VaspResult, static_job, relax_job, double_relax_flow
-from vasp.recipes.slabs import SlabResult, slab_static_job, slab_relax_job, bulk_to_slabs_flow, make_slabs_from_bulk
-from vasp.recipes.phonons import PhononResult, get_phonopy_supercells, _check_phonopy
-from vasp.runners import MockRunner, MockResults
+from vasp.recipes.core import VaspResult, double_relax_flow, relax_job, static_job
+from vasp.recipes.decorators import WORKFLOW_ENGINE, flow, job, subflow
+from vasp.recipes.phonons import PhononResult, _check_phonopy, get_phonopy_supercells
+from vasp.recipes.slabs import (
+    SlabResult,
+    bulk_to_slabs_flow,
+    make_slabs_from_bulk,
+    slab_relax_job,
+    slab_static_job,
+)
+from vasp.runners import MockResults, MockRunner
 
 
 class TestDecorators:
@@ -57,7 +61,6 @@ class TestDecorators:
         """Test that workflow engine is detected from environment."""
         # WORKFLOW_ENGINE is set at import time from env var
         # Valid values are None or one of the supported engines
-        valid_engines = {None, 'prefect', 'dask', 'parsl', 'covalent', 'jobflow'}
         # Allow any value since it comes from environment
         assert WORKFLOW_ENGINE is None or isinstance(WORKFLOW_ENGINE, str)
 
@@ -322,7 +325,7 @@ class TestRecipeIntegration:
 
     def test_recipe_with_ldau(self, si_atoms, mock_runner):
         """Test recipe with DFT+U (conceptual - Si doesn't need U)."""
-        from vasp.parameters import get_ldau_params, HubbardU
+        from vasp.parameters import HubbardU, get_ldau_params
 
         # This is just for testing the parameter passing
         # Si doesn't actually need U corrections

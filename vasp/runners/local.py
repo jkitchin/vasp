@@ -7,12 +7,12 @@ or in background mode for non-blocking operation.
 from __future__ import annotations
 
 import os
-import subprocess
 import signal
+import subprocess
 from typing import TYPE_CHECKING
 
-from .base import Runner, JobState, JobStatus
 from ..exceptions import VaspRunning, VaspSetupError
+from .base import JobState, JobStatus, Runner
 
 if TYPE_CHECKING:
     pass
@@ -189,7 +189,7 @@ class LocalRunner(Runner):
             try:
                 with open(pid_file) as f:
                     return int(f.read().strip())
-            except (ValueError, IOError):
+            except (OSError, ValueError):
                 return None
         return None
 

@@ -1,12 +1,11 @@
 """Tests for analysis mixin methods."""
 
 import os
-import numpy as np
+
 import pytest
 
 from vasp import Vasp
-from vasp.runners import MockRunner, MockResults
-
+from vasp.runners import MockResults, MockRunner
 
 # Mock file contents
 MOCK_DOSCAR = """     2     2     1     1
@@ -233,8 +232,8 @@ Direct
     # Generate potential values (vacuum at edges, bulk in middle)
     values = []
     for z in range(20):
-        for y in range(4):
-            for x in range(4):
+        for _y in range(4):
+            for _x in range(4):
                 # Slab centered around z=10
                 # Vacuum potential is higher
                 if z < 4 or z > 16:

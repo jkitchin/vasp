@@ -60,7 +60,6 @@ class DynamicsMixin:
 
         if not massweighted:
             # Un-mass-weight the eigenvectors
-            from ase.data import atomic_masses
             masses = self.atoms.get_masses()
             for i in range(len(frequencies)):
                 for j in range(len(self.atoms)):
@@ -105,10 +104,10 @@ class DynamicsMixin:
             r'([\d.]+)\s+meV'
         )
 
-        mode_sections = re.split(r'\d+\s+f\s*/?\s*i?=', content)[1:]
+        re.split(r'\d+\s+f\s*/?\s*i?=', content)[1:]
 
         for match in re.finditer(pattern, content):
-            mode_num = int(match.group(1))
+            int(match.group(1))
             is_imaginary = match.group(2) == '/i'
             freq_cm = float(match.group(5))
 
@@ -118,7 +117,6 @@ class DynamicsMixin:
             frequencies.append(freq_cm)
 
         # Parse eigenvectors
-        eig_pattern = r'X\s+Y\s+Z\s+dx\s+dy\s+dz\s*\n((?:.*\n)*?)(?:\s*\d+\s+f|Eigenvectors after)}}'
 
         # Simpler approach: find all displacement blocks
         blocks = re.findall(

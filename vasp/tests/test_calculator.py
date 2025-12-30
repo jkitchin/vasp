@@ -6,15 +6,13 @@ import pickle
 import numpy as np
 import pytest
 
-from vasp import Vasp, CalculationResult
-from vasp.runners import JobState, MockRunner, MockResults, LocalRunner
+from vasp import CalculationResult, Vasp
 from vasp.exceptions import (
-    VaspSubmitted,
     VaspQueued,
     VaspRunning,
-    VaspNotFinished,
-    VaspNotConverged,
+    VaspSubmitted,
 )
+from vasp.runners import JobState, LocalRunner, MockResults, MockRunner
 
 
 class TestVaspInit:

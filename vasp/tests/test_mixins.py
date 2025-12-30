@@ -1,14 +1,12 @@
 """Tests for mixin classes."""
 
 import os
-import tempfile
-import shutil
 
 import numpy as np
 import pytest
 
 from vasp import Vasp
-from vasp.runners import MockRunner, MockResults
+from vasp.runners import MockResults, MockRunner
 
 
 class TestIOMixin:

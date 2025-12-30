@@ -24,15 +24,14 @@ Example:
 
 from __future__ import annotations
 
-import json
 import os
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-from .base import Runner, JobState, JobStatus
-from ..exceptions import VaspRunning, VaspQueued, VaspSubmitted
+from ..exceptions import VaspQueued, VaspRunning, VaspSubmitted
+from .base import JobState, JobStatus, Runner
 
 if TYPE_CHECKING:
     pass

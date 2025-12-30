@@ -1,23 +1,20 @@
 """Tests for VASP runners."""
 
 import os
-import tempfile
-import shutil
 
 import numpy as np
 import pytest
 
+from vasp.exceptions import VaspRunning, VaspSetupError, VaspSubmitted
 from vasp.runners import (
-    Runner,
     JobState,
     JobStatus,
-    LocalRunner,
-    MockRunner,
-    MockResults,
-    SlurmRunner,
     KubernetesRunner,
+    LocalRunner,
+    MockResults,
+    MockRunner,
+    SlurmRunner,
 )
-from vasp.exceptions import VaspRunning, VaspSetupError, VaspSubmitted
 
 
 class TestJobStatus:
@@ -330,7 +327,7 @@ class TestKubernetesRunner:
     def check_kubernetes(self):
         """Skip tests if kubernetes package not available."""
         try:
-            import kubernetes
+            import kubernetes  # noqa: F401
         except ImportError:
             pytest.skip("kubernetes package not installed")
 

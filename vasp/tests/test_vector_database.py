@@ -6,10 +6,9 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from ase import Atoms
 from ase.build import bulk, fcc111, molecule
 
-from vasp.database import VectorAtomDatabase, MockEmbedder, AtomMatch, StructureRecord
+from vasp.database import AtomMatch, MockEmbedder, VectorAtomDatabase
 from vasp.database.embedders import Embedder
 
 

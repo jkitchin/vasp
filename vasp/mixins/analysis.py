@@ -10,6 +10,7 @@ Provides methods for:
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 from typing import TYPE_CHECKING
 
@@ -263,7 +264,7 @@ class AnalysisMixin:
         density = np.array(values[:npoints]).reshape((ngx, ngy, ngz))
 
         # Generate grid points
-        cell = self.atoms.get_cell()
+        self.atoms.get_cell()
         x = np.linspace(0, 1, ngx, endpoint=False)
         y = np.linspace(0, 1, ngy, endpoint=False)
         z = np.linspace(0, 1, ngz, endpoint=False)
@@ -580,5 +581,3 @@ class AnalysisMixin:
         return self._read_volumetric_file(elfcar)
 
 
-# Import re for elastic moduli parsing
-import re

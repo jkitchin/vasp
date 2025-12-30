@@ -9,10 +9,10 @@ the full VASP interface. Each mixin groups related methods:
 - DynamicsMixin: NEB and vibrational calculations
 """
 
-from .io import IOMixin
-from .electronic import ElectronicMixin
 from .analysis import AnalysisMixin
 from .dynamics import DynamicsMixin
+from .electronic import ElectronicMixin
+from .io import IOMixin
 
 __all__ = [
     'IOMixin',

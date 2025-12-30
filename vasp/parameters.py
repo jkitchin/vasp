@@ -12,9 +12,8 @@ Provides convenient parameter sets for common calculation types:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
-
 
 # =============================================================================
 # Van der Waals Corrections
@@ -106,45 +105,45 @@ class HubbardU:
     Attributes:
         u: Coulomb U parameter in eV.
         j: Exchange J parameter in eV.
-        l: Angular momentum (0=s, 1=p, 2=d, 3=f).
+        l_angular: Angular momentum (0=s, 1=p, 2=d, 3=f).
     """
     u: float
     j: float = 0.0
-    l: int = 2  # Default to d-orbitals
+    l_angular: int = 2  # Default to d-orbitals (l_angular=2)
 
 
 # Common U values from literature (Dudarev method: U_eff = U - J)
 COMMON_U_VALUES = {
-    # 3d transition metals (d-orbitals, l=2)
-    'Ti': HubbardU(u=3.0, j=0.0, l=2),
-    'V': HubbardU(u=3.1, j=0.0, l=2),
-    'Cr': HubbardU(u=3.5, j=0.0, l=2),
-    'Mn': HubbardU(u=3.9, j=0.0, l=2),
-    'Fe': HubbardU(u=4.0, j=0.0, l=2),
-    'Co': HubbardU(u=3.3, j=0.0, l=2),
-    'Ni': HubbardU(u=6.4, j=0.0, l=2),
-    'Cu': HubbardU(u=4.0, j=0.0, l=2),
-    'Zn': HubbardU(u=7.5, j=0.0, l=2),
+    # 3d transition metals (d-orbitals, l_angular=2)
+    'Ti': HubbardU(u=3.0, j=0.0, l_angular=2),
+    'V': HubbardU(u=3.1, j=0.0, l_angular=2),
+    'Cr': HubbardU(u=3.5, j=0.0, l_angular=2),
+    'Mn': HubbardU(u=3.9, j=0.0, l_angular=2),
+    'Fe': HubbardU(u=4.0, j=0.0, l_angular=2),
+    'Co': HubbardU(u=3.3, j=0.0, l_angular=2),
+    'Ni': HubbardU(u=6.4, j=0.0, l_angular=2),
+    'Cu': HubbardU(u=4.0, j=0.0, l_angular=2),
+    'Zn': HubbardU(u=7.5, j=0.0, l_angular=2),
 
     # 4d transition metals
-    'Zr': HubbardU(u=2.0, j=0.0, l=2),
-    'Nb': HubbardU(u=2.0, j=0.0, l=2),
-    'Mo': HubbardU(u=2.0, j=0.0, l=2),
+    'Zr': HubbardU(u=2.0, j=0.0, l_angular=2),
+    'Nb': HubbardU(u=2.0, j=0.0, l_angular=2),
+    'Mo': HubbardU(u=2.0, j=0.0, l_angular=2),
 
-    # Lanthanides (f-orbitals, l=3)
-    'Ce': HubbardU(u=5.0, j=0.0, l=3),
-    'Pr': HubbardU(u=5.0, j=0.0, l=3),
-    'Nd': HubbardU(u=5.0, j=0.0, l=3),
-    'Sm': HubbardU(u=5.0, j=0.0, l=3),
-    'Eu': HubbardU(u=5.0, j=0.0, l=3),
-    'Gd': HubbardU(u=5.0, j=0.0, l=3),
+    # Lanthanides (f-orbitals, l_angular=3)
+    'Ce': HubbardU(u=5.0, j=0.0, l_angular=3),
+    'Pr': HubbardU(u=5.0, j=0.0, l_angular=3),
+    'Nd': HubbardU(u=5.0, j=0.0, l_angular=3),
+    'Sm': HubbardU(u=5.0, j=0.0, l_angular=3),
+    'Eu': HubbardU(u=5.0, j=0.0, l_angular=3),
+    'Gd': HubbardU(u=5.0, j=0.0, l_angular=3),
 
-    # Actinides (f-orbitals, l=3)
-    'U': HubbardU(u=4.0, j=0.0, l=3),
-    'Pu': HubbardU(u=4.0, j=0.0, l=3),
+    # Actinides (f-orbitals, l_angular=3)
+    'U': HubbardU(u=4.0, j=0.0, l_angular=3),
+    'Pu': HubbardU(u=4.0, j=0.0, l_angular=3),
 
     # p-block (for O 2p states in some oxides)
-    'O': HubbardU(u=0.0, j=0.0, l=1),
+    'O': HubbardU(u=0.0, j=0.0, l_angular=1),
 }
 
 
@@ -187,18 +186,18 @@ def get_ldau_params(
             if isinstance(val, HubbardU):
                 ldauu.append(val.u)
                 ldauj.append(val.j)
-                ldaul.append(val.l)
+                ldaul.append(val.l_angular)
             else:
                 # Simple float U value, use defaults
-                hub = COMMON_U_VALUES.get(symbol, HubbardU(u=val, j=0.0, l=2))
+                hub = COMMON_U_VALUES.get(symbol, HubbardU(u=val, j=0.0, l_angular=2))
                 ldauu.append(val)
                 ldauj.append(hub.j)
-                ldaul.append(hub.l)
+                ldaul.append(hub.l_angular)
         elif symbol in COMMON_U_VALUES:
             hub = COMMON_U_VALUES[symbol]
             ldauu.append(hub.u)
             ldauj.append(hub.j)
-            ldaul.append(hub.l)
+            ldaul.append(hub.l_angular)
         else:
             # No U for this element
             ldauu.append(0.0)

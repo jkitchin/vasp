@@ -9,12 +9,11 @@ import os
 
 import numpy as np
 import pytest
-
 from ase import Atoms
 from ase.db import connect
 
 from vasp import Vasp
-from vasp.runners import MockRunner, MockResults
+from vasp.runners import MockResults, MockRunner
 
 
 class TestDatabaseWrite:

@@ -18,7 +18,7 @@ Example:
 """
 
 from .embedders import Embedder, MockEmbedder
-from .vector_db import VectorAtomDatabase, AtomMatch, StructureRecord
+from .vector_db import AtomMatch, StructureRecord, VectorAtomDatabase
 
 __all__ = [
     'VectorAtomDatabase',

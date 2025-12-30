@@ -28,25 +28,25 @@ _parsl_available = False
 _covalent_available = False
 
 try:
-    import prefect
+    import prefect  # noqa: F401
     _prefect_available = True
 except ImportError:
     pass
 
 try:
-    import dask
+    import dask  # noqa: F401
     _dask_available = True
 except ImportError:
     pass
 
 try:
-    import parsl
+    import parsl  # noqa: F401
     _parsl_available = True
 except ImportError:
     pass
 
 try:
-    import covalent
+    import covalent  # noqa: F401
     _covalent_available = True
 except ImportError:
     pass

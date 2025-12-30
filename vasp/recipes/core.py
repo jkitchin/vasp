@@ -8,10 +8,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
-from .decorators import job, flow
+from .decorators import flow, job
 
 if TYPE_CHECKING:
     from ase import Atoms
+
     from ..runners.base import Runner
 
 

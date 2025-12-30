@@ -14,13 +14,13 @@ Example:
     >>> runner = SlurmRunner(partition='compute', nodes=2)
 """
 
-from .base import Runner, JobState, JobStatus
-from .local import LocalRunner
-from .mock import MockRunner, MockResults
-from .slurm import SlurmRunner
+from .base import JobState, JobStatus, Runner
+from .interactive import InteractiveResults, InteractiveRunner
 from .kubernetes import KubernetesRunner
-from .interactive import InteractiveRunner, InteractiveResults
-from .socket_io import SocketServer, SocketClient, SocketConfig
+from .local import LocalRunner
+from .mock import MockResults, MockRunner
+from .slurm import SlurmRunner
+from .socket_io import SocketClient, SocketConfig, SocketServer
 
 __all__ = [
     'Runner',

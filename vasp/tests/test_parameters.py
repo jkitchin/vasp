@@ -1,22 +1,21 @@
 """Tests for parameter preset functions."""
 
 import pytest
-import numpy as np
 
 from vasp.parameters import (
-    VDW_METHODS,
-    get_vdw_params,
     COMMON_U_VALUES,
+    VDW_METHODS,
     HubbardU,
-    get_ldau_params,
-    get_hybrid_params,
-    get_soc_params,
-    get_mlff_params,
-    get_md_params,
-    get_phonon_params,
-    get_optical_params,
-    get_gw_params,
     get_bse_params,
+    get_gw_params,
+    get_hybrid_params,
+    get_ldau_params,
+    get_md_params,
+    get_mlff_params,
+    get_optical_params,
+    get_phonon_params,
+    get_soc_params,
+    get_vdw_params,
 )
 
 
@@ -279,7 +278,7 @@ class TestMDParameters:
 
     def test_get_md_params_invalid(self):
         """Test invalid ensemble raises error."""
-        with pytest.raises(ValueError, match="Unknown ensemble"):
+        with pytest.raises(ValueError, match="Unknown MD ensemble"):
             get_md_params('invalid_ensemble')
 
 

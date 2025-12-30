@@ -12,7 +12,6 @@ import os
 import shutil
 import sys
 from pathlib import Path
-from importlib import resources
 
 __all__ = ['main', 'status_command', 'claude_install', 'claude_uninstall', 'vaspsum', 'vasp_debug']
 
@@ -238,7 +237,7 @@ def claude_install(args=None):
     # Install vasp-help command
     help_file = commands_dir / 'vasp-help.md'
     help_file.write_text(VASP_HELP_COMMAND)
-    print(f"  ✓ Installed command: /vasp-help")
+    print("  ✓ Installed command: /vasp-help")
 
     # Try to copy additional commands from package
     package_claude = get_package_claude_dir()
@@ -430,7 +429,7 @@ def vaspsum():
     CLI tool to display quick summaries of VASP calculation results.
     """
     import argparse
-    import numpy as np
+
     from vasp import Vasp
     from vasp.exceptions import VaspException
 
@@ -769,12 +768,10 @@ def vasp_debug():
     print()
     print("MPI implementation hints:")
     for lib in mpi_libs:
-        found = False
         # Check if library directory exists or module loaded
         for path_dir in os.environ.get('PATH', '').split(':'):
             if lib in path_dir.lower():
                 print(f"  Possible {lib}: {path_dir}")
-                found = True
                 break
 
     # Pseudopotentials
@@ -838,12 +835,10 @@ def vasp_debug():
     section("ASE Configuration")
 
     try:
-        from ase import Atoms
-        from ase.calculators.calculator import Calculator
+        import ase
         print("✓ ASE imported successfully")
 
         # Check ASE data directory
-        import ase
         ase_dir = Path(ase.__file__).parent
         print(f"  ASE location: {ase_dir}")
 
@@ -873,7 +868,7 @@ def vasp_debug():
 
         # Check for recipes
         try:
-            from vasp import recipes
+            from vasp import recipes  # noqa: F401
             print("  Recipes: available")
         except ImportError:
             print("  Recipes: not available")
@@ -886,10 +881,11 @@ def vasp_debug():
 
     print("Calculator instantiation test:")
     try:
-        from vasp import Vasp
-        from vasp.runners import MockRunner, MockResults
-        from ase.build import bulk
         import numpy as np
+        from ase.build import bulk
+
+        from vasp import Vasp
+        from vasp.runners import MockResults, MockRunner
 
         atoms = bulk('Si', 'diamond', a=5.43)
         mock = MockResults(energy=-10.0, forces=np.zeros((2, 3)))
@@ -918,7 +914,7 @@ def vasp_debug():
             if si_potcar.exists():
                 print(f"✓ Si POTCAR found: {si_potcar}")
             else:
-                print(f"✗ Si POTCAR not found in expected locations")
+                print("✗ Si POTCAR not found in expected locations")
     else:
         print("✗ Cannot test POTCAR - VASP_PP_PATH not set")
 

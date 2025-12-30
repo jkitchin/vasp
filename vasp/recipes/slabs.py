@@ -8,14 +8,15 @@ Provides workflows for surface calculations including:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from .decorators import job, flow, subflow
-from .core import VaspResult, static_job, relax_job
+from .core import VaspResult, relax_job, static_job
+from .decorators import flow, job, subflow
 
 if TYPE_CHECKING:
     from ase import Atoms
+
     from ..runners.base import Runner
 
 
@@ -59,7 +60,6 @@ def make_slabs_from_bulk(
         List of slab Atoms objects.
     """
     from ase.build import surface
-    import numpy as np
 
     if miller_indices is None:
         # Common low-index surfaces
@@ -173,8 +173,9 @@ def slab_relax_job(
     Returns:
         SlabResult with relaxed structure.
     """
-    from ase.constraints import FixAtoms
     import numpy as np
+    from ase.constraints import FixAtoms
+
     from ..calculator import Vasp
     from ..parameters import get_preset
 

@@ -1,15 +1,14 @@
 """Pytest configuration and shared fixtures."""
 
 import os
-import tempfile
 import shutil
-from pathlib import Path
+import tempfile
 
-import pytest
 import numpy as np
+import pytest
 
-from vasp import Vasp, MockRunner
-from vasp.runners import MockResults, JobState
+from vasp import MockRunner, Vasp
+from vasp.runners import JobState, MockResults
 
 
 @pytest.fixture
@@ -23,9 +22,7 @@ def temp_dir():
 @pytest.fixture
 def calc_dir(temp_dir):
     """Create a calculation directory with mock input files."""
-    from vasp.tests.fixtures import (
-        MOCK_INCAR, MOCK_POSCAR, MOCK_KPOINTS, MOCK_POTCAR_HEADER
-    )
+    from vasp.tests.fixtures import MOCK_INCAR, MOCK_KPOINTS, MOCK_POSCAR, MOCK_POTCAR_HEADER
 
     # Write mock input files
     with open(os.path.join(temp_dir, 'INCAR'), 'w') as f:

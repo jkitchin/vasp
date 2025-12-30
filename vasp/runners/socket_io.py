@@ -25,7 +25,6 @@ from __future__ import annotations
 
 import socket
 import struct
-import time
 from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING
@@ -34,6 +33,8 @@ import numpy as np
 
 if TYPE_CHECKING:
     from ase import Atoms
+
+    from vasp.runners.interactive import InteractiveRunner
 
 
 # =============================================================================
@@ -276,7 +277,7 @@ class SocketServer:
             "virial": virial,
         }
 
-    def __enter__(self) -> "SocketServer":
+    def __enter__(self) -> SocketServer:
         self.start()
         return self
 
@@ -311,7 +312,7 @@ class SocketClient:
     def __init__(
         self,
         config: SocketConfig,
-        runner: "InteractiveRunner" = None,
+        runner: InteractiveRunner | None = None,
     ):
         self.config = config
         self.runner = runner
@@ -339,7 +340,6 @@ class SocketClient:
             atoms_template: Template atoms object (for element types).
             directory: VASP calculation directory.
         """
-        from ase import Atoms as AseAtoms
 
         self._atoms = atoms_template.copy()
         first_step = True
@@ -357,7 +357,7 @@ class SocketClient:
 
             elif msg == MSG_INIT:
                 # Receive init data (bead index + init string)
-                bead = struct.unpack("i", self._socket.recv(4))[0]
+                struct.unpack("i", self._socket.recv(4))[0]
                 init_len = struct.unpack("i", self._socket.recv(4))[0]
                 if init_len > 0:
                     self._socket.recv(init_len)
@@ -490,7 +490,7 @@ class SocketClient:
         # Extra bytes (empty)
         self._socket.sendall(struct.pack(">i", 0))
 
-    def __enter__(self) -> "SocketClient":
+    def __enter__(self) -> SocketClient:
         self.connect()
         return self
 

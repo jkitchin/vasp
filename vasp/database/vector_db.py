@@ -7,14 +7,16 @@ per-atom embeddings for similarity search using libSQL's native vector support.
 from __future__ import annotations
 
 import json
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterator
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
 if TYPE_CHECKING:
     from ase import Atoms
+
     from .embedders import Embedder
 
 
@@ -197,7 +199,7 @@ class VectorAtomDatabase:
                 pass
         else:
             # Standard SQLite without vector support
-            cursor.execute(f"""
+            cursor.execute("""
                 CREATE TABLE IF NOT EXISTS atoms (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     structure_id INTEGER NOT NULL,

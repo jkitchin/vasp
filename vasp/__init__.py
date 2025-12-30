@@ -63,29 +63,29 @@ __version__ = '2.0.0'
 __author__ = 'John Kitchin'
 
 # Main calculator class
-from .calculator import Vasp, CalculationResult
+from .calculator import CalculationResult, Vasp
 
 # Exceptions
 from .exceptions import (
+    VaspEmptyOutput,
+    VaspError,
     VaspException,
-    VaspSubmitted,
+    VaspNotConverged,
+    VaspNotFinished,
     VaspQueued,
     VaspRunning,
-    VaspNotFinished,
-    VaspNotConverged,
-    VaspError,
-    VaspEmptyOutput,
     VaspSetupError,
+    VaspSubmitted,
     VaspWarning,
 )
 
 # Runners
 from .runners import (
-    Runner,
     JobState,
     JobStatus,
     LocalRunner,
     MockRunner,
+    Runner,
 )
 
 __all__ = [

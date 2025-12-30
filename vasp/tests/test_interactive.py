@@ -1,17 +1,14 @@
 """Tests for InteractiveRunner."""
 
 import os
-import subprocess
-from io import StringIO
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
 
-from vasp.runners import InteractiveRunner, InteractiveResults
+from vasp.exceptions import VaspError, VaspSetupError
+from vasp.runners import InteractiveResults, InteractiveRunner
 from vasp.runners.interactive import InteractiveState
-from vasp.exceptions import VaspSetupError, VaspError
-
 
 # =============================================================================
 # Fixtures

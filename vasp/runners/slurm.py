@@ -8,11 +8,10 @@ from __future__ import annotations
 
 import os
 import subprocess
-from datetime import datetime
 from typing import TYPE_CHECKING
 
-from .base import Runner, JobState, JobStatus
-from ..exceptions import VaspSubmitted, VaspQueued, VaspRunning
+from ..exceptions import VaspQueued, VaspRunning, VaspSubmitted
+from .base import JobState, JobStatus, Runner
 
 if TYPE_CHECKING:
     pass

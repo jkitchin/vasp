@@ -3,31 +3,29 @@
 import socket
 import struct
 import threading
-import time
 
 import numpy as np
 import pytest
 
 from vasp.runners.socket_io import (
-    SocketServer,
+    ANGSTROM_TO_BOHR,
+    BOHR_TO_ANGSTROM,
+    EV_TO_HARTREE,
+    HARTREE_TO_EV,
+    HEADER_SIZE,
+    MSG_EXIT,
+    MSG_FORCEREADY,
+    MSG_GETFORCE,
+    MSG_HAVEDATA,
+    MSG_NEEDINIT,
+    MSG_POSDATA,
+    MSG_READY,
+    MSG_STATUS,
     SocketClient,
     SocketConfig,
+    SocketServer,
     SocketState,
-    MSG_STATUS,
-    MSG_READY,
-    MSG_NEEDINIT,
-    MSG_HAVEDATA,
-    MSG_POSDATA,
-    MSG_GETFORCE,
-    MSG_FORCEREADY,
-    MSG_EXIT,
-    HEADER_SIZE,
-    BOHR_TO_ANGSTROM,
-    ANGSTROM_TO_BOHR,
-    HARTREE_TO_EV,
-    EV_TO_HARTREE,
 )
-
 
 # =============================================================================
 # Unit Conversion Tests
@@ -224,7 +222,7 @@ class TestServerClientIntegration:
 
         # Get actual port
         actual_port = server._socket.getsockname()[1]
-        client_config = SocketConfig(port=actual_port)
+        SocketConfig(port=actual_port)
 
         def connect_client():
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

@@ -9,15 +9,15 @@ Provides workflows for:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from .decorators import job, flow, subflow
 from .core import VaspResult
+from .decorators import flow, job, subflow
 
 if TYPE_CHECKING:
     from ase import Atoms
-    import numpy as np
+
     from ..runners.base import Runner
 
 
@@ -48,7 +48,7 @@ class PhononResult:
 def _check_phonopy():
     """Check if phonopy is available."""
     try:
-        import phonopy
+        import phonopy  # noqa: F401
         return True
     except ImportError:
         return False
@@ -75,12 +75,13 @@ def get_phonopy_supercells(
     if not _check_phonopy():
         raise ImportError("phonopy required: pip install phonopy")
 
+    import os
+    import tempfile
+
+    import numpy as np
+    from ase.io import write
     from phonopy import Phonopy
     from phonopy.interface.vasp import read_vasp
-    from ase.io import write
-    import tempfile
-    import os
-    import numpy as np
 
     # Convert ASE atoms to Phonopy format
     with tempfile.NamedTemporaryFile(suffix='.vasp', delete=False) as f:
@@ -371,7 +372,7 @@ def _parse_dfpt_frequencies(directory: str) -> list[float]:
     pattern = r'f\s*[/=i]*\s*([-\d.]+)\s+THz.*?([-\d.]+)\s+cm-1'
     matches = re.findall(pattern, content)
 
-    for thz, cm1 in matches:
+    for _thz, cm1 in matches:
         frequencies.append(float(cm1))
 
     return frequencies
