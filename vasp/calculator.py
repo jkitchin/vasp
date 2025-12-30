@@ -31,28 +31,41 @@ if TYPE_CHECKING:
     from ase import Atoms
 
 # Configure logging
-log = logging.getLogger('vasp')
+log = logging.getLogger("vasp")
 
 
 # Exchange-correlation functional settings
 XC_DEFAULTS: dict[str, dict[str, Any]] = {
-    'lda': {'pp': 'LDA'},
-    'pbe': {'gga': 'PE'},
-    'revpbe': {'gga': 'RE'},
-    'rpbe': {'gga': 'RP'},
-    'pbesol': {'gga': 'PS'},
-    'am05': {'gga': 'AM'},
-    'pbe0': {'gga': 'PE', 'lhfcalc': True, 'aexx': 0.25},
-    'hse03': {'gga': 'PE', 'lhfcalc': True, 'hfscreen': 0.3},
-    'hse06': {'gga': 'PE', 'lhfcalc': True, 'hfscreen': 0.2},
-    'b3lyp': {'gga': 'B3', 'lhfcalc': True, 'aexx': 0.2, 'aggax': 0.72, 'aggac': 0.81, 'aldac': 0.19},
-    'scan': {'metagga': 'SCAN'},
-    'tpss': {'metagga': 'TPSS'},
-    'optpbe-vdw': {'gga': 'OR', 'luse_vdw': True, 'aggac': 0.0},
-    'optb88-vdw': {'gga': 'BO', 'luse_vdw': True, 'aggac': 0.0, 'param1': 1.1/6.0, 'param2': 0.22},
-    'optb86b-vdw': {'gga': 'MK', 'luse_vdw': True, 'aggac': 0.0, 'param1': 0.1234, 'param2': 1.0},
-    'vdw-df2': {'gga': 'ML', 'luse_vdw': True, 'aggac': 0.0, 'zab_vdw': -1.8867},
-    'beef-vdw': {'gga': 'BF', 'luse_vdw': True, 'zab_vdw': -1.8867, 'lbeefens': True},
+    "lda": {"pp": "LDA"},
+    "pbe": {"gga": "PE"},
+    "revpbe": {"gga": "RE"},
+    "rpbe": {"gga": "RP"},
+    "pbesol": {"gga": "PS"},
+    "am05": {"gga": "AM"},
+    "pbe0": {"gga": "PE", "lhfcalc": True, "aexx": 0.25},
+    "hse03": {"gga": "PE", "lhfcalc": True, "hfscreen": 0.3},
+    "hse06": {"gga": "PE", "lhfcalc": True, "hfscreen": 0.2},
+    "b3lyp": {
+        "gga": "B3",
+        "lhfcalc": True,
+        "aexx": 0.2,
+        "aggax": 0.72,
+        "aggac": 0.81,
+        "aldac": 0.19,
+    },
+    "scan": {"metagga": "SCAN"},
+    "tpss": {"metagga": "TPSS"},
+    "optpbe-vdw": {"gga": "OR", "luse_vdw": True, "aggac": 0.0},
+    "optb88-vdw": {
+        "gga": "BO",
+        "luse_vdw": True,
+        "aggac": 0.0,
+        "param1": 1.1 / 6.0,
+        "param2": 0.22,
+    },
+    "optb86b-vdw": {"gga": "MK", "luse_vdw": True, "aggac": 0.0, "param1": 0.1234, "param2": 1.0},
+    "vdw-df2": {"gga": "ML", "luse_vdw": True, "aggac": 0.0, "zab_vdw": -1.8867},
+    "beef-vdw": {"gga": "BF", "luse_vdw": True, "zab_vdw": -1.8867, "lbeefens": True},
 }
 
 
@@ -70,6 +83,7 @@ class CalculationResult:
         jobid: Job identifier (if submitted).
         error: Error message (if failed).
     """
+
     state: JobState
     energy: float | None = None
     forces: np.ndarray | None = None
@@ -127,25 +141,25 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
         ...     print("Waiting in queue...")
     """
 
-    name = 'vasp'
-    implemented_properties = ['energy', 'forces', 'stress', 'magmom', 'magmoms']
+    name = "vasp"
+    implemented_properties = ["energy", "forces", "stress", "magmom", "magmoms"]
     default_parameters: dict[str, Any] = {
-        'xc': 'PBE',
-        'pp': 'PBE',
-        'kpts': (1, 1, 1),
-        'gamma': False,
-        'ismear': 1,
-        'sigma': 0.1,
-        'lwave': False,
-        'lcharg': False,
+        "xc": "PBE",
+        "pp": "PBE",
+        "kpts": (1, 1, 1),
+        "gamma": False,
+        "ismear": 1,
+        "sigma": 0.1,
+        "lwave": False,
+        "lcharg": False,
     }
 
     def __init__(
         self,
-        label: str = 'vasp',
+        label: str = "vasp",
         atoms: Atoms | None = None,
         runner: Runner | None = None,
-        **kwargs
+        **kwargs,
     ):
         # Initialize parent Calculator first
         Calculator.__init__(self, atoms=atoms)
@@ -185,8 +199,8 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
             key_lower = key.lower()
 
             # Handle XC functional
-            if key_lower == 'xc':
-                self.parameters['xc'] = val
+            if key_lower == "xc":
+                self.parameters["xc"] = val
                 xc_lower = val.lower()
                 if xc_lower in XC_DEFAULTS:
                     for xc_key, xc_val in XC_DEFAULTS[xc_lower].items():
@@ -241,7 +255,7 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
                 self.parameters[key_lower] = val
 
                 # Handle XC changes
-                if key_lower == 'xc':
+                if key_lower == "xc":
                     xc_lower = val.lower()
                     if xc_lower in XC_DEFAULTS:
                         for xc_key, xc_val in XC_DEFAULTS[xc_lower].items():
@@ -292,10 +306,10 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
             return
 
         if status.state == JobState.QUEUED:
-            raise VaspQueued(message=status.message, jobid=status.jobid)
+            raise VaspQueued(message=status.message or "", jobid=status.jobid)
 
         if status.state == JobState.RUNNING:
-            raise VaspRunning(message=status.message, jobid=status.jobid)
+            raise VaspRunning(message=status.message or "", jobid=status.jobid)
 
         if status.state == JobState.FAILED:
             raise VaspNotConverged(status.message or "Calculation failed")
@@ -326,10 +340,10 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
             return
 
         if status.state == JobState.QUEUED:
-            raise VaspQueued(message=status.message, jobid=status.jobid)
+            raise VaspQueued(message=status.message or "", jobid=status.jobid)
 
         if status.state == JobState.RUNNING:
-            raise VaspRunning(message=status.message, jobid=status.jobid)
+            raise VaspRunning(message=status.message or "", jobid=status.jobid)
 
         if status.state == JobState.FAILED:
             raise VaspNotConverged(status.message or "Calculation failed")
@@ -345,21 +359,23 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
     def potential_energy(self) -> float:
         """Get potential energy in eV."""
         self.calculate()
-        return self.results['energy']
+        return self.results["energy"]
 
     @property
     def forces(self) -> np.ndarray:
         """Get forces in eV/Angstrom."""
         self.calculate()
-        return self.results['forces']
+        return self.results["forces"]
 
     @property
     def stress(self) -> np.ndarray:
         """Get stress tensor in eV/Angstrom^3."""
         self.calculate()
-        return self.results['stress']
+        return self.results["stress"]
 
-    def get_potential_energy(self, atoms: Atoms | None = None, force_consistent: bool = False) -> float:
+    def get_potential_energy(
+        self, atoms: Atoms | None = None, force_consistent: bool = False
+    ) -> float:
         """Get potential energy.
 
         Args:
@@ -370,13 +386,13 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
             Total energy in eV.
         """
         if atoms is not None:
-            self.calculate(atoms=atoms, properties=['energy'])
+            self.calculate(atoms=atoms, properties=["energy"])
         else:
-            self.calculate(properties=['energy'])
+            self.calculate(properties=["energy"])
 
-        if force_consistent and 'free_energy' in self.results:
-            return self.results['free_energy']
-        return self.results['energy']
+        if force_consistent and "free_energy" in self.results:
+            return self.results["free_energy"]
+        return self.results["energy"]
 
     def get_forces(self, atoms: Atoms | None = None) -> np.ndarray:
         """Get forces on atoms.
@@ -388,11 +404,11 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
             Forces array of shape (natoms, 3) in eV/Angstrom.
         """
         if atoms is not None:
-            self.calculate(atoms=atoms, properties=['forces'])
+            self.calculate(atoms=atoms, properties=["forces"])
         else:
-            self.calculate(properties=['forces'])
+            self.calculate(properties=["forces"])
 
-        return self.results['forces']
+        return self.results["forces"]
 
     def get_stress(self, atoms: Atoms | None = None) -> np.ndarray:
         """Get stress tensor.
@@ -404,11 +420,11 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
             Stress in Voigt notation (6,) in eV/Angstrom^3.
         """
         if atoms is not None:
-            self.calculate(atoms=atoms, properties=['stress'])
+            self.calculate(atoms=atoms, properties=["stress"])
         else:
-            self.calculate(properties=['stress'])
+            self.calculate(properties=["stress"])
 
-        return self.results['stress']
+        return self.results["stress"]
 
     # =========================================================================
     # Workflow-Friendly Methods
@@ -468,9 +484,9 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
             self.read_results()
             return CalculationResult(
                 state=JobState.COMPLETE,
-                energy=self.results.get('energy'),
-                forces=self.results.get('forces'),
-                stress=self.results.get('stress'),
+                energy=self.results.get("energy"),
+                forces=self.results.get("forces"),
+                stress=self.results.get("stress"),
             )
 
         if status.state == JobState.NOT_STARTED:
@@ -482,9 +498,9 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
                     self.read_results()
                     return CalculationResult(
                         state=JobState.COMPLETE,
-                        energy=self.results.get('energy'),
-                        forces=self.results.get('forces'),
-                        stress=self.results.get('stress'),
+                        energy=self.results.get("energy"),
+                        forces=self.results.get("forces"),
+                        stress=self.results.get("stress"),
                     )
                 return CalculationResult(
                     state=new_status.state,
@@ -523,8 +539,8 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
         """Prepare for pickling (for workflow tools)."""
         state = self.__dict__.copy()
         # Don't pickle runner - recreate on unpickle
-        state['_runner_type'] = type(self.runner).__name__
-        state['runner'] = None
+        state["_runner_type"] = type(self.runner).__name__
+        state["runner"] = None
         return state
 
     def __setstate__(self, state: dict) -> None:

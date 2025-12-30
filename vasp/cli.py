@@ -12,28 +12,30 @@ import os
 import shutil
 import sys
 from pathlib import Path
+from typing import Optional
 
-__all__ = ['main', 'status_command', 'claude_install', 'claude_uninstall', 'vaspsum', 'vasp_debug']
+__all__ = ["main", "status_command", "claude_install", "claude_uninstall", "vaspsum", "vasp_debug"]
 
 
 def get_claude_home() -> Path:
     """Get the Claude Code configuration directory."""
     # Check for custom location
-    claude_home = os.environ.get('CLAUDE_CONFIG_DIR')
+    claude_home = os.environ.get("CLAUDE_CONFIG_DIR")
     if claude_home:
         return Path(claude_home)
 
     # Default to ~/.claude
-    return Path.home() / '.claude'
+    return Path.home() / ".claude"
 
 
-def get_package_claude_dir() -> Path:
+def get_package_claude_dir() -> Optional[Path]:
     """Get the .claude directory from the installed package."""
     # Try to find the package's .claude directory
     try:
         import vasp
+
         package_dir = Path(vasp.__file__).parent.parent
-        claude_dir = package_dir / '.claude'
+        claude_dir = package_dir / ".claude"
         if claude_dir.exists():
             return claude_dir
     except Exception:
@@ -41,7 +43,7 @@ def get_package_claude_dir() -> Path:
 
     # Fallback: try relative to this file
     this_dir = Path(__file__).parent.parent
-    claude_dir = this_dir / '.claude'
+    claude_dir = this_dir / ".claude"
     if claude_dir.exists():
         return claude_dir
 
@@ -49,7 +51,7 @@ def get_package_claude_dir() -> Path:
 
 
 # Global skill content (embedded for reliable installation)
-GLOBAL_SKILL_CONTENT = '''---
+GLOBAL_SKILL_CONTENT = """---
 name: vasp
 description: Help with VASP DFT calculations using the vasp-ase Python interface. Use when the user asks about VASP, DFT calculations, or computational materials science.
 ---
@@ -165,9 +167,9 @@ For more details, see the vasp-ase documentation or run:
 ```bash
 vasp-claude docs
 ```
-'''
+"""
 
-VASP_HELP_COMMAND = '''Get help with VASP parameters and the vasp-ase interface.
+VASP_HELP_COMMAND = """Get help with VASP parameters and the vasp-ase interface.
 
 Arguments: $ARGUMENTS
 
@@ -214,14 +216,14 @@ from vasp.parameters import (
     get_md_params,       # 'nvt', 'npt'
 )
 ```
-'''
+"""
 
 
 def claude_install(args=None):
     """Install vasp-ase Claude Code skills globally."""
     claude_home = get_claude_home()
-    commands_dir = claude_home / 'commands'
-    skills_dir = claude_home / 'skills'
+    commands_dir = claude_home / "commands"
+    skills_dir = claude_home / "skills"
 
     # Create directories
     commands_dir.mkdir(parents=True, exist_ok=True)
@@ -230,23 +232,23 @@ def claude_install(args=None):
     print(f"Installing vasp-ase Claude Code skills to {claude_home}")
 
     # Install global skill
-    skill_file = skills_dir / 'vasp.md'
+    skill_file = skills_dir / "vasp.md"
     skill_file.write_text(GLOBAL_SKILL_CONTENT)
     print(f"  ✓ Installed skill: {skill_file}")
 
     # Install vasp-help command
-    help_file = commands_dir / 'vasp-help.md'
+    help_file = commands_dir / "vasp-help.md"
     help_file.write_text(VASP_HELP_COMMAND)
     print("  ✓ Installed command: /vasp-help")
 
     # Try to copy additional commands from package
     package_claude = get_package_claude_dir()
     if package_claude:
-        package_commands = package_claude / 'commands'
+        package_commands = package_claude / "commands"
         if package_commands.exists():
-            for cmd_file in package_commands.glob('*.md'):
+            for cmd_file in package_commands.glob("*.md"):
                 # Prefix with vasp- to avoid conflicts
-                if not cmd_file.name.startswith('vasp-'):
+                if not cmd_file.name.startswith("vasp-"):
                     target_name = f"vasp-{cmd_file.name}"
                 else:
                     target_name = cmd_file.name
@@ -271,15 +273,15 @@ def claude_uninstall(args=None):
     removed = []
 
     # Remove skill
-    skill_file = claude_home / 'skills' / 'vasp.md'
+    skill_file = claude_home / "skills" / "vasp.md"
     if skill_file.exists():
         skill_file.unlink()
         removed.append(str(skill_file))
 
     # Remove commands with vasp- prefix
-    commands_dir = claude_home / 'commands'
+    commands_dir = claude_home / "commands"
     if commands_dir.exists():
-        for cmd_file in commands_dir.glob('vasp-*.md'):
+        for cmd_file in commands_dir.glob("vasp-*.md"):
             cmd_file.unlink()
             removed.append(str(cmd_file))
 
@@ -299,15 +301,15 @@ def claude_status(args=None):
     print()
 
     # Check skill
-    skill_file = claude_home / 'skills' / 'vasp.md'
+    skill_file = claude_home / "skills" / "vasp.md"
     if skill_file.exists():
         print("✓ vasp skill installed")
     else:
         print("✗ vasp skill not installed")
 
     # Check commands
-    commands_dir = claude_home / 'commands'
-    vasp_commands = list(commands_dir.glob('vasp-*.md')) if commands_dir.exists() else []
+    commands_dir = claude_home / "commands"
+    vasp_commands = list(commands_dir.glob("vasp-*.md")) if commands_dir.exists() else []
 
     if vasp_commands:
         print(f"✓ {len(vasp_commands)} vasp commands installed:")
@@ -324,14 +326,15 @@ def claude_docs(args=None):
     """Show documentation location and open if possible."""
     try:
         import vasp
+
         package_dir = Path(vasp.__file__).parent.parent
-        docs_dir = package_dir / 'docs'
+        docs_dir = package_dir / "docs"
 
         if docs_dir.exists():
             print(f"Documentation source: {docs_dir}")
 
             # Check for built docs
-            built_docs = docs_dir / '_build' / 'html' / 'index.html'
+            built_docs = docs_dir / "_build" / "html" / "index.html"
             if built_docs.exists():
                 print(f"Built documentation: {built_docs}")
                 print()
@@ -359,14 +362,15 @@ def status_command():
 
     try:
         import vasp
+
         print(f"Package version: {vasp.__version__}")
     except ImportError:
         print("Package not installed")
         return
 
     # Check environment
-    pp_path = os.environ.get('VASP_PP_PATH', 'Not set')
-    vasp_cmd = os.environ.get('ASE_VASP_COMMAND', 'Not set')
+    pp_path = os.environ.get("VASP_PP_PATH", "Not set")
+    vasp_cmd = os.environ.get("ASE_VASP_COMMAND", "Not set")
 
     print(f"VASP_PP_PATH: {pp_path}")
     print(f"ASE_VASP_COMMAND: {vasp_cmd}")
@@ -375,38 +379,25 @@ def status_command():
 def main():
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
-        prog='vasp-claude',
-        description='VASP-ASE command-line tools and Claude Code integration'
+        prog="vasp-claude", description="VASP-ASE command-line tools and Claude Code integration"
     )
 
-    subparsers = parser.add_subparsers(dest='command', help='Available commands')
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # Install command
-    install_parser = subparsers.add_parser(
-        'install',
-        help='Install Claude Code skills globally'
-    )
+    install_parser = subparsers.add_parser("install", help="Install Claude Code skills globally")
     install_parser.set_defaults(func=claude_install)
 
     # Uninstall command
-    uninstall_parser = subparsers.add_parser(
-        'uninstall',
-        help='Remove Claude Code skills'
-    )
+    uninstall_parser = subparsers.add_parser("uninstall", help="Remove Claude Code skills")
     uninstall_parser.set_defaults(func=claude_uninstall)
 
     # Status command
-    status_parser = subparsers.add_parser(
-        'status',
-        help='Show installation status'
-    )
+    status_parser = subparsers.add_parser("status", help="Show installation status")
     status_parser.set_defaults(func=claude_status)
 
     # Docs command
-    docs_parser = subparsers.add_parser(
-        'docs',
-        help='Show documentation location'
-    )
+    docs_parser = subparsers.add_parser("docs", help="Show documentation location")
     docs_parser.set_defaults(func=claude_docs)
 
     args = parser.parse_args()
@@ -441,7 +432,7 @@ def vaspsum():
     def format_forces(forces):
         if forces is None:
             return "Forces: Not available"
-        fmax = (forces**2).sum(axis=1).max()**0.5
+        fmax = (forces**2).sum(axis=1).max() ** 0.5
         return f"Max force: {fmax:.6f} eV/Å"
 
     def format_stress(stress):
@@ -469,9 +460,9 @@ def vaspsum():
             print(f"  Atoms: {len(atoms)}")
 
             try:
-                energy = calc.results.get('energy')
-                forces = calc.results.get('forces')
-                stress = calc.results.get('stress')
+                energy = calc.results.get("energy")
+                forces = calc.results.get("forces")
+                stress = calc.results.get("stress")
 
                 print(f"  {format_energy(energy, len(atoms))}")
                 if verbose and forces is not None:
@@ -479,7 +470,7 @@ def vaspsum():
                 if verbose and stress is not None:
                     print(f"  {format_stress(stress)}")
 
-                converged = calc.results.get('converged', None)
+                converged = calc.results.get("converged", None)
                 if converged is not None:
                     status = "Converged" if converged else "NOT CONVERGED"
                     print(f"  Status: {status}")
@@ -493,7 +484,7 @@ def vaspsum():
     def print_parameters(calc, verbose=False):
         print("\nParameters:")
         params = calc.parameters
-        key_params = ['xc', 'encut', 'kpts', 'ismear', 'sigma']
+        key_params = ["xc", "encut", "kpts", "ismear", "sigma"]
 
         for key in key_params:
             if key in params:
@@ -507,17 +498,17 @@ def vaspsum():
 
     def print_json(calc, pretty=False):
         data = {
-            'directory': calc.directory,
-            'parameters': calc.parameters,
-            'results': calc.results,
+            "directory": calc.directory,
+            "parameters": calc.parameters,
+            "results": calc.results,
         }
 
         if calc.atoms:
-            data['formula'] = calc.atoms.get_chemical_formula()
-            data['natoms'] = len(calc.atoms)
-            data['positions'] = calc.atoms.positions.tolist()
-            data['cell'] = calc.atoms.cell.tolist()
-            data['symbols'] = calc.atoms.get_chemical_symbols()
+            data["formula"] = calc.atoms.get_chemical_formula()
+            data["natoms"] = len(calc.atoms)
+            data["positions"] = calc.atoms.positions.tolist()
+            data["cell"] = calc.atoms.cell.tolist()
+            data["symbols"] = calc.atoms.get_chemical_symbols()
 
         if pretty:
             print(json.dumps(data, indent=2, default=str))
@@ -525,7 +516,7 @@ def vaspsum():
             print(json.dumps(data, default=str))
 
     parser = argparse.ArgumentParser(
-        description='Summarize VASP calculations',
+        description="Summarize VASP calculations",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -534,21 +525,27 @@ Examples:
   vaspsum -v .               # Verbose output
   vaspsum --json calc1       # JSON output
   vaspsum --view .           # View structure
-        """
+        """,
     )
 
-    parser.add_argument('dirs', nargs='*', default=['.'],
-                        help='Directories to summarize (default: current directory)')
-    parser.add_argument('-v', '--verbose', action='store_true',
-                        help='Show detailed information')
-    parser.add_argument('--params', '--describe', action='store_true',
-                        help='Show calculation parameters')
-    parser.add_argument('--json', action='store_true',
-                        help='Output in JSON format')
-    parser.add_argument('--json-pretty', '--jsonpp', action='store_true',
-                        help='Output in pretty-printed JSON format')
-    parser.add_argument('--view', '-p', action='store_true',
-                        help='View final structure')
+    parser.add_argument(
+        "dirs",
+        nargs="*",
+        default=["."],
+        help="Directories to summarize (default: current directory)",
+    )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Show detailed information")
+    parser.add_argument(
+        "--params", "--describe", action="store_true", help="Show calculation parameters"
+    )
+    parser.add_argument("--json", action="store_true", help="Output in JSON format")
+    parser.add_argument(
+        "--json-pretty",
+        "--jsonpp",
+        action="store_true",
+        help="Output in pretty-printed JSON format",
+    )
+    parser.add_argument("--view", "-p", action="store_true", help="View final structure")
 
     args = parser.parse_args()
 
@@ -584,12 +581,14 @@ Examples:
 
             if args.view and calc.atoms:
                 from ase.visualize import view as ase_view
+
                 ase_view(calc.atoms)
 
         except Exception as e:
             print(f"Error processing {directory}: {e}", file=sys.stderr)
             if args.verbose:
                 import traceback
+
                 traceback.print_exc()
 
 
@@ -619,13 +618,8 @@ def vasp_debug():
     def get_version(cmd):
         """Try to get version from a command."""
         try:
-            result = subprocess.run(
-                [cmd, '--version'],
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
-            return result.stdout.strip().split('\n')[0]
+            result = subprocess.run([cmd, "--version"], capture_output=True, text=True, timeout=5)
+            return result.stdout.strip().split("\n")[0]
         except Exception:
             return None
 
@@ -634,12 +628,12 @@ def vasp_debug():
         import_name = import_name or name
         try:
             mod = __import__(import_name)
-            version = getattr(mod, '__version__', 'unknown')
+            version = getattr(mod, "__version__", "unknown")
             return f"✓ {name}: {version}"
         except ImportError:
             return f"✗ {name}: not installed"
 
-    def check_pp_directory(base_path, functional='potpaw_PBE'):
+    def check_pp_directory(base_path, functional="potpaw_PBE"):
         """Check pseudopotential directory structure."""
         pp_path = Path(base_path) / functional
         if not pp_path.exists():
@@ -648,7 +642,7 @@ def vasp_debug():
         elements = []
         for item in sorted(pp_path.iterdir()):
             if item.is_dir():
-                potcar = item / 'POTCAR'
+                potcar = item / "POTCAR"
                 if potcar.exists():
                     elements.append(item.name)
 
@@ -657,7 +651,7 @@ def vasp_debug():
     # Header
     print()
     print("VASP-ASE Debug Information")
-    print("Generated:", __import__('datetime').datetime.now().isoformat())
+    print("Generated:", __import__("datetime").datetime.now().isoformat())
 
     # System Information
     section("System Information")
@@ -671,13 +665,13 @@ def vasp_debug():
     section("Environment Variables (VASP-related)")
 
     vasp_env_vars = [
-        'VASP_PP_PATH',
-        'ASE_VASP_COMMAND',
-        'VASP_COMMAND',
-        'VASP_SCRIPT',
-        'ASE_VASP_VDW',
-        'VASP_PP',
-        'POTCAR_PATH',
+        "VASP_PP_PATH",
+        "ASE_VASP_COMMAND",
+        "VASP_COMMAND",
+        "VASP_SCRIPT",
+        "ASE_VASP_VDW",
+        "VASP_PP",
+        "POTCAR_PATH",
     ]
 
     for var in vasp_env_vars:
@@ -690,17 +684,17 @@ def vasp_debug():
     # Additional useful environment variables
     print()
     print("Other relevant environment variables:")
-    other_vars = ['OMP_NUM_THREADS', 'MKL_NUM_THREADS', 'PATH', 'LD_LIBRARY_PATH']
+    other_vars = ["OMP_NUM_THREADS", "MKL_NUM_THREADS", "PATH", "LD_LIBRARY_PATH"]
     for var in other_vars:
         value = os.environ.get(var)
         if value:
-            if var in ['PATH', 'LD_LIBRARY_PATH']:
+            if var in ["PATH", "LD_LIBRARY_PATH"]:
                 # Show first few paths
-                paths = value.split(':')[:5]
+                paths = value.split(":")[:5]
                 print(f"  {var}:")
                 for p in paths:
                     print(f"    {p}")
-                if len(value.split(':')) > 5:
+                if len(value.split(":")) > 5:
                     print(f"    ... and {len(value.split(':')) - 5} more")
             else:
                 print(f"  {var}={value}")
@@ -709,17 +703,17 @@ def vasp_debug():
     section("Python Packages")
 
     packages = [
-        ('vasp-ase', 'vasp'),
-        ('ase', 'ase'),
-        ('numpy', 'numpy'),
-        ('scipy', 'scipy'),
-        ('matplotlib', 'matplotlib'),
-        ('spglib', 'spglib'),
-        ('phonopy', 'phonopy'),
-        ('pymatgen', 'pymatgen'),
-        ('mp-api', 'mp_api'),
-        ('icet', 'icet'),
-        ('mpi4py', 'mpi4py'),
+        ("vasp-ase", "vasp"),
+        ("ase", "ase"),
+        ("numpy", "numpy"),
+        ("scipy", "scipy"),
+        ("matplotlib", "matplotlib"),
+        ("spglib", "spglib"),
+        ("phonopy", "phonopy"),
+        ("pymatgen", "pymatgen"),
+        ("mp-api", "mp_api"),
+        ("icet", "icet"),
+        ("mpi4py", "mpi4py"),
     ]
 
     for name, import_name in packages:
@@ -729,17 +723,17 @@ def vasp_debug():
     section("VASP Executables")
 
     vasp_commands = [
-        'vasp_std',
-        'vasp_gam',
-        'vasp_ncl',
-        'vasp',
+        "vasp_std",
+        "vasp_gam",
+        "vasp_ncl",
+        "vasp",
     ]
 
     for cmd in vasp_commands:
         print(check_command(cmd))
 
     # Check ASE_VASP_COMMAND specifically
-    ase_cmd = os.environ.get('ASE_VASP_COMMAND')
+    ase_cmd = os.environ.get("ASE_VASP_COMMAND")
     if ase_cmd:
         # Extract the actual vasp command (might have mpirun prefix)
         parts = ase_cmd.split()
@@ -754,22 +748,22 @@ def vasp_debug():
     # MPI Configuration
     section("MPI Configuration")
 
-    mpi_commands = ['mpirun', 'mpiexec', 'srun', 'aprun', 'orterun']
+    mpi_commands = ["mpirun", "mpiexec", "srun", "aprun", "orterun"]
     for cmd in mpi_commands:
         result = check_command(cmd)
-        if '✓' in result:
+        if "✓" in result:
             print(result)
             version = get_version(cmd)
             if version:
                 print(f"    Version: {version}")
 
     # Check for common MPI implementations
-    mpi_libs = ['openmpi', 'mpich', 'intelmpi']
+    mpi_libs = ["openmpi", "mpich", "intelmpi"]
     print()
     print("MPI implementation hints:")
     for lib in mpi_libs:
         # Check if library directory exists or module loaded
-        for path_dir in os.environ.get('PATH', '').split(':'):
+        for path_dir in os.environ.get("PATH", "").split(":"):
             if lib in path_dir.lower():
                 print(f"  Possible {lib}: {path_dir}")
                 break
@@ -777,7 +771,7 @@ def vasp_debug():
     # Pseudopotentials
     section("Pseudopotentials")
 
-    pp_path = os.environ.get('VASP_PP_PATH')
+    pp_path = os.environ.get("VASP_PP_PATH")
     if not pp_path:
         print("✗ VASP_PP_PATH not set")
         print()
@@ -801,7 +795,7 @@ def vasp_debug():
             print()
 
             # Check for different functionals
-            functionals = ['potpaw_PBE', 'potpaw_LDA', 'potpaw_GGA', 'PBE', 'LDA', 'GGA']
+            functionals = ["potpaw_PBE", "potpaw_LDA", "potpaw_GGA", "PBE", "LDA", "GGA"]
             found_any = False
 
             for func in functionals:
@@ -820,8 +814,8 @@ def vasp_debug():
                         # Check for common variants
                         variants = []
                         for elem in elements[:20]:
-                            if '_' in elem:
-                                base, variant = elem.rsplit('_', 1)
+                            if "_" in elem:
+                                base, variant = elem.rsplit("_", 1)
                                 if variant not in variants:
                                     variants.append(variant)
                         if variants:
@@ -836,6 +830,7 @@ def vasp_debug():
 
     try:
         import ase
+
         print("✓ ASE imported successfully")
 
         # Check ASE data directory
@@ -843,7 +838,7 @@ def vasp_debug():
         print(f"  ASE location: {ase_dir}")
 
         # Check for ASE database
-        db_path = Path.home() / '.ase'
+        db_path = Path.home() / ".ase"
         if db_path.exists():
             print(f"  ASE config dir: {db_path}")
 
@@ -855,13 +850,15 @@ def vasp_debug():
 
     try:
         import vasp
+
         print(f"✓ Version: {vasp.__version__}")
         print(f"  Location: {Path(vasp.__file__).parent}")
 
         # Check for runners
         from vasp import runners
+
         available_runners = []
-        for name in ['LocalRunner', 'MockRunner', 'SlurmRunner', 'InteractiveRunner']:
+        for name in ["LocalRunner", "MockRunner", "SlurmRunner", "InteractiveRunner"]:
             if hasattr(runners, name):
                 available_runners.append(name)
         print(f"  Runners: {', '.join(available_runners)}")
@@ -869,6 +866,7 @@ def vasp_debug():
         # Check for recipes
         try:
             from vasp import recipes  # noqa: F401
+
             print("  Recipes: available")
         except ImportError:
             print("  Recipes: not available")
@@ -887,12 +885,12 @@ def vasp_debug():
         from vasp import Vasp
         from vasp.runners import MockResults, MockRunner
 
-        atoms = bulk('Si', 'diamond', a=5.43)
+        atoms = bulk("Si", "diamond", a=5.43)
         mock = MockResults(energy=-10.0, forces=np.zeros((2, 3)))
         calc = Vasp(
             atoms=atoms,
             runner=MockRunner(results=mock),
-            xc='PBE',
+            xc="PBE",
             encut=300,
         )
         energy = calc.potential_energy
@@ -902,15 +900,15 @@ def vasp_debug():
 
     print()
     print("POTCAR path test:")
-    pp_path = os.environ.get('VASP_PP_PATH')
+    pp_path = os.environ.get("VASP_PP_PATH")
     if pp_path:
         # Check if Si POTCAR exists
-        si_potcar = Path(pp_path) / 'potpaw_PBE' / 'Si' / 'POTCAR'
+        si_potcar = Path(pp_path) / "potpaw_PBE" / "Si" / "POTCAR"
         if si_potcar.exists():
             print(f"✓ Si POTCAR found: {si_potcar}")
         else:
             # Try alternate path
-            si_potcar = Path(pp_path) / 'PBE' / 'Si' / 'POTCAR'
+            si_potcar = Path(pp_path) / "PBE" / "Si" / "POTCAR"
             if si_potcar.exists():
                 print(f"✓ Si POTCAR found: {si_potcar}")
             else:
@@ -923,10 +921,10 @@ def vasp_debug():
 
     issues = []
 
-    if not os.environ.get('VASP_PP_PATH'):
+    if not os.environ.get("VASP_PP_PATH"):
         issues.append("VASP_PP_PATH not set - cannot generate POTCAR files")
 
-    if not os.environ.get('ASE_VASP_COMMAND'):
+    if not os.environ.get("ASE_VASP_COMMAND"):
         issues.append("ASE_VASP_COMMAND not set - cannot run VASP automatically")
 
     vasp_found = any(shutil.which(cmd) for cmd in vasp_commands)
@@ -945,5 +943,5 @@ def vasp_debug():
     print()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

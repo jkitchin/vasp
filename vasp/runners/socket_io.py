@@ -66,6 +66,7 @@ EV_TO_HARTREE = 1.0 / HARTREE_TO_EV
 
 class SocketState(Enum):
     """State of the socket client."""
+
     DISCONNECTED = "disconnected"
     CONNECTED = "connected"
     READY = "ready"
@@ -75,6 +76,7 @@ class SocketState(Enum):
 @dataclass
 class SocketConfig:
     """Configuration for socket connection."""
+
     host: str = "localhost"
     port: int = 31415
     unix_socket: str | None = None
@@ -84,6 +86,7 @@ class SocketConfig:
 # =============================================================================
 # Socket Server (Driver Side)
 # =============================================================================
+
 
 class SocketServer:
     """Socket server for driving VASP calculations.
@@ -154,7 +157,7 @@ class SocketServer:
             status = self._get_status()
 
         if status != MSG_READY:
-            raise RuntimeError(f"Unexpected status: {status}")
+            raise RuntimeError(f"Unexpected status: {status!r}")
 
         # Send positions
         self._send_posdata(atoms)
@@ -162,7 +165,7 @@ class SocketServer:
         # Wait for calculation
         status = self._get_status()
         if status != MSG_HAVEDATA:
-            raise RuntimeError(f"Expected HAVEDATA, got: {status}")
+            raise RuntimeError(f"Expected HAVEDATA, got: {status!r}")
 
         # Get forces
         return self._get_forces(len(atoms))
@@ -244,7 +247,7 @@ class SocketServer:
         # Wait for FORCEREADY
         status = self._recv_message()
         if status != MSG_FORCEREADY:
-            raise RuntimeError(f"Expected FORCEREADY, got: {status}")
+            raise RuntimeError(f"Expected FORCEREADY, got: {status!r}")
 
         # Energy (Hartree -> eV)
         energy_data = self._client.recv(8)
@@ -288,6 +291,7 @@ class SocketServer:
 # =============================================================================
 # Socket Client (VASP Side)
 # =============================================================================
+
 
 class SocketClient:
     """Socket client for VASP to receive positions and send forces.
@@ -396,7 +400,7 @@ class SocketClient:
                 break
 
             else:
-                raise RuntimeError(f"Unknown message: {msg}")
+                raise RuntimeError(f"Unknown message: {msg!r}")
 
         self.close()
 
@@ -452,6 +456,9 @@ class SocketClient:
     def _send_forces(self) -> None:
         """Send energy, forces, and virial."""
         self._send_message(MSG_FORCEREADY)
+
+        assert self._atoms is not None
+        assert self._results is not None
 
         n_atoms = len(self._atoms)
 

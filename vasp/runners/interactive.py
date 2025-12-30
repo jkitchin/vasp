@@ -42,6 +42,7 @@ if TYPE_CHECKING:
 @dataclass
 class InteractiveResults:
     """Results from a single interactive step."""
+
     energy: float
     forces: np.ndarray
     stress: np.ndarray | None = None
@@ -51,6 +52,7 @@ class InteractiveResults:
 @dataclass
 class InteractiveState:
     """Internal state of the interactive session."""
+
     steps: int = 0
     positions_sent: int = 0
     positions_confirmed: int = 0
@@ -98,7 +100,7 @@ class InteractiveRunner(Runner):
         timeout: float = 3600,
         parse_stress: bool = False,
     ):
-        self.vasp_command = vasp_command or os.environ.get('VASP_COMMAND', 'vasp_std')
+        self.vasp_command = vasp_command or os.environ.get("VASP_COMMAND", "vasp_std")
         self.mpi_command = mpi_command
         self.timeout = timeout
         self.parse_stress = parse_stress
@@ -191,11 +193,15 @@ class InteractiveRunner(Runner):
         if not self.is_running:
             return
 
+        # Type narrowing for mypy
+        assert self._process is not None
+        assert self._directory is not None
+
         try:
             # Write STOPCAR for graceful shutdown
-            stopcar_path = os.path.join(self._directory, 'STOPCAR')
-            with open(stopcar_path, 'w') as f:
-                f.write('LABORT = .TRUE.\n')
+            stopcar_path = os.path.join(self._directory, "STOPCAR")
+            with open(stopcar_path, "w") as f:
+                f.write("LABORT = .TRUE.\n")
 
             # Send dummy positions to trigger VASP to read STOPCAR
             if self._atoms is not None:
@@ -232,16 +238,14 @@ class InteractiveRunner(Runner):
             return JobStatus(JobState.COMPLETE)
 
         return JobStatus(
-            JobState.NOT_STARTED,
-            message="Use start()/step()/close() for interactive mode"
+            JobState.NOT_STARTED, message="Use start()/step()/close() for interactive mode"
         )
 
     def status(self, directory: str) -> JobStatus:
         """Check status of interactive session."""
         if self.is_running:
             return JobStatus(
-                JobState.RUNNING,
-                message=f"Interactive session active, {self._state.steps} steps"
+                JobState.RUNNING, message=f"Interactive session active, {self._state.steps} steps"
             )
 
         if self._check_outcar_complete(directory):
@@ -261,21 +265,21 @@ class InteractiveRunner(Runner):
     def _prepare_inputs(self, directory: str) -> None:
         """Verify and modify input files for interactive mode."""
         # Check required files
-        required = ['INCAR', 'POSCAR', 'POTCAR', 'KPOINTS']
+        required = ["INCAR", "POSCAR", "POTCAR", "KPOINTS"]
         for fname in required:
             path = os.path.join(directory, fname)
             if not os.path.exists(path):
-                if fname == 'KPOINTS':
+                if fname == "KPOINTS":
                     # Check for KSPACING
-                    incar_path = os.path.join(directory, 'INCAR')
+                    incar_path = os.path.join(directory, "INCAR")
                     if os.path.exists(incar_path):
                         with open(incar_path) as f:
-                            if 'KSPACING' in f.read().upper():
+                            if "KSPACING" in f.read().upper():
                                 continue
                 raise VaspSetupError(f"Missing {fname} in {directory}")
 
         # Modify INCAR for interactive mode
-        incar_path = os.path.join(directory, 'INCAR')
+        incar_path = os.path.join(directory, "INCAR")
         self._modify_incar(incar_path)
 
     def _modify_incar(self, incar_path: str) -> None:
@@ -283,35 +287,39 @@ class InteractiveRunner(Runner):
         with open(incar_path) as f:
             content = f.read()
 
-        lines = content.split('\n')
+        lines = content.split("\n")
         new_lines = []
         has_interactive = False
 
         for line in lines:
             # Remove NSW, IBRION settings (we control the loop)
             upper = line.upper().strip()
-            if upper.startswith('NSW') or upper.startswith('IBRION'):
+            if upper.startswith("NSW") or upper.startswith("IBRION"):
                 continue
-            if upper.startswith('INTERACTIVE'):
+            if upper.startswith("INTERACTIVE"):
                 has_interactive = True
-                new_lines.append('INTERACTIVE = .TRUE.')
+                new_lines.append("INTERACTIVE = .TRUE.")
             else:
                 new_lines.append(line)
 
         if not has_interactive:
-            new_lines.insert(0, 'INTERACTIVE = .TRUE.')
+            new_lines.insert(0, "INTERACTIVE = .TRUE.")
 
         # Also set NSW=0, IBRION=-1 explicitly
-        new_lines.insert(1, 'NSW = 0')
-        new_lines.insert(2, 'IBRION = -1')
+        new_lines.insert(1, "NSW = 0")
+        new_lines.insert(2, "IBRION = -1")
 
-        with open(incar_path, 'w') as f:
-            f.write('\n'.join(new_lines))
+        with open(incar_path, "w") as f:
+            f.write("\n".join(new_lines))
 
     def _write_positions(self, atoms: Atoms) -> None:
         """Send atomic positions to VASP via stdin."""
         if not self.is_running:
             raise VaspError("VASP process not running")
+
+        # Type narrowing for mypy
+        assert self._process is not None
+        assert self._process.stdin is not None
 
         # Get scaled (fractional) positions
         scaled = atoms.get_scaled_positions()
@@ -329,16 +337,21 @@ class InteractiveRunner(Runner):
         if not self.is_running:
             raise VaspError("VASP process not running")
 
+        # Type narrowing for mypy
+        assert self._process is not None
+        assert self._process.stdout is not None
+        assert self._process.stderr is not None
+
         energy = None
         forces = []
         stress = None
         n_atoms = len(self._atoms) if self._atoms else 0
 
         # Patterns to match
-        energy_pattern = re.compile(r'ETOTAL\s*=\s*([-\d.E+]+)')
-        force_pattern = re.compile(r'FORCES:\s*([-\d.E+]+)\s+([-\d.E+]+)\s+([-\d.E+]+)')
-        pos_confirm = re.compile(r'POSITIONS:\s*read from stdin')
-        lattice_support = re.compile(r'LATTICE:\s*reading from stdin')
+        energy_pattern = re.compile(r"ETOTAL\s*=\s*([-\d.E+]+)")
+        force_pattern = re.compile(r"FORCES:\s*([-\d.E+]+)\s+([-\d.E+]+)\s+([-\d.E+]+)")
+        pos_confirm = re.compile(r"POSITIONS:\s*read from stdin")
+        lattice_support = re.compile(r"LATTICE:\s*reading from stdin")
 
         start_time = time.time()
 

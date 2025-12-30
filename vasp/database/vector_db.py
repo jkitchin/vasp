@@ -7,6 +7,7 @@ per-atom embeddings for similarity search using libSQL's native vector support.
 from __future__ import annotations
 
 import json
+import sqlite3
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -107,7 +108,7 @@ class VectorAtomDatabase:
         self.db_path = Path(db_path)
         self.embedder = embedder
         self._embedding_dim = embedding_dim if embedder is None else embedder.dim
-        self._conn = None
+        self._conn: sqlite3.Connection | Any | None = None
         self._has_vector_support = False
 
     @property
@@ -117,11 +118,10 @@ class VectorAtomDatabase:
 
     def connect(self) -> None:
         """Connect to database and create tables."""
-        import sqlite3
-
         # Try libSQL first for vector support
         try:
             import libsql_experimental as libsql
+
             self._conn = libsql.connect(str(self.db_path))
             self._has_vector_support = True
         except ImportError:
@@ -149,7 +149,8 @@ class VectorAtomDatabase:
         cursor = self._conn.cursor()
 
         # Structures table
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS structures (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 formula TEXT NOT NULL,
@@ -164,11 +165,13 @@ class VectorAtomDatabase:
                 metadata TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        """)
+        """
+        )
 
         # Atoms table with embeddings
         if self._has_vector_support:
-            cursor.execute(f"""
+            cursor.execute(
+                f"""
                 CREATE TABLE IF NOT EXISTS atoms (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     structure_id INTEGER NOT NULL,
@@ -185,21 +188,25 @@ class VectorAtomDatabase:
                     FOREIGN KEY (structure_id) REFERENCES structures(id),
                     UNIQUE(structure_id, atom_index)
                 )
-            """)
+            """
+            )
 
             # Create vector index
             try:
-                cursor.execute("""
+                cursor.execute(
+                    """
                     CREATE INDEX IF NOT EXISTS atoms_emb_idx ON atoms (
                         libsql_vector_idx(embedding, 'metric=cosine')
                     )
-                """)
+                """
+                )
             except Exception:
                 # Vector index creation might fail on some libSQL versions
                 pass
         else:
             # Standard SQLite without vector support
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS atoms (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     structure_id INTEGER NOT NULL,
@@ -216,15 +223,12 @@ class VectorAtomDatabase:
                     FOREIGN KEY (structure_id) REFERENCES structures(id),
                     UNIQUE(structure_id, atom_index)
                 )
-            """)
+            """
+            )
 
         # Index for element queries
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS atoms_symbol_idx ON atoms(symbol)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS atoms_structure_idx ON atoms(structure_id)"
-        )
+        cursor.execute("CREATE INDEX IF NOT EXISTS atoms_symbol_idx ON atoms(symbol)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS atoms_structure_idx ON atoms(structure_id)")
 
         self._conn.commit()
 
@@ -290,6 +294,7 @@ class VectorAtomDatabase:
             ),
         )
         structure_id = cursor.lastrowid
+        assert structure_id is not None
 
         # Insert atoms with embeddings
         positions = atoms.get_positions()

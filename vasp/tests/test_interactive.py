@@ -14,6 +14,7 @@ from vasp.runners.interactive import InteractiveState
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def temp_calc_dir(tmp_path):
     """Create a temporary calculation directory with input files."""
@@ -22,7 +23,8 @@ def temp_calc_dir(tmp_path):
 
     # Create minimal input files
     (calc_dir / "INCAR").write_text("ENCUT = 400\nISMEAR = 0\n")
-    (calc_dir / "POSCAR").write_text("""Si
+    (calc_dir / "POSCAR").write_text(
+        """Si
 1.0
 5.43 0.0 0.0
 0.0 5.43 0.0
@@ -32,7 +34,8 @@ Si
 Direct
 0.0 0.0 0.0
 0.25 0.25 0.25
-""")
+"""
+    )
     (calc_dir / "POTCAR").write_text("PAW_PBE Si\n")
     (calc_dir / "KPOINTS").write_text("Automatic\n0\nGamma\n4 4 4\n")
 
@@ -43,7 +46,8 @@ Direct
 def si_atoms():
     """Create Si atoms for testing."""
     from ase.build import bulk
-    return bulk('Si', 'diamond', a=5.43)
+
+    return bulk("Si", "diamond", a=5.43)
 
 
 @pytest.fixture
@@ -69,6 +73,7 @@ def mock_vasp_output():
 # =============================================================================
 # InteractiveResults Tests
 # =============================================================================
+
 
 class TestInteractiveResults:
     """Tests for InteractiveResults dataclass."""
@@ -104,6 +109,7 @@ class TestInteractiveResults:
 # InteractiveState Tests
 # =============================================================================
 
+
 class TestInteractiveState:
     """Tests for InteractiveState dataclass."""
 
@@ -123,14 +129,18 @@ class TestInteractiveState:
 # InteractiveRunner Tests
 # =============================================================================
 
+
 class TestInteractiveRunner:
     """Tests for InteractiveRunner class."""
 
-    def test_init_defaults(self):
+    def test_init_defaults(self, monkeypatch):
         """Test default initialization."""
+        # Clear VASP_COMMAND env var for this test
+        monkeypatch.delenv("VASP_COMMAND", raising=False)
+
         runner = InteractiveRunner()
 
-        assert runner.vasp_command == 'vasp_std'
+        assert runner.vasp_command == "vasp_std"
         assert runner.mpi_command is None
         assert runner.timeout == 3600
         assert runner.parse_stress is False
@@ -139,33 +149,33 @@ class TestInteractiveRunner:
     def test_init_custom(self):
         """Test custom initialization."""
         runner = InteractiveRunner(
-            vasp_command='vasp_gam',
-            mpi_command='mpirun -np 8',
+            vasp_command="vasp_gam",
+            mpi_command="mpirun -np 8",
             timeout=7200,
             parse_stress=True,
         )
 
-        assert runner.vasp_command == 'vasp_gam'
-        assert runner.mpi_command == 'mpirun -np 8'
+        assert runner.vasp_command == "vasp_gam"
+        assert runner.mpi_command == "mpirun -np 8"
         assert runner.timeout == 7200
         assert runner.parse_stress is True
 
     def test_build_command_no_mpi(self):
         """Test command building without MPI."""
-        runner = InteractiveRunner(vasp_command='vasp_std')
+        runner = InteractiveRunner(vasp_command="vasp_std")
         cmd = runner._build_command()
 
-        assert cmd == 'vasp_std'
+        assert cmd == "vasp_std"
 
     def test_build_command_with_mpi(self):
         """Test command building with MPI."""
         runner = InteractiveRunner(
-            vasp_command='vasp_std',
-            mpi_command='mpirun -np 4',
+            vasp_command="vasp_std",
+            mpi_command="mpirun -np 4",
         )
         cmd = runner._build_command()
 
-        assert cmd == 'mpirun -np 4 vasp_std'
+        assert cmd == "mpirun -np 4 vasp_std"
 
     def test_prepare_inputs_missing_files(self, tmp_path):
         """Test error on missing input files."""
@@ -181,18 +191,18 @@ class TestInteractiveRunner:
         runner = InteractiveRunner()
         runner._prepare_inputs(temp_calc_dir)
 
-        with open(os.path.join(temp_calc_dir, 'INCAR')) as f:
+        with open(os.path.join(temp_calc_dir, "INCAR")) as f:
             content = f.read()
 
-        assert 'INTERACTIVE = .TRUE.' in content
-        assert 'NSW = 0' in content
-        assert 'IBRION = -1' in content
+        assert "INTERACTIVE = .TRUE." in content
+        assert "NSW = 0" in content
+        assert "IBRION = -1" in content
 
     def test_prepare_inputs_removes_nsw_ibrion(self, temp_calc_dir):
         """Test that NSW and IBRION are removed from INCAR."""
         # Add NSW and IBRION to INCAR
-        incar_path = os.path.join(temp_calc_dir, 'INCAR')
-        with open(incar_path, 'w') as f:
+        incar_path = os.path.join(temp_calc_dir, "INCAR")
+        with open(incar_path, "w") as f:
             f.write("ENCUT = 400\nNSW = 100\nIBRION = 2\nISMEAR = 0\n")
 
         runner = InteractiveRunner()
@@ -202,17 +212,17 @@ class TestInteractiveRunner:
             content = f.read()
 
         # Should have removed user NSW/IBRION and set our own
-        assert content.count('NSW') == 1  # Only our NSW = 0
-        assert content.count('IBRION') == 1  # Only our IBRION = -1
+        assert content.count("NSW") == 1  # Only our NSW = 0
+        assert content.count("IBRION") == 1  # Only our IBRION = -1
 
     def test_repr_stopped(self):
         """Test string representation when stopped."""
         runner = InteractiveRunner()
         repr_str = repr(runner)
 
-        assert 'InteractiveRunner' in repr_str
-        assert 'vasp_std' in repr_str
-        assert 'stopped' in repr_str
+        assert "InteractiveRunner" in repr_str
+        assert "vasp_std" in repr_str
+        assert "stopped" in repr_str
 
     def test_is_running_no_process(self):
         """Test is_running when no process exists."""
@@ -240,7 +250,7 @@ class TestInteractiveRunner:
         runner = InteractiveRunner()
         status = runner.status(temp_calc_dir)
 
-        assert status.state.value == 'not_started'
+        assert status.state.value == "not_started"
 
 
 class TestInteractiveRunnerMocked:
@@ -281,10 +291,10 @@ class TestInteractiveRunnerMocked:
         runner.close()
 
         # STOPCAR should exist
-        stopcar_path = os.path.join(temp_calc_dir, 'STOPCAR')
+        stopcar_path = os.path.join(temp_calc_dir, "STOPCAR")
         assert os.path.exists(stopcar_path)
         with open(stopcar_path) as f:
-            assert 'LABORT' in f.read()
+            assert "LABORT" in f.read()
 
     def test_start_already_running_raises(self, temp_calc_dir, si_atoms):
         """Test that start() raises if already running."""
@@ -304,7 +314,8 @@ class TestInteractiveResultsParsing:
     def test_parse_energy_pattern(self):
         """Test energy regex pattern."""
         import re
-        pattern = re.compile(r'ETOTAL\s*=\s*([-\d.E+]+)')
+
+        pattern = re.compile(r"ETOTAL\s*=\s*([-\d.E+]+)")
 
         line = " ETOTAL = -10.84274516"
         match = pattern.search(line)
@@ -314,7 +325,8 @@ class TestInteractiveResultsParsing:
     def test_parse_forces_pattern(self):
         """Test forces regex pattern."""
         import re
-        pattern = re.compile(r'FORCES:\s*([-\d.E+]+)\s+([-\d.E+]+)\s+([-\d.E+]+)')
+
+        pattern = re.compile(r"FORCES:\s*([-\d.E+]+)\s+([-\d.E+]+)\s+([-\d.E+]+)")
 
         line = " FORCES:  0.12345678  -0.23456789  0.34567890"
         match = pattern.search(line)
@@ -326,7 +338,8 @@ class TestInteractiveResultsParsing:
     def test_parse_position_confirmation(self):
         """Test position confirmation regex."""
         import re
-        pattern = re.compile(r'POSITIONS:\s*read from stdin')
+
+        pattern = re.compile(r"POSITIONS:\s*read from stdin")
 
         line = " POSITIONS: read from stdin"
         assert pattern.search(line) is not None

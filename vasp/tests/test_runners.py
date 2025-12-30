@@ -41,13 +41,13 @@ class TestJobStatus:
 
     def test_with_jobid(self):
         """Test JobStatus with job ID."""
-        status = JobStatus(JobState.RUNNING, jobid='12345')
-        assert status.jobid == '12345'
+        status = JobStatus(JobState.RUNNING, jobid="12345")
+        assert status.jobid == "12345"
 
     def test_with_message(self):
         """Test JobStatus with message."""
-        status = JobStatus(JobState.FAILED, message='Out of memory')
-        assert status.message == 'Out of memory'
+        status = JobStatus(JobState.FAILED, message="Out of memory")
+        assert status.message == "Out of memory"
 
 
 class TestMockRunner:
@@ -64,23 +64,19 @@ class TestMockRunner:
 
     def test_mock_writes_files(self, temp_dir):
         """Test that mock runner writes output files."""
-        results = MockResults(
-            energy=-10.0,
-            forces=np.array([[0.1, -0.1, 0.0]]),
-            fermi_level=5.0
-        )
+        results = MockResults(energy=-10.0, forces=np.array([[0.1, -0.1, 0.0]]), fermi_level=5.0)
         runner = MockRunner(results=results)
 
         runner.run(temp_dir)
 
-        assert os.path.exists(os.path.join(temp_dir, 'OUTCAR'))
-        assert os.path.exists(os.path.join(temp_dir, 'vasprun.xml'))
+        assert os.path.exists(os.path.join(temp_dir, "OUTCAR"))
+        assert os.path.exists(os.path.join(temp_dir, "vasprun.xml"))
 
     def test_mock_state_sequence(self, temp_dir):
         """Test mock runner with state sequence."""
         runner = MockRunner(
             results=MockResults(energy=-10.0),
-            state_sequence=[JobState.SUBMITTED, JobState.RUNNING, JobState.COMPLETE]
+            state_sequence=[JobState.SUBMITTED, JobState.RUNNING, JobState.COMPLETE],
         )
 
         # First call - SUBMITTED (raises exception)
@@ -99,10 +95,7 @@ class TestMockRunner:
         """Test mock runner with delay."""
         import time
 
-        runner = MockRunner(
-            results=MockResults(energy=-10.0),
-            delay=0.1
-        )
+        runner = MockRunner(results=MockResults(energy=-10.0), delay=0.1)
 
         start = time.time()
         runner.run(temp_dir)
@@ -127,10 +120,7 @@ class TestMockRunner:
 
     def test_mock_cancel(self, temp_dir):
         """Test cancelling mock runner."""
-        runner = MockRunner(
-            results=MockResults(energy=-10.0),
-            state_sequence=[JobState.RUNNING]
-        )
+        runner = MockRunner(results=MockResults(energy=-10.0), state_sequence=[JobState.RUNNING])
         # run() raises VaspRunning for RUNNING state
         with pytest.raises(VaspRunning):
             runner.run(temp_dir)
@@ -144,37 +134,34 @@ class TestLocalRunner:
     def test_init_defaults(self, monkeypatch):
         """Test default initialization."""
         # Clear VASP_COMMAND env var to test true default
-        monkeypatch.delenv('VASP_COMMAND', raising=False)
+        monkeypatch.delenv("VASP_COMMAND", raising=False)
         runner = LocalRunner()
 
-        assert runner.vasp_command == 'vasp_std'
+        assert runner.vasp_command == "vasp_std"
         assert runner.mpi_command is None
         assert not runner.background
 
     def test_init_from_env(self, monkeypatch):
         """Test initialization from VASP_COMMAND environment variable."""
-        monkeypatch.setenv('VASP_COMMAND', 'vasp_ncl')
+        monkeypatch.setenv("VASP_COMMAND", "vasp_ncl")
         runner = LocalRunner()
 
-        assert runner.vasp_command == 'vasp_ncl'
+        assert runner.vasp_command == "vasp_ncl"
 
     def test_init_with_mpi(self):
         """Test initialization with MPI."""
-        runner = LocalRunner(
-            vasp_command='vasp_gam',
-            mpi_command='mpirun -np 4'
-        )
+        runner = LocalRunner(vasp_command="vasp_gam", mpi_command="mpirun -np 4")
 
-        assert runner.vasp_command == 'vasp_gam'
-        assert runner.mpi_command == 'mpirun -np 4'
+        assert runner.vasp_command == "vasp_gam"
+        assert runner.mpi_command == "mpirun -np 4"
 
     def test_build_command(self):
         """Test command building."""
-        runner = LocalRunner(vasp_command='vasp_std')
-        assert runner._build_command() == 'vasp_std'
+        runner = LocalRunner(vasp_command="vasp_std")
+        assert runner._build_command() == "vasp_std"
 
-        runner = LocalRunner(vasp_command='vasp_std', mpi_command='mpirun -np 4')
-        assert runner._build_command() == 'mpirun -np 4 vasp_std'
+        runner = LocalRunner(vasp_command="vasp_std", mpi_command="mpirun -np 4")
+        assert runner._build_command() == "mpirun -np 4 vasp_std"
 
     def test_verify_inputs_missing(self, temp_dir):
         """Test input verification with missing files."""
@@ -183,7 +170,7 @@ class TestLocalRunner:
         with pytest.raises(VaspSetupError) as exc_info:
             runner._verify_inputs(temp_dir)
 
-        assert 'INCAR' in str(exc_info.value)
+        assert "INCAR" in str(exc_info.value)
 
     def test_verify_inputs_complete(self, calc_dir):
         """Test input verification with complete files."""
@@ -216,20 +203,20 @@ class TestLocalRunner:
         runner = LocalRunner()
 
         # Create OUTCAR with error
-        with open(os.path.join(temp_dir, 'OUTCAR'), 'w') as f:
-            f.write('VERY BAD NEWS! Something went wrong\n')
+        with open(os.path.join(temp_dir, "OUTCAR"), "w") as f:
+            f.write("VERY BAD NEWS! Something went wrong\n")
 
         error = runner._check_outcar_error(temp_dir)
-        assert error == 'VERY BAD NEWS!'
+        assert error == "VERY BAD NEWS!"
 
     def test_repr(self):
         """Test string representation."""
-        runner = LocalRunner(vasp_command='vasp_ncl', background=True)
+        runner = LocalRunner(vasp_command="vasp_ncl", background=True)
 
         repr_str = repr(runner)
-        assert 'LocalRunner' in repr_str
-        assert 'vasp_ncl' in repr_str
-        assert 'background=True' in repr_str
+        assert "LocalRunner" in repr_str
+        assert "vasp_ncl" in repr_str
+        assert "background=True" in repr_str
 
 
 class TestSlurmRunner:
@@ -241,51 +228,49 @@ class TestSlurmRunner:
 
         assert runner.nodes == 1
         assert runner.ntasks_per_node == 24  # Actual default
-        assert runner.time == '24:00:00'
-        assert 'vasp_std' in runner.vasp_command
+        assert runner.time == "24:00:00"
+        assert "vasp_std" in runner.vasp_command
 
     def test_init_custom(self):
         """Test custom initialization."""
         runner = SlurmRunner(
             nodes=4,
             ntasks_per_node=32,
-            partition='gpu',
-            account='my-project',
-            time='48:00:00',
-            vasp_command='vasp_gpu'
+            partition="gpu",
+            account="my-project",
+            time="48:00:00",
+            vasp_command="vasp_gpu",
         )
 
         assert runner.nodes == 4
         assert runner.ntasks_per_node == 32
-        assert runner.partition == 'gpu'
-        assert runner.account == 'my-project'
+        assert runner.partition == "gpu"
+        assert runner.account == "my-project"
 
     def test_generate_script(self, temp_dir):
         """Test SLURM script generation."""
         runner = SlurmRunner(
             nodes=2,
-            partition='normal',
+            partition="normal",
         )
 
         # Method is named _create_script, not _generate_script
         script = runner._create_script(temp_dir)
 
-        assert '#!/bin/bash' in script
-        assert '#SBATCH --nodes=2' in script
-        assert '#SBATCH --partition=normal' in script
-        assert '#SBATCH --job-name=' in script  # job_name derived from directory
-        assert 'srun' in script or 'vasp' in script
+        assert "#!/bin/bash" in script
+        assert "#SBATCH --nodes=2" in script
+        assert "#SBATCH --partition=normal" in script
+        assert "#SBATCH --job-name=" in script  # job_name derived from directory
+        assert "srun" in script or "vasp" in script
 
     def test_generate_script_with_modules(self, temp_dir):
         """Test script generation with module loading."""
-        runner = SlurmRunner(
-            modules=['vasp/6.3.0', 'intel/2021']
-        )
+        runner = SlurmRunner(modules=["vasp/6.3.0", "intel/2021"])
 
         script = runner._create_script(temp_dir)
 
-        assert 'module load vasp/6.3.0' in script
-        assert 'module load intel/2021' in script
+        assert "module load vasp/6.3.0" in script
+        assert "module load intel/2021" in script
 
     def test_status_not_started(self, temp_dir):
         """Test status for not started job."""
@@ -299,8 +284,8 @@ class TestSlurmRunner:
         runner = SlurmRunner()
 
         # Create job ID file
-        with open(os.path.join(complete_calc_dir, '.slurm_jobid'), 'w') as f:
-            f.write('12345')
+        with open(os.path.join(complete_calc_dir, ".slurm_jobid"), "w") as f:
+            f.write("12345")
 
         status = runner.status(complete_calc_dir)
         # Should check squeue, then fall back to OUTCAR
@@ -308,12 +293,12 @@ class TestSlurmRunner:
 
     def test_repr(self):
         """Test string representation."""
-        runner = SlurmRunner(partition='gpu', nodes=4)
+        runner = SlurmRunner(partition="gpu", nodes=4)
 
         repr_str = repr(runner)
-        assert 'SlurmRunner' in repr_str
-        assert 'gpu' in repr_str
-        assert '4' in repr_str
+        assert "SlurmRunner" in repr_str
+        assert "gpu" in repr_str
+        assert "4" in repr_str
 
 
 class TestKubernetesRunner:
@@ -325,64 +310,66 @@ class TestKubernetesRunner:
 
     @pytest.fixture(autouse=True)
     def check_kubernetes(self):
-        """Skip tests if kubernetes package not available."""
+        """Skip tests if kubernetes package or config not available."""
         try:
             import kubernetes  # noqa: F401
+            from kubernetes import config
+
+            config.load_kube_config()
         except ImportError:
             pytest.skip("kubernetes package not installed")
+        except kubernetes.config.config_exception.ConfigException:
+            pytest.skip("kubernetes config not available")
 
     def test_init_defaults(self):
         """Test default initialization."""
-        runner = KubernetesRunner(pvc_name='vasp-data')
+        runner = KubernetesRunner(pvc_name="vasp-data")
 
-        assert runner.pvc_name == 'vasp-data'
-        assert runner.namespace == 'default'
+        assert runner.pvc_name == "vasp-data"
+        assert runner.namespace == "default"
         # attribute is 'image', not 'vasp_image'
-        assert runner.image == 'vasp:latest'
+        assert runner.image == "vasp:latest"
 
     def test_init_custom(self):
         """Test custom initialization."""
         runner = KubernetesRunner(
-            pvc_name='my-pvc',
-            namespace='compute',
-            image='registry/vasp:6.3.0',  # 'image' not 'vasp_image'
-            cpu_request='4',
-            memory_request='16Gi',
-            gpu_limit=1  # 'gpu_limit' not 'gpu_request'
+            pvc_name="my-pvc",
+            namespace="compute",
+            image="registry/vasp:6.3.0",  # 'image' not 'vasp_image'
+            cpu_request="4",
+            memory_request="16Gi",
+            gpu_limit=1,  # 'gpu_limit' not 'gpu_request'
         )
 
-        assert runner.pvc_name == 'my-pvc'
-        assert runner.namespace == 'compute'
+        assert runner.pvc_name == "my-pvc"
+        assert runner.namespace == "compute"
         assert runner.gpu_limit == 1
 
     def test_generate_job_name(self, temp_dir):
         """Test Kubernetes Job name generation."""
-        runner = KubernetesRunner(pvc_name='vasp-data')
+        runner = KubernetesRunner(pvc_name="vasp-data")
 
         job_name = runner._generate_job_name(temp_dir)
 
         # Job name should start with 'vasp-' and be K8s compatible
-        assert job_name.startswith('vasp-')
-        assert all(c.isalnum() or c == '-' for c in job_name)
+        assert job_name.startswith("vasp-")
+        assert all(c.isalnum() or c == "-" for c in job_name)
 
     def test_status_not_started(self, temp_dir):
         """Test status for not started job."""
-        runner = KubernetesRunner(pvc_name='vasp-data')
+        runner = KubernetesRunner(pvc_name="vasp-data")
 
         status = runner.status(temp_dir)
         assert status.state == JobState.NOT_STARTED
 
     def test_repr(self):
         """Test string representation."""
-        runner = KubernetesRunner(
-            pvc_name='my-pvc',
-            namespace='compute'
-        )
+        runner = KubernetesRunner(pvc_name="my-pvc", namespace="compute")
 
         repr_str = repr(runner)
-        assert 'KubernetesRunner' in repr_str
+        assert "KubernetesRunner" in repr_str
         # Check for namespace in repr
-        assert 'compute' in repr_str
+        assert "compute" in repr_str
 
 
 class TestRunnerBase:
@@ -399,8 +386,8 @@ class TestRunnerBase:
         runner = MockRunner(results=MockResults(energy=-10.0))
 
         # Write incomplete OUTCAR
-        with open(os.path.join(temp_dir, 'OUTCAR'), 'w') as f:
-            f.write('Some output but not complete\n')
+        with open(os.path.join(temp_dir, "OUTCAR"), "w") as f:
+            f.write("Some output but not complete\n")
 
         assert not runner._check_outcar_complete(temp_dir)
 
@@ -419,4 +406,4 @@ class TestRunnerBase:
 
         logs = runner.get_logs(temp_dir)
 
-        assert 'No OUTCAR found' in logs
+        assert "No OUTCAR found" in logs
