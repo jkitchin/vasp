@@ -14,31 +14,31 @@ parts:
     chapters:
       - file: tutorials/beginner
         sections:
-          - file: tutorials/01_getting_started
-          - file: tutorials/02_convergence
-          - file: tutorials/03_relaxation
-          - file: tutorials/04_equation_of_state
-          - file: tutorials/05_density_of_states
+          - file: ../examples/01_getting_started/tutorial
+          - file: ../examples/02_convergence/tutorial
+          - file: ../examples/03_relaxation/tutorial
+          - file: ../examples/04_equation_of_state/tutorial
+          - file: ../examples/05_density_of_states/tutorial
       - file: tutorials/intermediate
         sections:
-          - file: tutorials/06_band_structure
-          - file: tutorials/07_magnetism
-          - file: tutorials/08_surfaces
-          - file: tutorials/09_adsorption
-          - file: tutorials/10_reactions
+          - file: ../examples/06_band_structure/tutorial
+          - file: ../examples/07_magnetism/tutorial
+          - file: ../examples/08_surfaces/tutorial
+          - file: ../examples/09_adsorption/tutorial
+          - file: ../examples/10_reactions/tutorial
       - file: tutorials/advanced
         sections:
-          - file: tutorials/11_phonons
-          - file: tutorials/12_dft_plus_u
-          - file: tutorials/13_hybrid_functionals
-          - file: tutorials/14_van_der_waals
-          - file: tutorials/15_workflows
-          - file: tutorials/16_neb
-          - file: tutorials/17_vibrations
-          - file: tutorials/18_3d_visualization
-          - file: tutorials/19_pseudopotentials
-          - file: tutorials/20_interactive_mode
-          - file: tutorials/21_cluster_expansion
+          - file: ../examples/11_phonons/tutorial
+          - file: ../examples/12_dft_plus_u/tutorial
+          - file: ../examples/13_hybrid_functionals/tutorial
+          - file: ../examples/14_van_der_waals/tutorial
+          - file: ../examples/15_workflows/tutorial
+          - file: ../examples/16_neb/tutorial
+          - file: ../examples/17_vibrations/tutorial
+          - file: ../examples/18_3d_visualization/tutorial
+          - file: ../examples/19_pseudopotentials/tutorial
+          - file: ../examples/20_interactive_mode/tutorial
+          - file: ../examples/21_cluster_expansion/tutorial
 
   - caption: User Guide
     chapters:
