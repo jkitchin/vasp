@@ -123,55 +123,38 @@ status:
 	@echo "Uncommitted changes:"
 	@git diff --shortstat
 
-# Example targets
-EXAMPLE_DIRS := $(sort $(wildcard examples/[0-9][0-9]_*))
-NOTEBOOKS := $(wildcard examples/*/tutorial.ipynb)
+# Example targets (all examples are now Jupyter notebooks)
+NOTEBOOKS := $(sort $(wildcard examples/*/tutorial.ipynb))
 
 examples:
-	@echo "Running all examples..."
-	@for dir in $(EXAMPLE_DIRS); do \
-		name=$$(basename $$dir); \
-		if [ -f "$$dir/tutorial.ipynb" ]; then \
-			echo "  [$$name] Running notebook..."; \
-			jupyter nbconvert --to notebook --execute --inplace "$$dir/tutorial.ipynb" || exit 1; \
-		elif [ -f "$$dir/run.py" ]; then \
-			echo "  [$$name] Running script..."; \
-			python "$$dir/run.py" || exit 1; \
-		else \
-			echo "  [$$name] Skipped (no run.py or tutorial.ipynb)"; \
-		fi; \
+	@echo "Running all example notebooks..."
+	@for nb in $(NOTEBOOKS); do \
+		name=$$(dirname $$nb | xargs basename); \
+		echo "  [$$name] Running..."; \
+		jupyter nbconvert --to notebook --execute --inplace "$$nb" || exit 1; \
 	done
 	@echo "All examples completed."
 
-# Run a single example: make example EX=19_pseudopotentials
+# Run a single example: make example EX=01 or EX=getting_started
 example:
 ifdef EX
-	@dir=$$(ls -d examples/$(EX) examples/$(EX)_* examples/*_$(EX) 2>/dev/null | head -1); \
-	if [ -z "$$dir" ]; then \
+	@nb=$$(ls examples/$(EX)/tutorial.ipynb examples/$(EX)_*/tutorial.ipynb examples/*_$(EX)/tutorial.ipynb 2>/dev/null | head -1); \
+	if [ -z "$$nb" ]; then \
 		echo "Error: No example found matching '$(EX)'"; \
 		echo ""; \
 		echo "Available examples:"; \
 		ls -d examples/[0-9][0-9]_* 2>/dev/null | sed 's|examples/||'; \
 		exit 1; \
 	fi; \
-	name=$$(basename $$dir); \
-	if [ -f "$$dir/tutorial.ipynb" ]; then \
-		echo "Running $$name (notebook)..."; \
-		jupyter nbconvert --to notebook --execute --inplace "$$dir/tutorial.ipynb"; \
-	elif [ -f "$$dir/run.py" ]; then \
-		echo "Running $$name (script)..."; \
-		python "$$dir/run.py"; \
-	else \
-		echo "Error: No run.py or tutorial.ipynb in $$dir"; \
-		exit 1; \
-	fi
+	echo "Running $$nb..."; \
+	jupyter nbconvert --to notebook --execute --inplace "$$nb"
 else
 	@echo "Usage: make example EX=<name>"
 	@echo ""
 	@echo "Examples:"
-	@echo "  make example EX=01_getting_started"
-	@echo "  make example EX=getting_started"
 	@echo "  make example EX=01"
+	@echo "  make example EX=getting_started"
+	@echo "  make example EX=01_getting_started"
 	@echo ""
 	@echo "Available examples:"
 	@ls -d examples/[0-9][0-9]_* 2>/dev/null | sed 's|examples/||'

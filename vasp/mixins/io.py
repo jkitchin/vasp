@@ -515,8 +515,8 @@ class IOMixin:
             except Exception:
                 pass
 
-    def read_atoms(self) -> Atoms:
-        """Read atoms from CONTCAR or POSCAR.
+    def load_atoms(self) -> Atoms:
+        """Load atoms from CONTCAR or POSCAR.
 
         Returns:
             ASE Atoms object.

@@ -17,6 +17,11 @@ These tutorials cover specialized DFT methods and workflows.
 | 14 | Van der Waals | Dispersion corrections |
 | 15 | Workflows | Automated pipelines |
 | 16 | NEB | Transition states and barriers |
+| 17 | Vibrations | Molecular vibrations and IR/Raman |
+| 18 | 3D Visualization | Structure visualization |
+| 19 | Pseudopotentials | POTCAR setup and selection |
+| 20 | Interactive Mode | Persistent VASP sessions |
+| 21 | Cluster Expansion | Alloy thermodynamics with ICET |
 
 ## Topics Covered
 
@@ -62,3 +67,38 @@ Learn how to:
 - Find minimum energy paths
 - Locate transition states
 - Calculate reaction barriers
+
+### 17 - Vibrations
+
+Learn how to:
+- Calculate molecular vibrations
+- Compute IR and Raman spectra
+- Analyze vibrational modes
+
+### 18 - 3D Visualization
+
+Learn how to:
+- Visualize structures with ASE
+- Create publication-quality figures
+- Animate trajectories
+
+### 19 - Pseudopotentials
+
+Learn how to:
+- Set up POTCAR files
+- Choose appropriate pseudopotentials
+- Handle different VASP versions
+
+### 20 - Interactive Mode
+
+Learn how to:
+- Use persistent VASP sessions
+- Reduce I/O overhead
+- Integrate with ASE optimizers
+
+### 21 - Cluster Expansion
+
+Learn how to:
+- Build cluster expansion models with ICET
+- Calculate alloy thermodynamics
+- Generate training data with VASP

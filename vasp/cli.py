@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 from importlib import resources
 
-__all__ = ['main', 'status_command', 'claude_install', 'claude_uninstall']
+__all__ = ['main', 'status_command', 'claude_install', 'claude_uninstall', 'vaspsum']
 
 
 def get_claude_home() -> Path:
@@ -422,6 +422,176 @@ def main():
         sys.exit(0)
 
     args.func(args)
+
+
+def vaspsum():
+    """Summarize VASP calculations.
+
+    CLI tool to display quick summaries of VASP calculation results.
+    """
+    import argparse
+    import numpy as np
+    from vasp import Vasp
+    from vasp.exceptions import VaspException
+
+    def format_energy(energy, natoms):
+        if energy is None:
+            return "Energy: Not available"
+        return f"Energy: {energy:.6f} eV ({energy/natoms:.6f} eV/atom)"
+
+    def format_forces(forces):
+        if forces is None:
+            return "Forces: Not available"
+        fmax = (forces**2).sum(axis=1).max()**0.5
+        return f"Max force: {fmax:.6f} eV/Å"
+
+    def format_stress(stress):
+        if stress is None:
+            return "Stress: Not available"
+        stress_gpa = stress * 0.1
+        pressure = -stress_gpa[:3].mean()
+        return f"Pressure: {pressure:.3f} GPa"
+
+    def print_summary(calc, verbose=False):
+        try:
+            atoms = calc.atoms
+            if atoms is None:
+                # Try to read from CONTCAR/POSCAR
+                try:
+                    atoms = calc.load_atoms()
+                    calc.atoms = atoms
+                except Exception:
+                    pass
+            if atoms is None:
+                print("  No structure found")
+                return
+
+            print(f"  Formula: {atoms.get_chemical_formula()}")
+            print(f"  Atoms: {len(atoms)}")
+
+            try:
+                energy = calc.results.get('energy')
+                forces = calc.results.get('forces')
+                stress = calc.results.get('stress')
+
+                print(f"  {format_energy(energy, len(atoms))}")
+                if verbose and forces is not None:
+                    print(f"  {format_forces(forces)}")
+                if verbose and stress is not None:
+                    print(f"  {format_stress(stress)}")
+
+                converged = calc.results.get('converged', None)
+                if converged is not None:
+                    status = "Converged" if converged else "NOT CONVERGED"
+                    print(f"  Status: {status}")
+
+            except (VaspException, FileNotFoundError) as e:
+                print(f"  Results not available: {e}")
+
+        except Exception as e:
+            print(f"  Error reading calculation: {e}")
+
+    def print_parameters(calc, verbose=False):
+        print("\nParameters:")
+        params = calc.parameters
+        key_params = ['xc', 'encut', 'kpts', 'ismear', 'sigma']
+
+        for key in key_params:
+            if key in params:
+                print(f"  {key}: {params[key]}")
+
+        if verbose:
+            print("\nAll parameters:")
+            for key, value in sorted(params.items()):
+                if key not in key_params:
+                    print(f"  {key}: {value}")
+
+    def print_json(calc, pretty=False):
+        data = {
+            'directory': calc.directory,
+            'parameters': calc.parameters,
+            'results': calc.results,
+        }
+
+        if calc.atoms:
+            data['formula'] = calc.atoms.get_chemical_formula()
+            data['natoms'] = len(calc.atoms)
+            data['positions'] = calc.atoms.positions.tolist()
+            data['cell'] = calc.atoms.cell.tolist()
+            data['symbols'] = calc.atoms.get_chemical_symbols()
+
+        if pretty:
+            print(json.dumps(data, indent=2, default=str))
+        else:
+            print(json.dumps(data, default=str))
+
+    parser = argparse.ArgumentParser(
+        description='Summarize VASP calculations',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  vaspsum                    # Summarize current directory
+  vaspsum calc1 calc2        # Summarize multiple directories
+  vaspsum -v .               # Verbose output
+  vaspsum --json calc1       # JSON output
+  vaspsum --view .           # View structure
+        """
+    )
+
+    parser.add_argument('dirs', nargs='*', default=['.'],
+                        help='Directories to summarize (default: current directory)')
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='Show detailed information')
+    parser.add_argument('--params', '--describe', action='store_true',
+                        help='Show calculation parameters')
+    parser.add_argument('--json', action='store_true',
+                        help='Output in JSON format')
+    parser.add_argument('--json-pretty', '--jsonpp', action='store_true',
+                        help='Output in pretty-printed JSON format')
+    parser.add_argument('--view', '-p', action='store_true',
+                        help='View final structure')
+
+    args = parser.parse_args()
+
+    for directory in args.dirs:
+        if not os.path.isdir(directory):
+            print(f"Error: {directory} does not exist!", file=sys.stderr)
+            continue
+
+        print(f"\n{directory}")
+        print("=" * 60)
+
+        try:
+            calc = Vasp(directory)
+
+            # Try to load atoms and results from existing files
+            try:
+                calc.atoms = calc.load_atoms()
+                calc._setup_sorting(calc.atoms)
+            except Exception:
+                pass
+            try:
+                calc.read_results()
+            except Exception:
+                pass
+
+            if args.json or args.json_pretty:
+                print_json(calc, pretty=args.json_pretty)
+            elif args.params:
+                print_summary(calc, verbose=args.verbose)
+                print_parameters(calc, verbose=args.verbose)
+            else:
+                print_summary(calc, verbose=args.verbose)
+
+            if args.view and calc.atoms:
+                from ase.visualize import view as ase_view
+                ase_view(calc.atoms)
+
+        except Exception as e:
+            print(f"Error processing {directory}: {e}", file=sys.stderr)
+            if args.verbose:
+                import traceback
+                traceback.print_exc()
 
 
 if __name__ == '__main__':

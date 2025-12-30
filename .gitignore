@@ -24,31 +24,50 @@ htmlcov/
 *.swp
 *.swo
 
-# Ignore large/proprietary VASP files
-CHG
-CONTCAR
-DOSCAR
-EIGENVAL
-IBZKPT
-INCAR
-KPOINTS
-METADATA
-OSZICAR
-OUTCAR
-PCDAT
-POSCAR
-POTCAR
-vasprun.xml
-XDATCAR
+# VASP output files (wildcards for comprehensive coverage)
+*CAR
+**/POTCAR
+**/INCAR
+**/KPOINTS
+**/POSCAR
+**/CONTCAR
+**/OUTCAR
+**/OSZICAR
+**/DOSCAR
+**/EIGENVAL
+**/PROCAR
+**/LOCPOT
+**/CHGCAR
+**/WAVECAR
+**/AECCAR*
+**/vasprun.xml
+**/XDATCAR
+**/IBZKPT
+**/PCDAT
+**/REPORT
+**/DYNMAT
+**/HILLSPOT
+**/CENTCAR
+**/NEWMOVE
+**/CHG
+
+# ASE and job files
 ase-sort.dat
-CHGCAR
-WAVECAR
 *.o[0-9]*
-DYNMAT
 jobid
+.vasp_pid
+*.traj
 DB.db
-# calculation directories
+METADATA
+# Calculation results
+results/
+**/results/
+
+# Legacy calculation directories
 molecules
 /.doit.db
 bulk
 vasp.egg-info
+
+# Plot outputs
+*.png

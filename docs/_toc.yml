@@ -34,6 +34,11 @@ parts:
           - file: tutorials/14_van_der_waals
           - file: tutorials/15_workflows
           - file: tutorials/16_neb
+          - file: tutorials/17_vibrations
+          - file: tutorials/18_3d_visualization
+          - file: tutorials/19_pseudopotentials
+          - file: tutorials/20_interactive_mode
+          - file: tutorials/21_cluster_expansion
 
   - caption: User Guide
     chapters:

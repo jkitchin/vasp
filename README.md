@@ -2,10 +2,11 @@
 
 [![Tests](https://github.com/jkitchin/vasp/actions/workflows/tests.yml/badge.svg)](https://github.com/jkitchin/vasp/actions/workflows/tests.yml)
 [![codecov](https://codecov.io/gh/jkitchin/vasp/branch/main/graph/badge.svg)](https://codecov.io/gh/jkitchin/vasp)
+[![Documentation](https://img.shields.io/badge/docs-online-blue)](https://kitchingroup.cheme.cmu.edu/vasp/)
 
 > **⚠️ ALPHA SOFTWARE**: This project is under active development and not ready for production use. APIs may change without notice. This notice will be removed when the project reaches stable release.
 
-A modern Python interface for VASP (Vienna Ab initio Simulation Package) through ASE (Atomic Simulation Environment).
+A modern Python interface for [VASP](https://www.vasp.at/) (Vienna Ab initio Simulation Package) through [ASE](https://wiki.fysik.dtu.dk/ase/) (Atomic Simulation Environment).
 
 ## Features
 
@@ -96,11 +97,17 @@ runner = SlurmRunner(
 
 ## Tutorials
 
-The `examples/` directory contains 16 progressive tutorials:
+The `examples/` directory contains 21 progressive tutorials as Jupyter notebooks:
 
 1. **Beginner (01-05)**: Energy, convergence, relaxation, EOS, DOS
 2. **Intermediate (06-10)**: Bands, magnetism, surfaces, adsorption, reactions
-3. **Advanced (11-16)**: Phonons, DFT+U, HSE06, vdW, workflows, NEB
+3. **Advanced (11-21)**: Phonons, DFT+U, HSE06, vdW, workflows, NEB, vibrations, visualization, pseudopotentials, interactive mode, cluster expansion
+
+Run examples with:
+```bash
+make example EX=01    # Run a single example
+make examples         # Run all examples
+```
 
 ## Claude Code Integration
 
@@ -115,7 +122,7 @@ Then use commands like `/vasp-help`, `/vasp-watch-job`, `/vasp-fix-job` from any
 
 ## Documentation
 
-Full documentation available at the [project docs](https://github.com/jkitchin/vasp).
+Full documentation available at https://kitchingroup.cheme.cmu.edu/vasp/
 
 ## Related Projects
 
