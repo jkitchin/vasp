@@ -152,10 +152,11 @@ print()
 print("Step 3: Reading band data")
 print()
 
-band_data = calc_bands.read_eigenval()
+# read_procar returns energies[nkpts, nbands] from PROCAR file
+band_data = calc_bands.read_procar()
 
-eigenvalues = band_data['eigenvalues']
-fermi = calc_bands.results.get('fermi_level', band_data.get('fermi', 0.0))
+eigenvalues = band_data['energies']
+fermi = calc_bands.results.get('efermi', 0.0)
 
 print(f"  Number of bands: {eigenvalues.shape[1]}")
 print(f"  Fermi level: {fermi:.4f} eV")

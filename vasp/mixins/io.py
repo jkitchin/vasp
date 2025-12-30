@@ -148,11 +148,21 @@ class IOMixin:
     def write_potcar(self) -> None:
         """Write POTCAR file by concatenating pseudopotentials.
 
-        Requires VASP_PP_PATH environment variable to be set.
-        If not set, writes a placeholder POTCAR for testing.
+        Checks for pseudopotential path in these environment variables (in order):
+        - VASP_PP_PATH
+        - VASP_PP_BASE
+        - VASP_PSP_DIR
+
+        If none are set, writes a placeholder POTCAR for testing.
         """
         potcar_path = os.path.join(self.directory, 'POTCAR')
-        pp_path = os.environ.get('VASP_PP_PATH')
+
+        # Check multiple environment variables for PP path
+        pp_path = None
+        for env_var in ['VASP_PP_PATH', 'VASP_PP_BASE', 'VASP_PSP_DIR']:
+            pp_path = os.environ.get(env_var)
+            if pp_path:
+                break
 
         if not pp_path:
             # For testing without real POTCARs, create placeholder
@@ -200,11 +210,11 @@ class IOMixin:
                         f"PP path: {pp_path}\n"
                         f"PP type: {pp}\n\n"
                         f"Solutions:\n"
-                        f"  1. Set VASP_PP_PATH environment variable:\n"
+                        f"  1. Set one of these environment variables:\n"
                         f"     export VASP_PP_PATH=/path/to/vasp/potentials\n"
-                        f"  2. Or specify pp_path in runner:\n"
-                        f"     runner = LocalRunner(pp_path='/path/to/potentials')\n"
-                        f"  3. Ensure directory structure is:\n"
+                        f"     export VASP_PP_BASE=/path/to/vasp/potentials\n"
+                        f"     export VASP_PSP_DIR=/path/to/vasp/potentials\n"
+                        f"  2. Ensure directory structure is:\n"
                         f"     $VASP_PP_PATH/potpaw_{pp}/{symbol}/POTCAR\n\n"
                         f"See: https://www.vasp.at/wiki/index.php/POTCAR"
                     )

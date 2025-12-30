@@ -346,19 +346,19 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
     @property
     def potential_energy(self) -> float:
         """Get potential energy in eV."""
-        self.update()
+        self.calculate()
         return self.results['energy']
 
     @property
     def forces(self) -> np.ndarray:
         """Get forces in eV/Angstrom."""
-        self.update()
+        self.calculate()
         return self.results['forces']
 
     @property
     def stress(self) -> np.ndarray:
         """Get stress tensor in eV/Angstrom^3."""
-        self.update()
+        self.calculate()
         return self.results['stress']
 
     def get_potential_energy(self, atoms: Atoms | None = None, force_consistent: bool = False) -> float:
@@ -374,7 +374,7 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
         if atoms is not None:
             self.calculate(atoms=atoms, properties=['energy'])
         else:
-            self.update()
+            self.calculate(properties=['energy'])
 
         if force_consistent and 'free_energy' in self.results:
             return self.results['free_energy']
@@ -392,7 +392,7 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
         if atoms is not None:
             self.calculate(atoms=atoms, properties=['forces'])
         else:
-            self.update()
+            self.calculate(properties=['forces'])
 
         return self.results['forces']
 
@@ -408,7 +408,7 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
         if atoms is not None:
             self.calculate(atoms=atoms, properties=['stress'])
         else:
-            self.update()
+            self.calculate(properties=['stress'])
 
         return self.results['stress']
 

@@ -32,7 +32,8 @@ class SlurmRunner(Runner):
         memory: Memory per node (e.g., '64G').
         account: SLURM account for billing.
         qos: Quality of service.
-        vasp_command: Command to run VASP (default: 'srun vasp_std').
+        vasp_command: Command to run VASP. Defaults to 'srun $VASP_COMMAND'
+            if VASP_COMMAND is set, or 'srun vasp_std' otherwise.
         modules: List of modules to load before running.
         extra_sbatch: Additional #SBATCH directives as list of strings.
         constraint: Node constraint (e.g., 'gpu' or 'skylake').
@@ -62,7 +63,7 @@ class SlurmRunner(Runner):
         memory: str | None = None,
         account: str | None = None,
         qos: str | None = None,
-        vasp_command: str = 'srun vasp_std',
+        vasp_command: str | None = None,
         modules: list[str] | None = None,
         extra_sbatch: list[str] | None = None,
         constraint: str | None = None,
@@ -74,7 +75,11 @@ class SlurmRunner(Runner):
         self.memory = memory
         self.account = account
         self.qos = qos
-        self.vasp_command = vasp_command
+        if vasp_command is not None:
+            self.vasp_command = vasp_command
+        else:
+            base_cmd = os.environ.get('VASP_COMMAND', 'vasp_std')
+            self.vasp_command = f'srun {base_cmd}'
         self.modules = modules or []
         self.extra_sbatch = extra_sbatch or []
         self.constraint = constraint

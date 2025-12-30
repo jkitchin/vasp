@@ -1,4 +1,4 @@
-.PHONY: help install install-dev test test-coverage lint typecheck format clean clean-all build publish publish-test docs docs-build docs-serve
+.PHONY: help install install-dev test test-coverage lint typecheck format clean clean-all build publish publish-test docs docs-build docs-serve example examples examples-clean
 
 # Default target
 help:
@@ -20,6 +20,9 @@ help:
 	@echo "  publish        Publish to PyPI"
 	@echo "  docs-build     Build Jupyter Book documentation"
 	@echo "  docs-serve     Build and serve documentation locally"
+	@echo "  example EX=x   Run a single example (by name or number)"
+	@echo "  examples       Run all 21 examples"
+	@echo "  examples-clean Clear notebook outputs"
 	@echo ""
 
 # Installation targets
@@ -119,3 +122,65 @@ status:
 	@echo ""
 	@echo "Uncommitted changes:"
 	@git diff --shortstat
+
+# Example targets
+EXAMPLE_DIRS := $(sort $(wildcard examples/[0-9][0-9]_*))
+NOTEBOOKS := $(wildcard examples/*/tutorial.ipynb)
+
+examples:
+	@echo "Running all examples..."
+	@for dir in $(EXAMPLE_DIRS); do \
+		name=$$(basename $$dir); \
+		if [ -f "$$dir/tutorial.ipynb" ]; then \
+			echo "  [$$name] Running notebook..."; \
+			jupyter nbconvert --to notebook --execute --inplace "$$dir/tutorial.ipynb" || exit 1; \
+		elif [ -f "$$dir/run.py" ]; then \
+			echo "  [$$name] Running script..."; \
+			python "$$dir/run.py" || exit 1; \
+		else \
+			echo "  [$$name] Skipped (no run.py or tutorial.ipynb)"; \
+		fi; \
+	done
+	@echo "All examples completed."
+
+# Run a single example: make example EX=19_pseudopotentials
+example:
+ifdef EX
+	@dir=$$(ls -d examples/$(EX) examples/$(EX)_* examples/*_$(EX) 2>/dev/null | head -1); \
+	if [ -z "$$dir" ]; then \
+		echo "Error: No example found matching '$(EX)'"; \
+		echo ""; \
+		echo "Available examples:"; \
+		ls -d examples/[0-9][0-9]_* 2>/dev/null | sed 's|examples/||'; \
+		exit 1; \
+	fi; \
+	name=$$(basename $$dir); \
+	if [ -f "$$dir/tutorial.ipynb" ]; then \
+		echo "Running $$name (notebook)..."; \
+		jupyter nbconvert --to notebook --execute --inplace "$$dir/tutorial.ipynb"; \
+	elif [ -f "$$dir/run.py" ]; then \
+		echo "Running $$name (script)..."; \
+		python "$$dir/run.py"; \
+	else \
+		echo "Error: No run.py or tutorial.ipynb in $$dir"; \
+		exit 1; \
+	fi
+else
+	@echo "Usage: make example EX=<name>"
+	@echo ""
+	@echo "Examples:"
+	@echo "  make example EX=01_getting_started"
+	@echo "  make example EX=getting_started"
+	@echo "  make example EX=01"
+	@echo ""
+	@echo "Available examples:"
+	@ls -d examples/[0-9][0-9]_* 2>/dev/null | sed 's|examples/||'
+endif
+
+examples-clean:
+	@echo "Clearing notebook outputs..."
+	@for nb in $(NOTEBOOKS); do \
+		echo "  Clearing $$nb..."; \
+		jupyter nbconvert --clear-output --inplace "$$nb"; \
+	done
+	@echo "Notebook outputs cleared."

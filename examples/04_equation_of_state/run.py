@@ -128,9 +128,11 @@ if HAS_MATPLOTLIB and v0 is not None:
     # Plot data points
     ax.plot(volumes, energies, 'o', markersize=10, label='DFT calculations')
 
-    # Plot fitted curve
+    # Plot fitted curve using Birch-Murnaghan equation (B' = 4)
+    # E(V) = E0 + (9/16) * B * V0 * [(V0/V)^(2/3) - 1]^2 * [6 - 4*(V0/V)^(2/3)]
     v_fit = np.linspace(min(volumes), max(volumes), 100)
-    e_fit = eos.eos_function(v_fit, e0, B, 4.0, v0)  # B' ≈ 4 is typical
+    eta = (v0 / v_fit) ** (2.0 / 3.0)
+    e_fit = e0 + (9.0 / 16.0) * B * v0 * (eta - 1) ** 2 * (6 - 4 * eta)
     ax.plot(v_fit, e_fit, '-', linewidth=2, label='Birch-Murnaghan fit')
 
     # Mark equilibrium

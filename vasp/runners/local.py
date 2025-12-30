@@ -25,7 +25,8 @@ class LocalRunner(Runner):
     Use background=True for non-blocking execution.
 
     Args:
-        vasp_command: Command to run VASP (default: 'vasp_std').
+        vasp_command: Command to run VASP. Defaults to $VASP_COMMAND
+            environment variable, or 'vasp_std' if not set.
         mpi_command: MPI launcher command, e.g., 'mpirun -np 4'.
             If None, runs serial VASP.
         background: If True, run in background and return immediately.
@@ -49,11 +50,11 @@ class LocalRunner(Runner):
 
     def __init__(
         self,
-        vasp_command: str = 'vasp_std',
+        vasp_command: str | None = None,
         mpi_command: str | None = None,
         background: bool = False,
     ):
-        self.vasp_command = vasp_command
+        self.vasp_command = vasp_command or os.environ.get('VASP_COMMAND', 'vasp_std')
         self.mpi_command = mpi_command
         self.background = background
 

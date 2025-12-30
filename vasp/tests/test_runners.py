@@ -144,13 +144,22 @@ class TestMockRunner:
 class TestLocalRunner:
     """Test LocalRunner."""
 
-    def test_init_defaults(self):
+    def test_init_defaults(self, monkeypatch):
         """Test default initialization."""
+        # Clear VASP_COMMAND env var to test true default
+        monkeypatch.delenv('VASP_COMMAND', raising=False)
         runner = LocalRunner()
 
         assert runner.vasp_command == 'vasp_std'
         assert runner.mpi_command is None
         assert not runner.background
+
+    def test_init_from_env(self, monkeypatch):
+        """Test initialization from VASP_COMMAND environment variable."""
+        monkeypatch.setenv('VASP_COMMAND', 'vasp_ncl')
+        runner = LocalRunner()
+
+        assert runner.vasp_command == 'vasp_ncl'
 
     def test_init_with_mpi(self):
         """Test initialization with MPI."""

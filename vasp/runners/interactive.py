@@ -67,7 +67,8 @@ class InteractiveRunner(Runner):
     reusing wavefunctions between steps provides significant speedup.
 
     Args:
-        vasp_command: Command to run VASP (default: 'vasp_std').
+        vasp_command: Command to run VASP. Defaults to $VASP_COMMAND
+            environment variable, or 'vasp_std' if not set.
         mpi_command: MPI launcher command, e.g., 'mpirun -np 4'.
         timeout: Seconds to wait for VASP response (default: 3600).
         parse_stress: Whether to parse stress tensor (default: False).
@@ -92,12 +93,12 @@ class InteractiveRunner(Runner):
 
     def __init__(
         self,
-        vasp_command: str = 'vasp_std',
+        vasp_command: str | None = None,
         mpi_command: str | None = None,
         timeout: float = 3600,
         parse_stress: bool = False,
     ):
-        self.vasp_command = vasp_command
+        self.vasp_command = vasp_command or os.environ.get('VASP_COMMAND', 'vasp_std')
         self.mpi_command = mpi_command
         self.timeout = timeout
         self.parse_stress = parse_stress
