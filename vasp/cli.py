@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 from importlib import resources
 
-__all__ = ['main', 'status_command', 'claude_install', 'claude_uninstall', 'vaspsum']
+__all__ = ['main', 'status_command', 'claude_install', 'claude_uninstall', 'vaspsum', 'vasp_debug']
 
 
 def get_claude_home() -> Path:
@@ -592,6 +592,361 @@ Examples:
             if args.verbose:
                 import traceback
                 traceback.print_exc()
+
+
+def vasp_debug():
+    """Output comprehensive diagnostic information for VASP setup.
+
+    This tool helps troubleshoot VASP installation and configuration issues
+    by displaying system info, environment variables, library versions,
+    executable paths, and pseudopotential availability.
+    """
+    import platform
+    import subprocess
+
+    def section(title):
+        print()
+        print("=" * 60)
+        print(f" {title}")
+        print("=" * 60)
+
+    def check_command(cmd, description=None):
+        """Check if a command exists and return its path."""
+        path = shutil.which(cmd)
+        if path:
+            return f"✓ {cmd}: {path}"
+        return f"✗ {cmd}: not found"
+
+    def get_version(cmd):
+        """Try to get version from a command."""
+        try:
+            result = subprocess.run(
+                [cmd, '--version'],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            return result.stdout.strip().split('\n')[0]
+        except Exception:
+            return None
+
+    def check_package(name, import_name=None):
+        """Check if a Python package is installed and get version."""
+        import_name = import_name or name
+        try:
+            mod = __import__(import_name)
+            version = getattr(mod, '__version__', 'unknown')
+            return f"✓ {name}: {version}"
+        except ImportError:
+            return f"✗ {name}: not installed"
+
+    def check_pp_directory(base_path, functional='potpaw_PBE'):
+        """Check pseudopotential directory structure."""
+        pp_path = Path(base_path) / functional
+        if not pp_path.exists():
+            return None, []
+
+        elements = []
+        for item in sorted(pp_path.iterdir()):
+            if item.is_dir():
+                potcar = item / 'POTCAR'
+                if potcar.exists():
+                    elements.append(item.name)
+
+        return str(pp_path), elements
+
+    # Header
+    print()
+    print("VASP-ASE Debug Information")
+    print("Generated:", __import__('datetime').datetime.now().isoformat())
+
+    # System Information
+    section("System Information")
+    print(f"Platform:        {platform.platform()}")
+    print(f"Architecture:    {platform.machine()}")
+    print(f"Python:          {platform.python_version()}")
+    print(f"Python path:     {sys.executable}")
+    print(f"Working dir:     {os.getcwd()}")
+
+    # Environment Variables
+    section("Environment Variables (VASP-related)")
+
+    vasp_env_vars = [
+        'VASP_PP_PATH',
+        'ASE_VASP_COMMAND',
+        'VASP_COMMAND',
+        'VASP_SCRIPT',
+        'ASE_VASP_VDW',
+        'VASP_PP',
+        'POTCAR_PATH',
+    ]
+
+    for var in vasp_env_vars:
+        value = os.environ.get(var)
+        if value:
+            print(f"✓ {var}={value}")
+        else:
+            print(f"  {var}: not set")
+
+    # Additional useful environment variables
+    print()
+    print("Other relevant environment variables:")
+    other_vars = ['OMP_NUM_THREADS', 'MKL_NUM_THREADS', 'PATH', 'LD_LIBRARY_PATH']
+    for var in other_vars:
+        value = os.environ.get(var)
+        if value:
+            if var in ['PATH', 'LD_LIBRARY_PATH']:
+                # Show first few paths
+                paths = value.split(':')[:5]
+                print(f"  {var}:")
+                for p in paths:
+                    print(f"    {p}")
+                if len(value.split(':')) > 5:
+                    print(f"    ... and {len(value.split(':')) - 5} more")
+            else:
+                print(f"  {var}={value}")
+
+    # Python Packages
+    section("Python Packages")
+
+    packages = [
+        ('vasp-ase', 'vasp'),
+        ('ase', 'ase'),
+        ('numpy', 'numpy'),
+        ('scipy', 'scipy'),
+        ('matplotlib', 'matplotlib'),
+        ('spglib', 'spglib'),
+        ('phonopy', 'phonopy'),
+        ('pymatgen', 'pymatgen'),
+        ('mp-api', 'mp_api'),
+        ('icet', 'icet'),
+        ('mpi4py', 'mpi4py'),
+    ]
+
+    for name, import_name in packages:
+        print(check_package(name, import_name))
+
+    # VASP Executables
+    section("VASP Executables")
+
+    vasp_commands = [
+        'vasp_std',
+        'vasp_gam',
+        'vasp_ncl',
+        'vasp',
+    ]
+
+    for cmd in vasp_commands:
+        print(check_command(cmd))
+
+    # Check ASE_VASP_COMMAND specifically
+    ase_cmd = os.environ.get('ASE_VASP_COMMAND')
+    if ase_cmd:
+        # Extract the actual vasp command (might have mpirun prefix)
+        parts = ase_cmd.split()
+        vasp_part = parts[-1] if parts else None
+        if vasp_part:
+            path = shutil.which(vasp_part)
+            if path:
+                print(f"✓ ASE_VASP_COMMAND resolves to: {path}")
+            else:
+                print(f"✗ ASE_VASP_COMMAND binary not found: {vasp_part}")
+
+    # MPI Configuration
+    section("MPI Configuration")
+
+    mpi_commands = ['mpirun', 'mpiexec', 'srun', 'aprun', 'orterun']
+    for cmd in mpi_commands:
+        result = check_command(cmd)
+        if '✓' in result:
+            print(result)
+            version = get_version(cmd)
+            if version:
+                print(f"    Version: {version}")
+
+    # Check for common MPI implementations
+    mpi_libs = ['openmpi', 'mpich', 'intelmpi']
+    print()
+    print("MPI implementation hints:")
+    for lib in mpi_libs:
+        found = False
+        # Check if library directory exists or module loaded
+        for path_dir in os.environ.get('PATH', '').split(':'):
+            if lib in path_dir.lower():
+                print(f"  Possible {lib}: {path_dir}")
+                found = True
+                break
+
+    # Pseudopotentials
+    section("Pseudopotentials")
+
+    pp_path = os.environ.get('VASP_PP_PATH')
+    if not pp_path:
+        print("✗ VASP_PP_PATH not set")
+        print()
+        print("To set up pseudopotentials:")
+        print("  export VASP_PP_PATH=/path/to/vasp/potpaw")
+        print()
+        print("Expected directory structure:")
+        print("  $VASP_PP_PATH/")
+        print("  ├── potpaw_PBE/")
+        print("  │   ├── Ag/POTCAR")
+        print("  │   ├── Al/POTCAR")
+        print("  │   └── ...")
+        print("  ├── potpaw_LDA/")
+        print("  └── potpaw_GGA/")
+    else:
+        pp_base = Path(pp_path)
+        if not pp_base.exists():
+            print(f"✗ VASP_PP_PATH directory does not exist: {pp_path}")
+        else:
+            print(f"✓ VASP_PP_PATH: {pp_path}")
+            print()
+
+            # Check for different functionals
+            functionals = ['potpaw_PBE', 'potpaw_LDA', 'potpaw_GGA', 'PBE', 'LDA', 'GGA']
+            found_any = False
+
+            for func in functionals:
+                func_path, elements = check_pp_directory(pp_path, func)
+                if func_path:
+                    found_any = True
+                    print(f"✓ {func}: {len(elements)} elements")
+
+                    # Show some sample elements
+                    if elements:
+                        sample = elements[:10]
+                        print(f"    Sample: {', '.join(sample)}")
+                        if len(elements) > 10:
+                            print(f"    ... and {len(elements) - 10} more")
+
+                        # Check for common variants
+                        variants = []
+                        for elem in elements[:20]:
+                            if '_' in elem:
+                                base, variant = elem.rsplit('_', 1)
+                                if variant not in variants:
+                                    variants.append(variant)
+                        if variants:
+                            print(f"    Variants found: {', '.join(variants[:5])}")
+
+            if not found_any:
+                print("✗ No pseudopotential directories found")
+                print("  Expected: potpaw_PBE, potpaw_LDA, etc.")
+
+    # ASE Configuration
+    section("ASE Configuration")
+
+    try:
+        from ase import Atoms
+        from ase.calculators.calculator import Calculator
+        print("✓ ASE imported successfully")
+
+        # Check ASE data directory
+        import ase
+        ase_dir = Path(ase.__file__).parent
+        print(f"  ASE location: {ase_dir}")
+
+        # Check for ASE database
+        db_path = Path.home() / '.ase'
+        if db_path.exists():
+            print(f"  ASE config dir: {db_path}")
+
+    except ImportError as e:
+        print(f"✗ ASE import error: {e}")
+
+    # vasp-ase specific
+    section("vasp-ase Package")
+
+    try:
+        import vasp
+        print(f"✓ Version: {vasp.__version__}")
+        print(f"  Location: {Path(vasp.__file__).parent}")
+
+        # Check for runners
+        from vasp import runners
+        available_runners = []
+        for name in ['LocalRunner', 'MockRunner', 'SlurmRunner', 'InteractiveRunner']:
+            if hasattr(runners, name):
+                available_runners.append(name)
+        print(f"  Runners: {', '.join(available_runners)}")
+
+        # Check for recipes
+        try:
+            from vasp import recipes
+            print("  Recipes: available")
+        except ImportError:
+            print("  Recipes: not available")
+
+    except ImportError as e:
+        print(f"✗ vasp-ase import error: {e}")
+
+    # Quick connectivity test
+    section("Quick Tests")
+
+    print("Calculator instantiation test:")
+    try:
+        from vasp import Vasp
+        from vasp.runners import MockRunner, MockResults
+        from ase.build import bulk
+        import numpy as np
+
+        atoms = bulk('Si', 'diamond', a=5.43)
+        mock = MockResults(energy=-10.0, forces=np.zeros((2, 3)))
+        calc = Vasp(
+            atoms=atoms,
+            runner=MockRunner(results=mock),
+            xc='PBE',
+            encut=300,
+        )
+        energy = calc.potential_energy
+        print(f"✓ Mock calculation successful: E = {energy:.4f} eV")
+    except Exception as e:
+        print(f"✗ Calculator test failed: {e}")
+
+    print()
+    print("POTCAR path test:")
+    pp_path = os.environ.get('VASP_PP_PATH')
+    if pp_path:
+        # Check if Si POTCAR exists
+        si_potcar = Path(pp_path) / 'potpaw_PBE' / 'Si' / 'POTCAR'
+        if si_potcar.exists():
+            print(f"✓ Si POTCAR found: {si_potcar}")
+        else:
+            # Try alternate path
+            si_potcar = Path(pp_path) / 'PBE' / 'Si' / 'POTCAR'
+            if si_potcar.exists():
+                print(f"✓ Si POTCAR found: {si_potcar}")
+            else:
+                print(f"✗ Si POTCAR not found in expected locations")
+    else:
+        print("✗ Cannot test POTCAR - VASP_PP_PATH not set")
+
+    # Summary
+    section("Summary")
+
+    issues = []
+
+    if not os.environ.get('VASP_PP_PATH'):
+        issues.append("VASP_PP_PATH not set - cannot generate POTCAR files")
+
+    if not os.environ.get('ASE_VASP_COMMAND'):
+        issues.append("ASE_VASP_COMMAND not set - cannot run VASP automatically")
+
+    vasp_found = any(shutil.which(cmd) for cmd in vasp_commands)
+    if not vasp_found:
+        issues.append("No VASP executable found in PATH")
+
+    if issues:
+        print("Issues found:")
+        for issue in issues:
+            print(f"  ⚠ {issue}")
+    else:
+        print("✓ No critical issues detected")
+
+    print()
+    print("For more help, see: https://kitchingroup.cheme.cmu.edu/vasp/")
+    print()
 
 
 if __name__ == '__main__':

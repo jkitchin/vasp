@@ -97,16 +97,16 @@ runner = SlurmRunner(
 
 ## Tutorials
 
-The `examples/` directory contains 21 progressive tutorials as Jupyter notebooks:
+The `docs/tutorials/` directory contains 21 progressive tutorials as Jupyter notebooks:
 
 1. **Beginner (01-05)**: Energy, convergence, relaxation, EOS, DOS
 2. **Intermediate (06-10)**: Bands, magnetism, surfaces, adsorption, reactions
 3. **Advanced (11-21)**: Phonons, DFT+U, HSE06, vdW, workflows, NEB, vibrations, visualization, pseudopotentials, interactive mode, cluster expansion
 
-Run examples with:
+Run tutorials with:
 ```bash
-make example EX=01    # Run a single example
-make examples         # Run all examples
+make tutorial T=01    # Run a single tutorial
+make tutorials        # Run all tutorials
 ```
 
 ## Claude Code Integration
