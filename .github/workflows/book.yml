@@ -3,14 +3,14 @@ name: Build and Deploy Documentation
 on:
   push:
     branches:
-      - main
+      - master
     paths:
       - 'docs/**'
       - 'examples/**'
       - '.github/workflows/book.yml'
   pull_request:
     branches:
-      - main
+      - master
     paths:
       - 'docs/**'
       - 'examples/**'
@@ -56,7 +56,7 @@ jobs:
           path: docs/_build/html
 
   deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     needs: build
     runs-on: ubuntu-latest
     environment:

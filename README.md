@@ -1,7 +1,7 @@
 # VASP-ASE Interface
 
 [![Tests](https://github.com/jkitchin/vasp/actions/workflows/tests.yml/badge.svg)](https://github.com/jkitchin/vasp/actions/workflows/tests.yml)
-[![codecov](https://codecov.io/gh/jkitchin/vasp/branch/main/graph/badge.svg)](https://codecov.io/gh/jkitchin/vasp)
+[![codecov](https://codecov.io/gh/jkitchin/vasp/branch/master/graph/badge.svg)](https://codecov.io/gh/jkitchin/vasp)
 [![Documentation](https://img.shields.io/badge/docs-online-blue)](https://kitchingroup.cheme.cmu.edu/vasp/)
 
 > **⚠️ ALPHA SOFTWARE**: This project is under active development and not ready for production use. APIs may change without notice. This notice will be removed when the project reaches stable release.
