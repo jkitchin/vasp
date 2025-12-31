@@ -142,7 +142,7 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
     """
 
     name = "vasp"
-    implemented_properties = ["energy", "forces", "stress", "magmom", "magmoms"]
+    implemented_properties = ["energy", "forces", "stress", "magmom", "magmoms", "dipole"]
     default_parameters: dict[str, Any] = {
         "xc": "PBE",
         "pp": "PBE",
@@ -161,6 +161,13 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
         runner: Runner | None = None,
         **kwargs,
     ):
+        # Check for common mistake of using directory= instead of label=
+        if "directory" in kwargs:
+            raise ValueError(
+                "Use 'label' instead of 'directory' to specify the calculation path. "
+                "Example: Vasp('my_calc', ...) or Vasp(label='my_calc', ...)"
+            )
+
         # Initialize parent Calculator first
         Calculator.__init__(self, atoms=atoms)
 
@@ -551,3 +558,141 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
 
     def __repr__(self) -> str:
         return f"Vasp('{self.directory}', xc='{self.parameters.get('xc', 'PBE')}')"
+
+    def clone(
+        self,
+        label: str,
+        copy_wavecar: bool = False,
+        copy_chgcar: bool = False,
+    ) -> Vasp:
+        """Create a new calculator with same parameters but different directory.
+
+        Args:
+            label: New calculation directory path.
+            copy_wavecar: Copy WAVECAR from original directory.
+            copy_chgcar: Copy CHGCAR from original directory.
+
+        Returns:
+            New Vasp calculator with same parameters.
+        """
+        import shutil
+
+        # Auto-load atoms if not already loaded
+        atoms = self.atoms
+        if atoms is None:
+            try:
+                atoms = self.load_atoms()
+            except FileNotFoundError:
+                pass
+
+        # Create new calculator with same parameters
+        new_calc = Vasp(
+            label=label,
+            atoms=atoms.copy() if atoms is not None else None,
+            runner=self.runner,
+            **self.parameters,
+        )
+
+        # Create directory if needed
+        os.makedirs(new_calc.directory, exist_ok=True)
+
+        # Copy files if requested
+        if copy_wavecar:
+            src = os.path.join(self.directory, "WAVECAR")
+            if os.path.exists(src):
+                shutil.copy2(src, new_calc.directory)
+
+        if copy_chgcar:
+            src = os.path.join(self.directory, "CHGCAR")
+            if os.path.exists(src):
+                shutil.copy2(src, new_calc.directory)
+
+        return new_calc
+
+    def set_nbands(self, f: float = 1.5) -> int:
+        """Set NBANDS based on valence electrons with a multiplier.
+
+        VASP default is approximately NELECT/2 + NIONS/2.
+        This method sets NBANDS = f * default.
+
+        Args:
+            f: Multiplier for default number of bands.
+
+        Returns:
+            The number of bands set.
+
+        Raises:
+            ValueError: If atoms not set or POTCAR info unavailable.
+        """
+        if self.atoms is None:
+            raise ValueError("Atoms must be set before calling set_nbands")
+
+        # Get valence electrons from POTCAR
+
+        # Find POTCAR path
+        pp_paths = [
+            os.environ.get("VASP_PP_PATH"),
+            os.environ.get("ASE_VASP_PP_PATH"),
+            os.environ.get("VASP_PP_BASE"),
+        ]
+
+        pp_path = None
+        for p in pp_paths:
+            if p and os.path.exists(p):
+                pp_path = p
+                break
+
+        if pp_path is None:
+            raise ValueError("Cannot find POTCAR path to determine NELECT")
+
+        # Get species in order
+        symbols = self.atoms.get_chemical_symbols()
+        species = []
+        for s in symbols:
+            if s not in species:
+                species.append(s)
+
+        # Read ZVAL from each POTCAR
+        pp_type = self.parameters.get("pp", "PBE")
+        total_zval = 0
+
+        for symbol in species:
+            # Try different directory structures
+            potcar_candidates = [
+                os.path.join(pp_path, f"potpaw_{pp_type}", symbol, "POTCAR"),
+                os.path.join(pp_path, f"potpaw_{pp_type.upper()}", symbol, "POTCAR"),
+                os.path.join(pp_path, pp_type, symbol, "POTCAR"),
+                os.path.join(pp_path, pp_type.upper(), symbol, "POTCAR"),
+            ]
+
+            potcar_file = None
+            for candidate in potcar_candidates:
+                if os.path.exists(candidate):
+                    potcar_file = candidate
+                    break
+
+            if potcar_file and os.path.exists(potcar_file):
+                with open(potcar_file) as pf:
+                    for line in pf:
+                        if "ZVAL" in line:
+                            parts = line.split()
+                            for i, part in enumerate(parts):
+                                if part == "ZVAL":
+                                    zval = float(parts[i + 2])
+                                    break
+                            break
+
+                # Count atoms of this species
+                n_atoms = symbols.count(symbol)
+                total_zval += zval * n_atoms
+
+        # VASP default: NELECT/2 + max(NIONS/2, 3)
+        nelect = total_zval
+        nions = len(self.atoms)
+        default_nbands = int(nelect / 2 + max(nions / 2, 3))
+
+        # Apply multiplier
+        nbands = int(f * default_nbands)
+
+        self.parameters["nbands"] = nbands
+        return nbands

@@ -41,10 +41,7 @@ class DynamicsMixin:
         frequencies, _ = self._parse_vibrations()
         return frequencies
 
-    def get_vibrational_modes(
-        self,
-        massweighted: bool = False
-    ) -> tuple[np.ndarray, np.ndarray]:
+    def get_vibrational_modes(self, massweighted: bool = False) -> tuple[np.ndarray, np.ndarray]:
         """Get vibrational frequencies and eigenvectors.
 
         Args:
@@ -77,7 +74,7 @@ class DynamicsMixin:
         Returns:
             Tuple of (frequencies, eigenvectors).
         """
-        outcar = os.path.join(self.directory, 'OUTCAR')
+        outcar = os.path.join(self.directory, "OUTCAR")
 
         if not os.path.exists(outcar):
             raise FileNotFoundError(f"OUTCAR not found in {self.directory}")
@@ -86,10 +83,9 @@ class DynamicsMixin:
             content = f.read()
 
         # Check for vibrational calculation
-        if 'Eigenvectors and calculation' not in content:
+        if "Eigenvectors and eigenvalues" not in content:
             raise ValueError(
-                "No vibrational data found. "
-                "Use IBRION=5, 6, 7, or 8 for vibrations."
+                "No vibrational data found. " "Use IBRION=5, 6, 7, or 8 for vibrations."
             )
 
         frequencies = []
@@ -98,17 +94,17 @@ class DynamicsMixin:
 
         # Parse each mode
         pattern = (
-            r'(\d+)\s+f\s*(/i)?=\s*([\d.]+)\s+THz\s+'
-            r'([\d.]+)\s+2PiTHz\s+'
-            r'([\d.]+)\s+cm-1\s+'
-            r'([\d.]+)\s+meV'
+            r"(\d+)\s+f\s*(/i)?=\s*([\d.]+)\s+THz\s+"
+            r"([\d.]+)\s+2PiTHz\s+"
+            r"([\d.]+)\s+cm-1\s+"
+            r"([\d.]+)\s+meV"
         )
 
-        re.split(r'\d+\s+f\s*/?\s*i?=', content)[1:]
+        re.split(r"\d+\s+f\s*/?\s*i?=", content)[1:]
 
         for match in re.finditer(pattern, content):
             int(match.group(1))
-            is_imaginary = match.group(2) == '/i'
+            is_imaginary = match.group(2) == "/i"
             freq_cm = float(match.group(5))
 
             if is_imaginary:
@@ -120,13 +116,13 @@ class DynamicsMixin:
 
         # Simpler approach: find all displacement blocks
         blocks = re.findall(
-            r'X\s+Y\s+Z\s+dx\s+dy\s+dz\s*\n((?:\s*[\d.-]+\s+[\d.-]+\s+[\d.-]+\s+[\d.-]+\s+[\d.-]+\s+[\d.-]+\s*\n)+)',
-            content
+            r"X\s+Y\s+Z\s+dx\s+dy\s+dz\s*\n((?:\s*[\d.-]+\s+[\d.-]+\s+[\d.-]+\s+[\d.-]+\s+[\d.-]+\s+[\d.-]+\s*\n)+)",
+            content,
         )
 
         for block in blocks:
             mode_vecs = []
-            for line in block.strip().split('\n'):
+            for line in block.strip().split("\n"):
                 parts = line.split()
                 if len(parts) >= 6:
                     dx, dy, dz = float(parts[3]), float(parts[4]), float(parts[5])
@@ -136,7 +132,9 @@ class DynamicsMixin:
                 eigenvectors.append(mode_vecs)
 
         frequencies = np.array(frequencies)
-        eigenvectors = np.array(eigenvectors) if eigenvectors else np.zeros((len(frequencies), natoms, 3))
+        eigenvectors = (
+            np.array(eigenvectors) if eigenvectors else np.zeros((len(frequencies), natoms, 3))
+        )
 
         return frequencies, eigenvectors
 
@@ -169,19 +167,18 @@ class DynamicsMixin:
         """
         self.update()
 
-        outcar = os.path.join(self.directory, 'OUTCAR')
+        outcar = os.path.join(self.directory, "OUTCAR")
         with open(outcar) as f:
             content = f.read()
 
         # Look for Born effective charges and compute intensities
-        if 'BORN EFFECTIVE CHARGES' not in content:
+        if "BORN EFFECTIVE CHARGES" not in content:
             raise ValueError(
-                "Born effective charges not found. "
-                "Use LEPSILON=.TRUE. for IR intensities."
+                "Born effective charges not found. " "Use LEPSILON=.TRUE. for IR intensities."
             )
 
         # Parse Born effective charges
-        pattern = r'ion\s+\d+\s*\n((?:\s*\d+\s+[-\d.]+\s+[-\d.]+\s+[-\d.]+\s*\n){3})'
+        pattern = r"ion\s+\d+\s*\n((?:\s*\d+\s+[-\d.]+\s+[-\d.]+\s+[-\d.]+\s*\n){3})"
         matches = re.findall(pattern, content)
 
         if not matches:
@@ -190,7 +187,7 @@ class DynamicsMixin:
         born_charges = []
         for match in matches:
             ion_charges = []
-            for line in match.strip().split('\n'):
+            for line in match.strip().split("\n"):
                 parts = line.split()
                 if len(parts) >= 4:
                     ion_charges.append([float(parts[1]), float(parts[2]), float(parts[3])])
@@ -226,28 +223,28 @@ class DynamicsMixin:
 
         # Check for numbered directories (00, 01, 02, ...)
         for i in range(100):
-            image_dir = os.path.join(self.directory, f'{i:02d}')
+            image_dir = os.path.join(self.directory, f"{i:02d}")
             if not os.path.exists(image_dir):
                 break
 
-            contcar = os.path.join(image_dir, 'CONTCAR')
-            poscar = os.path.join(image_dir, 'POSCAR')
+            contcar = os.path.join(image_dir, "CONTCAR")
+            poscar = os.path.join(image_dir, "POSCAR")
 
             if os.path.exists(contcar) and os.path.getsize(contcar) > 0:
-                atoms = read(contcar, format='vasp')
+                atoms = read(contcar, format="vasp")
             elif os.path.exists(poscar):
-                atoms = read(poscar, format='vasp')
+                atoms = read(poscar, format="vasp")
             else:
                 continue
 
             # Try to get energy
-            outcar = os.path.join(image_dir, 'OUTCAR')
+            outcar = os.path.join(image_dir, "OUTCAR")
             if os.path.exists(outcar):
                 with open(outcar) as f:
                     content = f.read()
-                match = re.search(r'free  energy   TOTEN\s*=\s*([-\d.]+)', content)
+                match = re.search(r"free  energy   TOTEN\s*=\s*([-\d.]+)", content)
                 if match:
-                    atoms.info['energy'] = float(match.group(1))
+                    atoms.info["energy"] = float(match.group(1))
 
             images.append(atoms)
 
@@ -266,8 +263,8 @@ class DynamicsMixin:
 
         energies = []
         for img in images:
-            if 'energy' in img.info:
-                energies.append(img.info['energy'])
+            if "energy" in img.info:
+                energies.append(img.info["energy"])
             else:
                 raise ValueError("Energy not found for all NEB images")
 
@@ -294,16 +291,14 @@ class DynamicsMixin:
         # Calculate reaction coordinate as cumulative distance
         distances = [0.0]
         for i in range(1, len(images)):
-            d = np.linalg.norm(
-                images[i].positions - images[i-1].positions
-            )
+            d = np.linalg.norm(images[i].positions - images[i - 1].positions)
             distances.append(distances[-1] + d)
 
         # Normalize to [0, 1]
         distances = np.array(distances)
         distances /= distances[-1]
 
-        energies = np.array([img.info.get('energy', np.nan) for img in images])
+        energies = np.array([img.info.get("energy", np.nan) for img in images])
 
         # Reference to initial state
         energies -= energies[0]

@@ -40,8 +40,8 @@ class ElectronicMixin:
         """
         self.update()
 
-        if 'fermi_level' in self.results:
-            return self.results['fermi_level']
+        if "fermi_level" in self.results:
+            return self.results["fermi_level"]
 
         # Try to read from vasprun.xml
         return self._read_fermi_from_vasprun()
@@ -50,7 +50,7 @@ class ElectronicMixin:
         """Read Fermi level from vasprun.xml."""
         from xml.etree import ElementTree
 
-        vasprun = os.path.join(self.directory, 'vasprun.xml')
+        vasprun = os.path.join(self.directory, "vasprun.xml")
         if not os.path.exists(vasprun):
             raise FileNotFoundError(f"vasprun.xml not found in {self.directory}")
 
@@ -118,22 +118,22 @@ class ElectronicMixin:
         """
         from xml.etree import ElementTree
 
-        vasprun = os.path.join(self.directory, 'vasprun.xml')
+        vasprun = os.path.join(self.directory, "vasprun.xml")
         tree = ElementTree.parse(vasprun)
 
         eigenvalues = []
         occupations = []
 
         # Find all spin blocks
-        for spin_set in tree.findall('.//eigenvalues/array/set/set'):
+        for spin_set in tree.findall(".//eigenvalues/array/set/set"):
             spin_eigs = []
             spin_occs = []
 
-            for kpt_set in spin_set.findall('set'):
+            for kpt_set in spin_set.findall("set"):
                 kpt_eigs = []
                 kpt_occs = []
 
-                for r in kpt_set.findall('r'):
+                for r in kpt_set.findall("r"):
                     parts = r.text.split()
                     kpt_eigs.append(float(parts[0]))
                     kpt_occs.append(float(parts[1]))
@@ -159,12 +159,12 @@ class ElectronicMixin:
         self.update()
         from xml.etree import ElementTree
 
-        vasprun = os.path.join(self.directory, 'vasprun.xml')
+        vasprun = os.path.join(self.directory, "vasprun.xml")
         tree = ElementTree.parse(vasprun)
 
         kpts_elem = tree.find(".//kpoints/varray[@name='kpointlist']")
         kpts = []
-        for v in kpts_elem.findall('v'):
+        for v in kpts_elem.findall("v"):
             kpts.append([float(x) for x in v.text.split()])
 
         kpts = np.array(kpts)
@@ -186,12 +186,12 @@ class ElectronicMixin:
         self.update()
         from xml.etree import ElementTree
 
-        vasprun = os.path.join(self.directory, 'vasprun.xml')
+        vasprun = os.path.join(self.directory, "vasprun.xml")
         tree = ElementTree.parse(vasprun)
 
         weights_elem = tree.find(".//kpoints/varray[@name='weights']")
         weights = []
-        for v in weights_elem.findall('v'):
+        for v in weights_elem.findall("v"):
             weights.append(float(v.text))
 
         return np.array(weights)
@@ -203,13 +203,11 @@ class ElectronicMixin:
             1 for non-spin-polarized, 2 for spin-polarized.
         """
         self.update()
-        ispin = self.parameters.get('ispin', 1)
+        ispin = self.parameters.get("ispin", 1)
         return ispin
 
     def get_dos(
-        self,
-        spin: int | None = None,
-        efermi: float | None = None
+        self, spin: int | None = None, efermi: float | None = None
     ) -> tuple[np.ndarray, np.ndarray]:
         """Get density of states.
 
@@ -223,13 +221,13 @@ class ElectronicMixin:
         self.update()
         from xml.etree import ElementTree
 
-        vasprun = os.path.join(self.directory, 'vasprun.xml')
+        vasprun = os.path.join(self.directory, "vasprun.xml")
         tree = ElementTree.parse(vasprun)
 
         if efermi is None:
             efermi = self.get_fermi_level()
 
-        dos_elem = tree.find('.//dos/total/array/set')
+        dos_elem = tree.find(".//dos/total/array/set")
         if dos_elem is None:
             raise ValueError("DOS not found in vasprun.xml")
 
@@ -237,11 +235,11 @@ class ElectronicMixin:
         energies = []
         dos_data = []
 
-        for spin_set in dos_elem.findall('set'):
+        for spin_set in dos_elem.findall("set"):
             spin_dos = []
-            for r in spin_set.findall('r'):
+            for r in spin_set.findall("r"):
                 parts = r.text.split()
-                if not energies or len(energies) < len(spin_set.findall('r')):
+                if not energies or len(energies) < len(spin_set.findall("r")):
                     energies.append(float(parts[0]))
                 spin_dos.append(float(parts[1]))
             dos_data.append(np.array(spin_dos))
@@ -255,6 +253,99 @@ class ElectronicMixin:
         else:
             return energies, dos_data[0]
 
+    def get_ados(
+        self, atom_index: int, orbital: str, spin: int | None = None, efermi: float | None = None
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Get atom-projected density of states.
+
+        Requires LORBIT=10, 11, or 12 in the calculation.
+
+        Args:
+            atom_index: Atom index (0-based).
+            orbital: Orbital type ('s', 'p', 'd', 'f', or 'total').
+            spin: Spin channel (None for total, 0 or 1 for spin-polarized).
+            efermi: Fermi level for shifting energies (default: use calculated).
+
+        Returns:
+            Tuple of (energies, pdos) arrays.
+        """
+        self.update()
+        from xml.etree import ElementTree
+
+        vasprun = os.path.join(self.directory, "vasprun.xml")
+        tree = ElementTree.parse(vasprun)
+
+        if efermi is None:
+            efermi = self.get_fermi_level()
+
+        # Find projected DOS
+        partial = tree.find(".//dos/partial")
+        if partial is None:
+            raise ValueError(
+                "Projected DOS not found. Set LORBIT=10, 11, or 12 in your calculation."
+            )
+
+        # Get orbital names from the field definitions
+        fields = partial.find(".//set/set/set/r")
+        if fields is None:
+            raise ValueError("Could not parse projected DOS structure")
+
+        # Determine orbital columns from header
+        # VASP typically outputs: energy s py pz px dxy dyz dz2 dxz dx2 (for LORBIT=11)
+        # or: energy s p d (for LORBIT=10)
+        orbital_map = {
+            "s": [1],
+            "p": [2, 3, 4] if len(fields.text.split()) > 5 else [2],
+            "d": [5, 6, 7, 8, 9] if len(fields.text.split()) > 5 else [3],
+            "f": [10, 11, 12, 13, 14, 15, 16] if len(fields.text.split()) > 10 else [4],
+        }
+
+        # Find the ion set for the requested atom
+        ions = partial.findall('.//set[@comment="ion"]/set')
+        if not ions:
+            # Try alternative structure
+            ions = partial.findall(".//array/set/set")
+
+        if atom_index >= len(ions):
+            raise IndexError(f"Atom index {atom_index} out of range (have {len(ions)} atoms)")
+
+        ion_set = ions[atom_index]
+
+        # Read DOS for each spin
+        energies = []
+        pdos_data = []
+
+        for spin_set in ion_set.findall("set"):
+            spin_pdos = []
+            for r in spin_set.findall("r"):
+                parts = [float(x) for x in r.text.split()]
+                if not energies or len(energies) < len(spin_set.findall("r")):
+                    energies.append(parts[0])
+
+                # Sum requested orbital columns
+                if orbital.lower() == "total":
+                    # Sum all orbitals (skip energy column)
+                    spin_pdos.append(sum(parts[1:]))
+                else:
+                    cols = orbital_map.get(orbital.lower(), [1])
+                    # Handle case where orbital columns don't exist
+                    valid_cols = [c for c in cols if c < len(parts)]
+                    if valid_cols:
+                        spin_pdos.append(sum(parts[c] for c in valid_cols))
+                    else:
+                        spin_pdos.append(0.0)
+
+            pdos_data.append(np.array(spin_pdos))
+
+        energies = np.array(energies) - efermi
+
+        if spin is not None:
+            return energies, pdos_data[spin]
+        elif len(pdos_data) == 2:
+            return energies, pdos_data[0] + pdos_data[1]
+        else:
+            return energies, pdos_data[0]
+
     def get_magnetic_moment(self) -> float:
         """Get total magnetic moment.
 
@@ -263,15 +354,15 @@ class ElectronicMixin:
         """
         self.update()
 
-        if 'magmom' in self.results:
-            return self.results['magmom']
+        if "magmom" in self.results:
+            return self.results["magmom"]
 
         # Try to read from OUTCAR
-        outcar = os.path.join(self.directory, 'OUTCAR')
+        outcar = os.path.join(self.directory, "OUTCAR")
         if os.path.exists(outcar):
             with open(outcar) as f:
                 content = f.read()
-            match = re.search(r'number of electron\s+[\d.]+\s+magnetization\s+([-\d.]+)', content)
+            match = re.search(r"number of electron\s+[\d.]+\s+magnetization\s+([-\d.]+)", content)
             if match:
                 return float(match.group(1))
 
@@ -285,7 +376,7 @@ class ElectronicMixin:
         """
         self.update()
 
-        outcar = os.path.join(self.directory, 'OUTCAR')
+        outcar = os.path.join(self.directory, "OUTCAR")
         if not os.path.exists(outcar):
             raise FileNotFoundError(f"OUTCAR not found in {self.directory}")
 
@@ -293,12 +384,12 @@ class ElectronicMixin:
             content = f.read()
 
         # Find magnetization section
-        pattern = r'magnetization \(x\)\s*\n.*?\n((?:\s*\d+\s+[-\d.]+\s*\n)+)'
+        pattern = r"magnetization \(x\)\s*\n.*?\n((?:\s*\d+\s+[-\d.]+\s*\n)+)"
         matches = re.findall(pattern, content, re.DOTALL)
 
         if matches:
             magmoms = []
-            for line in matches[-1].strip().split('\n'):
+            for line in matches[-1].strip().split("\n"):
                 parts = line.split()
                 if len(parts) >= 2:
                     magmoms.append(float(parts[1]))
@@ -317,8 +408,8 @@ class ElectronicMixin:
         efermi = self.get_fermi_level()
         eigenvalues = self._read_eigenvalues()
 
-        homo = float('-inf')
-        lumo = float('inf')
+        homo = float("-inf")
+        lumo = float("inf")
 
         for spin_eigs in eigenvalues:
             for kpt_eigs in spin_eigs:
