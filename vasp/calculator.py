@@ -571,6 +571,70 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
     def __repr__(self) -> str:
         return f"Vasp('{self.directory}', xc='{self.parameters.get('xc', 'PBE')}')"
 
+    def __str__(self) -> str:
+        """Return a vaspsum-style summary of the calculation."""
+        import numpy as np
+
+        lines = []
+        lines.append("=" * 60)
+        lines.append(f"VASP Calculation: {self.directory}")
+        lines.append("=" * 60)
+
+        # Try to get atoms
+        atoms = self.atoms
+        if atoms is None:
+            try:
+                atoms = self.load_atoms()
+            except Exception:
+                pass
+
+        if atoms is not None:
+            lines.append(f"\nFormula: {atoms.get_chemical_formula()}")
+            lines.append(f"Number of atoms: {len(atoms)}")
+
+            # Unit cell info
+            cell = atoms.get_cell()
+            volume = atoms.get_volume()
+            lines.append("\nUnit cell:")
+            lines.append(f"  Volume: {volume:.4f} Å³")
+            lengths = cell.lengths()
+            angles = cell.angles()
+            lines.append(f"  a={lengths[0]:.4f} b={lengths[1]:.4f} c={lengths[2]:.4f} Å")
+            lines.append(f"  α={angles[0]:.2f}° β={angles[1]:.2f}° γ={angles[2]:.2f}°")
+
+            # Energy
+            energy = self.results.get("energy")
+            if energy is not None:
+                lines.append(f"\nEnergy: {energy:.6f} eV ({energy/len(atoms):.6f} eV/atom)")
+            else:
+                lines.append("\nEnergy: Not available")
+
+            # Forces
+            forces = self.results.get("forces")
+            if forces is not None:
+                fmax = np.sqrt((forces**2).sum(axis=1).max())
+                lines.append(f"Max force: {fmax:.6f} eV/Å")
+
+            # Stress
+            stress = self.results.get("stress")
+            if stress is not None:
+                # Convert to GPa (ASE uses eV/Å³, multiply by 160.21766208)
+                stress_gpa = np.array(stress) * 160.21766208
+                pressure = -stress_gpa[:3].mean()
+                lines.append(f"Pressure: {pressure:.3f} GPa")
+        else:
+            lines.append("\nNo structure found")
+
+        # Parameters
+        lines.append("\nParameters:")
+        key_params = ["xc", "encut", "kpts", "ismear", "sigma", "ispin", "ibrion", "isif", "nsw"]
+        for key in key_params:
+            if key in self.parameters:
+                lines.append(f"  {key}: {self.parameters[key]}")
+
+        lines.append("=" * 60)
+        return "\n".join(lines)
+
     def clone(
         self,
         label: str,
