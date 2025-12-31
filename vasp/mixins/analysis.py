@@ -276,26 +276,27 @@ class AnalysisMixin:
             raise FileNotFoundError(f"OUTCAR not found in {self.directory}")
 
         with open(outcar) as f:
-            content = f.read()
+            lines = f.readlines()
 
-        # Find elastic constants section
-        if "TOTAL ELASTIC MODULI" not in content:
-            raise ValueError("Elastic moduli not found. " "Ensure IBRION=6 and ISIF>=3 were used.")
-
-        # Parse the 6x6 matrix
-        pattern = r"TOTAL ELASTIC MODULI \(kBar\).*?-+\s*\n((?:.*\n){6})"
-        match = re.search(pattern, content, re.DOTALL)
-
-        if not match:
-            raise ValueError("Could not parse elastic moduli from OUTCAR")
-
+        # Find TOTAL ELASTIC MODULI section (more robust line-by-line approach)
         matrix = []
-        for line in match.group(1).strip().split("\n"):
-            parts = line.split()
-            if len(parts) >= 7:
-                # Skip first column (XX, YY, etc.)
-                row = [float(x) for x in parts[1:7]]
-                matrix.append(row)
+        for i, line in enumerate(lines):
+            if "TOTAL ELASTIC MODULI (kBar)" in line:
+                # Skip header line, "Direction XX YY..." line, and dashed line
+                # The matrix data starts 3 lines after "TOTAL ELASTIC MODULI"
+                data_lines = lines[i + 3 : i + 9]  # 6 rows of data
+                for data_line in data_lines:
+                    parts = data_line.split()
+                    # Each line: XX/YY/ZZ/XY/YZ/ZX followed by 6 numbers
+                    if len(parts) >= 7 and parts[0] in ("XX", "YY", "ZZ", "XY", "YZ", "ZX"):
+                        row = [float(x) for x in parts[1:7]]
+                        matrix.append(row)
+                break
+
+        if len(matrix) != 6:
+            raise ValueError(
+                "Elastic moduli not found or incomplete. " "Ensure IBRION=6 and ISIF>=3 were used."
+            )
 
         # Convert from kBar to GPa
         return np.array(matrix) * 0.1
