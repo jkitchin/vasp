@@ -4,12 +4,6 @@
 format: jb-book
 root: index
 parts:
-  - caption: Getting Started
-    chapters:
-      - file: getting-started/installation
-      - file: getting-started/quickstart
-      - file: getting-started/configuration
-
   - caption: Tutorials
     chapters:
       - file: tutorials/beginner

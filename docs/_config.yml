@@ -23,7 +23,7 @@ bibtex_bibfiles:
 repository:
   url: https://github.com/jkitchin/vasp
   path_to_book: docs
-  branch: main
+  branch: master
 
 # Add GitHub buttons to your book
 html:
