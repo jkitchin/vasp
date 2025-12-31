@@ -157,8 +157,9 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
     def __init__(
         self,
         label: str = "vasp",
-        atoms: Atoms | None = None,
+        atoms: Atoms | list[Atoms] | None = None,
         runner: Runner | None = None,
+        force: bool = False,
         **kwargs,
     ):
         # Check for common mistake of using directory= instead of label=
@@ -167,6 +168,15 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
                 "Use 'label' instead of 'directory' to specify the calculation path. "
                 "Example: Vasp('my_calc', ...) or Vasp(label='my_calc', ...)"
             )
+
+        # Force rerun even if results exist
+        self.force = force
+
+        # Check for NEB calculation (list of images)
+        self.neb_images: list[Atoms] | None = None
+        if isinstance(atoms, list):
+            self.neb_images = atoms
+            atoms = atoms[0]  # Use first image for base calculator
 
         # Initialize parent Calculator first
         Calculator.__init__(self, atoms=atoms)
@@ -308,7 +318,7 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
         status = self.runner.status(self.directory)
         log.debug(f"Current status: {status.state}")
 
-        if status.state == JobState.COMPLETE:
+        if status.state == JobState.COMPLETE and not self.force:
             self.read_results()
             return
 
@@ -318,10 +328,10 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
         if status.state == JobState.RUNNING:
             raise VaspRunning(message=status.message or "", jobid=status.jobid)
 
-        if status.state == JobState.FAILED:
+        if status.state == JobState.FAILED and not self.force:
             raise VaspNotConverged(status.message or "Calculation failed")
 
-        # Not started - need to run
+        # Not started (or force=True with failed) - need to run
         Calculator.calculate(self, atoms, properties, system_changes)
 
         # Write input files
@@ -332,6 +342,8 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
 
         if result.state == JobState.COMPLETE:
             self.read_results()
+        elif result.state == JobState.FAILED:
+            raise VaspNotConverged(result.message or "Calculation failed")
 
     def update(self) -> None:
         """Ensure calculation results are current.
@@ -696,3 +708,18 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
 
         self.parameters["nbands"] = nbands
         return nbands
+
+    def stop_if(self, condition: bool, message: str = "Calculation stopped") -> None:
+        """Stop execution if condition is True.
+
+        Useful for checking if results are valid before proceeding.
+
+        Args:
+            condition: If True, raise SystemExit.
+            message: Message to display when stopping.
+
+        Raises:
+            SystemExit: If condition is True.
+        """
+        if condition:
+            raise SystemExit(message)

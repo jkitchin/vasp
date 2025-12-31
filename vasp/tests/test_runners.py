@@ -128,6 +128,58 @@ class TestMockRunner:
         assert runner.cancel(temp_dir)
 
 
+class TestGetOptimalNprocs:
+    """Test get_optimal_nprocs function."""
+
+    def test_without_directory(self):
+        """Test auto-detection without directory."""
+        import os
+
+        from vasp.runners.local import get_optimal_nprocs
+
+        nprocs = get_optimal_nprocs()
+        cpu_count = os.cpu_count() or 1
+
+        # Should be at least 1 and at most half of CPUs (capped at 32)
+        assert 1 <= nprocs <= min(cpu_count // 2, 32)
+
+    def test_with_small_system(self, temp_dir):
+        """Test with small system (few atoms)."""
+        from vasp.runners.local import get_optimal_nprocs
+
+        # Create a POSCAR with 2 atoms
+        poscar = os.path.join(temp_dir, "POSCAR")
+        with open(poscar, "w") as f:
+            f.write("Si2\n1.0\n5.43 0.0 0.0\n0.0 5.43 0.0\n0.0 0.0 5.43\n")
+            f.write("Si\n2\nDirect\n0.0 0.0 0.0\n0.25 0.25 0.25\n")
+
+        nprocs = get_optimal_nprocs(temp_dir)
+
+        # Small system should use few processes
+        assert nprocs <= 2
+
+    def test_respects_ncore(self, temp_dir):
+        """Test that NCORE in INCAR affects nprocs."""
+        from vasp.runners.local import get_optimal_nprocs
+
+        # Create POSCAR with 100 atoms
+        poscar = os.path.join(temp_dir, "POSCAR")
+        with open(poscar, "w") as f:
+            f.write("Test\n1.0\n10 0 0\n0 10 0\n0 0 10\nSi\n100\nCartesian\n")
+            for i in range(100):
+                f.write(f"{i % 10} {(i // 10) % 10} {i // 100} \n")
+
+        # Create INCAR with NCORE = 4
+        incar = os.path.join(temp_dir, "INCAR")
+        with open(incar, "w") as f:
+            f.write("NCORE = 4\n")
+
+        nprocs = get_optimal_nprocs(temp_dir)
+
+        # nprocs should be divisible by NCORE
+        assert nprocs % 4 == 0 or nprocs < 4
+
+
 class TestLocalRunner:
     """Test LocalRunner."""
 
@@ -135,33 +187,45 @@ class TestLocalRunner:
         """Test default initialization."""
         # Clear VASP_COMMAND env var to test true default
         monkeypatch.delenv("VASP_COMMAND", raising=False)
+        monkeypatch.delenv("VASP_EXECUTABLE", raising=False)
         runner = LocalRunner()
 
-        assert runner.vasp_command == "vasp_std"
-        assert runner.mpi_command is None
+        assert runner.vasp_executable == "vasp_std"
+        assert runner.nprocs == "auto"
+        assert runner.mpi_command == "mpirun"
         assert not runner.background
 
     def test_init_from_env(self, monkeypatch):
-        """Test initialization from VASP_COMMAND environment variable."""
-        monkeypatch.setenv("VASP_COMMAND", "vasp_ncl")
+        """Test initialization from VASP_EXECUTABLE environment variable."""
+        monkeypatch.delenv("VASP_COMMAND", raising=False)
+        monkeypatch.setenv("VASP_EXECUTABLE", "vasp_ncl")
         runner = LocalRunner()
 
-        assert runner.vasp_command == "vasp_ncl"
+        assert runner.vasp_executable == "vasp_ncl"
 
-    def test_init_with_mpi(self):
-        """Test initialization with MPI."""
-        runner = LocalRunner(vasp_command="vasp_gam", mpi_command="mpirun -np 4")
+    def test_init_with_nprocs(self, monkeypatch):
+        """Test initialization with explicit nprocs."""
+        monkeypatch.delenv("VASP_COMMAND", raising=False)
+        runner = LocalRunner(vasp_executable="vasp_gam", nprocs=4)
 
-        assert runner.vasp_command == "vasp_gam"
-        assert runner.mpi_command == "mpirun -np 4"
+        assert runner.vasp_executable == "vasp_gam"
+        assert runner.nprocs == 4
 
-    def test_build_command(self):
+    def test_build_command(self, temp_dir, monkeypatch):
         """Test command building."""
-        runner = LocalRunner(vasp_command="vasp_std")
-        assert runner._build_command() == "vasp_std"
+        monkeypatch.delenv("VASP_COMMAND", raising=False)
 
-        runner = LocalRunner(vasp_command="vasp_std", mpi_command="mpirun -np 4")
-        assert runner._build_command() == "mpirun -np 4 vasp_std"
+        # Serial (nprocs=1, no MPI)
+        runner = LocalRunner(vasp_executable="vasp_std", nprocs=1, mpi_command=None)
+        assert runner._build_command(temp_dir) == "vasp_std"
+
+        # With MPI
+        runner = LocalRunner(vasp_executable="vasp_std", nprocs=4)
+        assert runner._build_command(temp_dir) == "mpirun -np 4 vasp_std"
+
+        # With extra args
+        runner = LocalRunner(vasp_executable="vasp_std", nprocs=4, mpi_extra_args="--bind-to core")
+        assert runner._build_command(temp_dir) == "mpirun -np 4 --bind-to core vasp_std"
 
     def test_verify_inputs_missing(self, temp_dir):
         """Test input verification with missing files."""
@@ -209,14 +273,15 @@ class TestLocalRunner:
         error = runner._check_outcar_error(temp_dir)
         assert error == "VERY BAD NEWS!"
 
-    def test_repr(self):
+    def test_repr(self, monkeypatch):
         """Test string representation."""
-        runner = LocalRunner(vasp_command="vasp_ncl", background=True)
+        monkeypatch.delenv("VASP_COMMAND", raising=False)
+        runner = LocalRunner(vasp_executable="vasp_ncl", nprocs=8)
 
         repr_str = repr(runner)
         assert "LocalRunner" in repr_str
         assert "vasp_ncl" in repr_str
-        assert "background=True" in repr_str
+        assert "nprocs=8" in repr_str
 
 
 class TestSlurmRunner:

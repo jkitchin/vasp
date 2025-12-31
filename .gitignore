@@ -69,5 +69,22 @@ molecules
 bulk
 vasp.egg-info
 
-# Plot outputs
+# Plot and visualization outputs
 *.png
+*.html
+*.gif
+
+# Jupyter Book build
+docs/_build/
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# Generated structure files
+*.vasp
+*.cif
+*.xyz
+
+# Log files
+*.log
+vasp.log

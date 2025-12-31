@@ -202,9 +202,36 @@ class ElectronicMixin:
         Returns:
             1 for non-spin-polarized, 2 for spin-polarized.
         """
-        self.update()
-        ispin = self.parameters.get("ispin", 1)
-        return ispin
+        # First check parameters
+        if "ispin" in self.parameters:
+            return self.parameters["ispin"]
+
+        # Try to read from INCAR
+        incar = os.path.join(self.directory, "INCAR")
+        if os.path.exists(incar):
+            with open(incar) as f:
+                for line in f:
+                    if "ISPIN" in line.upper():
+                        parts = line.split("=")
+                        if len(parts) >= 2:
+                            try:
+                                return int(parts[1].split()[0])
+                            except (ValueError, IndexError):
+                                pass
+
+        # Try vasprun.xml
+        vasprun = os.path.join(self.directory, "vasprun.xml")
+        if os.path.exists(vasprun):
+            from xml.etree import ElementTree
+
+            tree = ElementTree.parse(vasprun)
+            ispin_elem = tree.find(
+                './/parameters/separator[@name="electronic spin"]/i[@name="ISPIN"]'
+            )
+            if ispin_elem is not None:
+                return int(ispin_elem.text.strip())
+
+        return 1  # Default
 
     def get_dos(
         self, spin: int | None = None, efermi: float | None = None

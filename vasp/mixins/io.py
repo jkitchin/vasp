@@ -75,8 +75,37 @@ class IOMixin:
         # Ensure directory exists
         os.makedirs(self.directory, exist_ok=True)
 
-        # Write input files
-        self.write_poscar()
+        # Check for NEB calculation
+        if hasattr(self, "neb_images") and self.neb_images is not None:
+            self._write_neb_input()
+        else:
+            # Write standard input files
+            self.write_poscar()
+            self.write_incar()
+            self.write_kpoints()
+            self.write_potcar()
+
+    def _write_neb_input(self) -> None:
+        """Write input files for NEB calculation."""
+        from ase.io import write
+
+        images = self.neb_images
+        n_images = len(images)
+
+        # Set IMAGES parameter (intermediate images, not including endpoints)
+        self.parameters["images"] = n_images - 2
+
+        # Write POSCAR for each image in subdirectories
+        for i, img in enumerate(images):
+            subdir = os.path.join(self.directory, f"{i:02d}")
+            os.makedirs(subdir, exist_ok=True)
+
+            # Sort atoms for VASP
+            sorted_atoms = img[self.sort]
+            poscar_path = os.path.join(subdir, "POSCAR")
+            write(poscar_path, sorted_atoms, format="vasp", vasp5=True)
+
+        # Write INCAR, KPOINTS, POTCAR in main directory
         self.write_incar()
         self.write_kpoints()
         self.write_potcar()

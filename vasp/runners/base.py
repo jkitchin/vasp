@@ -18,13 +18,14 @@ if TYPE_CHECKING:
 
 class JobState(Enum):
     """Possible states of a VASP calculation."""
-    NOT_STARTED = "not_started"    # No job submitted, no results
-    SUBMITTED = "submitted"        # Just submitted this run
-    QUEUED = "queued"             # Waiting in queue
-    RUNNING = "running"           # Currently executing
-    COMPLETE = "complete"         # Finished successfully
-    FAILED = "failed"             # Finished with error
-    UNKNOWN = "unknown"           # Cannot determine state
+
+    NOT_STARTED = "not_started"  # No job submitted, no results
+    SUBMITTED = "submitted"  # Just submitted this run
+    QUEUED = "queued"  # Waiting in queue
+    RUNNING = "running"  # Currently executing
+    COMPLETE = "complete"  # Finished successfully
+    FAILED = "failed"  # Finished with error
+    UNKNOWN = "unknown"  # Cannot determine state
 
 
 @dataclass
@@ -37,6 +38,7 @@ class JobStatus:
         message: Additional status message or error description.
         metadata: Additional runner-specific data.
     """
+
     state: JobState
     jobid: str | None = None
     message: str | None = None
@@ -128,10 +130,7 @@ class Runner(ABC):
         return False
 
     def wait(
-        self,
-        directory: str,
-        timeout: float | None = None,
-        poll_interval: float = 30.0
+        self, directory: str, timeout: float | None = None, poll_interval: float = 30.0
     ) -> JobStatus:
         """Block until calculation completes (for interactive use).
 
@@ -158,9 +157,7 @@ class Runner(ABC):
             if s.is_done:
                 return s
             if timeout is not None and (time.time() - start) > timeout:
-                raise TimeoutError(
-                    f"Calculation not complete after {timeout}s"
-                )
+                raise TimeoutError(f"Calculation not complete after {timeout}s")
             time.sleep(poll_interval)
 
     def get_logs(self, directory: str, tail_lines: int = 100) -> str:
@@ -176,11 +173,11 @@ class Runner(ABC):
         import os
 
         # Default implementation reads OUTCAR
-        outcar = os.path.join(directory, 'OUTCAR')
+        outcar = os.path.join(directory, "OUTCAR")
         if os.path.exists(outcar):
             with open(outcar) as f:
                 lines = f.readlines()
-                return ''.join(lines[-tail_lines:])
+                return "".join(lines[-tail_lines:])
         return "No OUTCAR found"
 
     def _check_outcar_complete(self, directory: str) -> bool:
@@ -194,19 +191,31 @@ class Runner(ABC):
         """
         import os
 
-        outcar = os.path.join(directory, 'OUTCAR')
-        if not os.path.exists(outcar):
-            return False
+        # Check main directory first
+        outcar = os.path.join(directory, "OUTCAR")
+        if os.path.exists(outcar):
+            if self._outcar_has_completion_marker(outcar):
+                return True
 
+        # Check for NEB calculation (subdirectories 01/, 02/, etc.)
+        # For NEB, check if first intermediate image (01/) has completed
+        neb_outcar = os.path.join(directory, "01", "OUTCAR")
+        if os.path.exists(neb_outcar):
+            return self._outcar_has_completion_marker(neb_outcar)
+
+        return False
+
+    def _outcar_has_completion_marker(self, outcar: str) -> bool:
+        """Check if an OUTCAR file has the completion marker."""
         # Check last few KB for completion marker
-        with open(outcar, 'rb') as f:
+        with open(outcar, "rb") as f:
             f.seek(0, 2)  # End of file
             size = f.tell()
             # Read last 10KB
             f.seek(max(0, size - 10240))
-            content = f.read().decode('utf-8', errors='ignore')
+            content = f.read().decode("utf-8", errors="ignore")
 
-        return 'General timing and accounting' in content
+        return "General timing and accounting" in content
 
     def _check_outcar_error(self, directory: str) -> str | None:
         """Check OUTCAR for error messages.
@@ -219,20 +228,20 @@ class Runner(ABC):
         """
         import os
 
-        outcar = os.path.join(directory, 'OUTCAR')
+        outcar = os.path.join(directory, "OUTCAR")
         if not os.path.exists(outcar):
             return None
 
         error_patterns = [
-            'ZBRENT: fatal error',
-            'VERY BAD NEWS!',
-            'internal error',
-            'EDDDAV: Call to ZHEGV failed',
-            'Sub-Space-Matrix is not hermitian',
+            "ZBRENT: fatal error",
+            "VERY BAD NEWS!",
+            "internal error",
+            "EDDDAV: Call to ZHEGV failed",
+            "Sub-Space-Matrix is not hermitian",
         ]
 
-        with open(outcar, 'rb') as f:
-            content = f.read().decode('utf-8', errors='ignore')
+        with open(outcar, "rb") as f:
+            content = f.read().decode("utf-8", errors="ignore")
 
         for pattern in error_patterns:
             if pattern in content:

@@ -686,3 +686,179 @@ class AnalysisMixin:
             return float(match.group(1))
 
         raise ValueError(f"Elapsed time not found in {outcar}")
+
+    def plot_isosurface(
+        self,
+        data: np.ndarray | str = "charge",
+        isovalue: float | None = None,
+        color: str = "blue",
+        alpha: float = 0.3,
+        show_cell: bool = True,
+        show_atoms: bool = True,
+        ax=None,
+    ):
+        """Plot isosurface of 3D volumetric data.
+
+        Args:
+            data: 3D numpy array or string ('charge', 'potential', 'elf').
+            isovalue: Isosurface value. If None, uses 10% of max value.
+            color: Surface color.
+            alpha: Surface transparency (0-1).
+            show_cell: If True, draw unit cell edges.
+            show_atoms: If True, show atom positions.
+            ax: Matplotlib 3D axes. If None, creates new figure.
+
+        Returns:
+            Matplotlib 3D axes object.
+
+        Raises:
+            ImportError: If scikit-image is not installed.
+        """
+        try:
+            from skimage import measure
+        except ImportError:
+            raise ImportError(
+                "scikit-image is required for isosurface plotting. "
+                "Install with: pip install scikit-image"
+            ) from None
+
+        import matplotlib.pyplot as plt
+        from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+
+        # Get the data array
+        if isinstance(data, str):
+            if data == "charge":
+                _, data_array = self.get_charge_density()
+            elif data == "potential":
+                _, data_array = self.get_local_potential()
+            elif data == "elf":
+                _, data_array = self.get_elf()
+            else:
+                raise ValueError(f"Unknown data type: {data}. Use 'charge', 'potential', or 'elf'.")
+        else:
+            data_array = data
+
+        # Default isovalue
+        if isovalue is None:
+            isovalue = 0.1 * np.max(data_array)
+
+        # Get unit cell
+        from ase.io import read
+
+        contcar = os.path.join(self.directory, "CONTCAR")
+        poscar = os.path.join(self.directory, "POSCAR")
+        if os.path.exists(contcar) and os.path.getsize(contcar) > 0:
+            atoms = read(contcar, format="vasp")
+        elif os.path.exists(poscar):
+            atoms = read(poscar, format="vasp")
+        else:
+            atoms = self.atoms
+
+        cell = atoms.get_cell()
+
+        # Extract isosurface using marching cubes
+        try:
+            verts, faces, normals, values = measure.marching_cubes(
+                data_array,
+                level=isovalue,
+                spacing=(
+                    1.0 / data_array.shape[0],
+                    1.0 / data_array.shape[1],
+                    1.0 / data_array.shape[2],
+                ),
+            )
+        except ValueError:
+            raise ValueError(
+                f"No isosurface found at isovalue={isovalue}. "
+                f"Data range: [{np.min(data_array):.3e}, {np.max(data_array):.3e}]"
+            ) from None
+
+        # Transform vertices from fractional to Cartesian coordinates
+        verts_cartesian = verts @ cell
+
+        # Create figure if needed
+        if ax is None:
+            fig = plt.figure(figsize=(10, 8))
+            ax = fig.add_subplot(111, projection="3d")
+
+        # Create mesh
+        mesh = Poly3DCollection(verts_cartesian[faces], alpha=alpha)
+        mesh.set_facecolor(color)
+        mesh.set_edgecolor("none")
+        ax.add_collection3d(mesh)
+
+        # Draw unit cell
+        if show_cell:
+            self._draw_cell(ax, cell)
+
+        # Draw atoms
+        if show_atoms and atoms is not None:
+            positions = atoms.get_positions()
+            symbols = atoms.get_chemical_symbols()
+
+            # Simple color mapping
+            colors = {
+                "H": "white",
+                "C": "gray",
+                "N": "blue",
+                "O": "red",
+                "S": "yellow",
+                "Fe": "orange",
+                "Ni": "green",
+                "Cu": "brown",
+                "Pt": "silver",
+                "Au": "gold",
+            }
+
+            for pos, sym in zip(positions, symbols):
+                c = colors.get(sym, "purple")
+                ax.scatter(*pos, c=c, s=100, edgecolors="black", linewidths=0.5)
+
+        # Set axis limits
+        all_verts = np.vstack(
+            [
+                [0, 0, 0],
+                cell[0],
+                cell[1],
+                cell[2],
+                cell[0] + cell[1],
+                cell[1] + cell[2],
+                cell[0] + cell[2],
+                cell[0] + cell[1] + cell[2],
+            ]
+        )
+        margin = 0.5
+        ax.set_xlim(all_verts[:, 0].min() - margin, all_verts[:, 0].max() + margin)
+        ax.set_ylim(all_verts[:, 1].min() - margin, all_verts[:, 1].max() + margin)
+        ax.set_zlim(all_verts[:, 2].min() - margin, all_verts[:, 2].max() + margin)
+
+        ax.set_xlabel("x (Å)")
+        ax.set_ylabel("y (Å)")
+        ax.set_zlabel("z (Å)")
+
+        return ax
+
+    def _draw_cell(self, ax, cell):
+        """Draw unit cell edges on 3D axes."""
+        # Cell vertices
+        o = np.array([0, 0, 0])
+        a, b, c = cell[0], cell[1], cell[2]
+
+        # 12 edges of the parallelepiped
+        edges = [
+            (o, a),
+            (o, b),
+            (o, c),
+            (a, a + b),
+            (a, a + c),
+            (b, b + a),
+            (b, b + c),
+            (c, c + a),
+            (c, c + b),
+            (a + b, a + b + c),
+            (a + c, a + b + c),
+            (b + c, a + b + c),
+        ]
+
+        for start, end in edges:
+            ax.plot3D(*zip(start, end), "k-", linewidth=0.5)

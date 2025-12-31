@@ -90,6 +90,10 @@ class DynamicsMixin:
 
         frequencies = []
         eigenvectors = []
+
+        # Load atoms if not already loaded
+        if self.atoms is None:
+            self.load_atoms()
         natoms = len(self.atoms)
 
         # Parse each mode
@@ -280,8 +284,16 @@ class DynamicsMixin:
 
         return forward, reverse
 
-    def get_neb_path(self) -> tuple[np.ndarray, np.ndarray]:
+    def get_neb_path(
+        self,
+        initial_energy: float | None = None,
+        final_energy: float | None = None,
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Get NEB reaction path data.
+
+        Args:
+            initial_energy: Energy of initial state (if not in NEB output).
+            final_energy: Energy of final state (if not in NEB output).
 
         Returns:
             Tuple of (reaction_coordinate, energies) arrays.
@@ -300,7 +312,131 @@ class DynamicsMixin:
 
         energies = np.array([img.info.get("energy", np.nan) for img in images])
 
-        # Reference to initial state
-        energies -= energies[0]
+        # Use provided endpoint energies if available
+        if initial_energy is not None:
+            energies[0] = initial_energy
+        if final_energy is not None:
+            energies[-1] = final_energy
+
+        # Try to get endpoint energies from original NEB images
+        if self.neb_images is not None:
+            if np.isnan(energies[0]):
+                # Check original initial image for energy
+                init_img = self.neb_images[0]
+                if "energy" in init_img.info:
+                    energies[0] = init_img.info["energy"]
+                elif init_img.calc is not None:
+                    try:
+                        energies[0] = init_img.get_potential_energy()
+                    except Exception:
+                        pass
+            if np.isnan(energies[-1]):
+                # Check original final image for energy
+                final_img = self.neb_images[-1]
+                if "energy" in final_img.info:
+                    energies[-1] = final_img.info["energy"]
+                elif final_img.calc is not None:
+                    try:
+                        energies[-1] = final_img.get_potential_energy()
+                    except Exception:
+                        pass
+
+        # Reference to initial state (use first non-NaN if initial is NaN)
+        ref_energy = energies[0]
+        if np.isnan(ref_energy):
+            # Find first non-NaN energy
+            for e in energies:
+                if not np.isnan(e):
+                    ref_energy = e
+                    break
+
+        energies = energies - ref_energy
 
         return distances, energies
+
+    def get_neb(self) -> tuple[list[Atoms], list[float | None]]:
+        """Get NEB images and their energies.
+
+        Returns:
+            Tuple of (images, energies) where images is a list of Atoms
+            and energies is a list of energies (None if not available).
+        """
+        images = self.get_neb_images()
+        energies = []
+
+        for img in images:
+            energy = img.info.get("energy")
+            if energy is None and img.calc is not None:
+                try:
+                    energy = img.get_potential_energy()
+                except Exception:
+                    pass
+            energies.append(energy)
+
+        return images, energies
+
+    def plot_neb(
+        self,
+        ax=None,
+        show: bool = True,
+        label: str | None = None,
+        initial_energy: float | None = None,
+        final_energy: float | None = None,
+        **kwargs,
+    ):
+        """Plot NEB energy profile.
+
+        Args:
+            ax: Matplotlib axes. If None, creates new figure.
+            show: If True, call plt.show().
+            label: Legend label for the curve.
+            initial_energy: Energy of initial state (if not computed in NEB).
+            final_energy: Energy of final state (if not computed in NEB).
+            **kwargs: Passed to plt.plot().
+
+        Returns:
+            Matplotlib axes object.
+        """
+        import matplotlib.pyplot as plt
+
+        distances, energies = self.get_neb_path(
+            initial_energy=initial_energy, final_energy=final_energy
+        )
+
+        if ax is None:
+            fig, ax = plt.subplots()
+
+        # Filter out NaN values for spline fitting
+        valid = ~np.isnan(energies)
+        x_valid = distances[valid]
+        y_valid = energies[valid]
+
+        # Plot data points
+        ax.plot(x_valid, y_valid, "o", markersize=8, label=label, **kwargs)
+
+        # Add spline fit if we have enough points
+        if len(x_valid) >= 4:
+            from scipy.interpolate import CubicSpline
+
+            # Create smooth spline through points
+            cs = CubicSpline(x_valid, y_valid)
+            x_smooth = np.linspace(x_valid.min(), x_valid.max(), 100)
+            y_smooth = cs(x_smooth)
+            ax.plot(x_smooth, y_smooth, "-", color=ax.lines[-1].get_color())
+
+        ax.set_xlabel("Reaction coordinate")
+        ax.set_ylabel("Energy (eV)")
+
+        if label is not None:
+            ax.legend()
+
+        # Calculate and show energy values in title
+        if len(y_valid) >= 2:
+            E_barrier = np.max(y_valid)  # Already referenced to initial
+            delta_E = y_valid[-1] - y_valid[0]  # Final - initial
+            ax.set_title(f"$E_a$ = {E_barrier:.2f} eV, $\\Delta E$ = {delta_E:.2f} eV")
+
+        if show:
+            plt.show()
+
+        return ax

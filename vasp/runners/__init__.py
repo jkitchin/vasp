@@ -17,39 +17,46 @@ Example:
 from .base import JobState, JobStatus, Runner
 from .interactive import InteractiveResults, InteractiveRunner
 from .kubernetes import KubernetesRunner
-from .local import LocalRunner
+from .local import LocalRunner, get_optimal_nprocs
 from .mock import MockResults, MockRunner
 from .slurm import SlurmRunner
 from .socket_io import SocketClient, SocketConfig, SocketServer
 
 __all__ = [
-    'Runner',
-    'JobState',
-    'JobStatus',
-    'LocalRunner',
-    'MockRunner',
-    'MockResults',
-    'SlurmRunner',
-    'KubernetesRunner',
-    'InteractiveRunner',
-    'InteractiveResults',
-    'SocketServer',
-    'SocketClient',
-    'SocketConfig',
+    "Runner",
+    "JobState",
+    "JobStatus",
+    "LocalRunner",
+    "get_optimal_nprocs",
+    "MockRunner",
+    "MockResults",
+    "SlurmRunner",
+    "KubernetesRunner",
+    "InteractiveRunner",
+    "InteractiveResults",
+    "SocketServer",
+    "SocketClient",
+    "SocketConfig",
 ]
+
 
 # Optional runners imported on demand
 def get_slurm_runner():
     """Get SlurmRunner class (avoids import if not needed)."""
     from .slurm import SlurmRunner
+
     return SlurmRunner
+
 
 def get_kubernetes_runner():
     """Get KubernetesRunner class (requires kubernetes package)."""
     from .kubernetes import KubernetesRunner
+
     return KubernetesRunner
+
 
 def get_interactive_runner():
     """Get InteractiveRunner class for persistent VASP sessions."""
     from .interactive import InteractiveRunner
+
     return InteractiveRunner
