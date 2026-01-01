@@ -66,5 +66,10 @@ sphinx:
     napoleon_numpy_docstring: true
     html_theme_options:
       repository_url: "https://github.com/jkitchin/vasp"
+      repository_branch: "master"
+      path_to_docs: "docs"
       use_repository_button: true
       use_issues_button: true
+      use_edit_page_button: true
+      use_source_repository_button: true
+      use_download_button: true
