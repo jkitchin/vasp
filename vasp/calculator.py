@@ -283,6 +283,49 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
 
         return changed
 
+    def _atoms_changed(self, atoms: Atoms | None) -> bool:
+        """Check if atoms have changed since last calculation.
+
+        Compares positions, cell, and atomic numbers to detect changes
+        that require a new calculation (e.g., for ASE optimizers).
+        """
+        if atoms is None:
+            atoms = self.atoms
+        if atoms is None:
+            return False
+
+        # Check if we have stored state from previous calculation
+        if not hasattr(self, "_last_atoms_state"):
+            return True
+
+        last = self._last_atoms_state
+        try:
+            # Check atomic numbers
+            if not np.array_equal(atoms.numbers, last["numbers"]):
+                return True
+            # Check positions (within tolerance)
+            if not np.allclose(atoms.positions, last["positions"], atol=1e-10):
+                return True
+            # Check cell (within tolerance)
+            if not np.allclose(atoms.cell[:], last["cell"], atol=1e-10):
+                return True
+            # Check pbc
+            if not np.array_equal(atoms.pbc, last["pbc"]):
+                return True
+        except (KeyError, ValueError):
+            return True
+
+        return False
+
+    def _store_atoms_state(self, atoms: Atoms) -> None:
+        """Store current atoms state for change detection."""
+        self._last_atoms_state = {
+            "numbers": atoms.numbers.copy(),
+            "positions": atoms.positions.copy(),
+            "cell": atoms.cell[:].copy(),
+            "pbc": atoms.pbc.copy(),
+        }
+
     def calculate(
         self,
         atoms: Atoms | None = None,
@@ -314,12 +357,17 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
             self.atoms = atoms
             self._setup_sorting(atoms)
 
+        # Check if atoms have changed (for ASE optimizers)
+        atoms_changed = self._atoms_changed(self.atoms)
+
         # Check current status
         status = self.runner.status(self.directory)
-        log.debug(f"Current status: {status.state}")
+        log.debug(f"Current status: {status.state}, atoms_changed: {atoms_changed}")
 
-        if status.state == JobState.COMPLETE and not self.force:
+        if status.state == JobState.COMPLETE and not self.force and not atoms_changed:
             self.read_results()
+            if self.atoms is not None:
+                self._store_atoms_state(self.atoms)
             return
 
         if status.state == JobState.QUEUED:
@@ -342,6 +390,8 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
 
         if result.state == JobState.COMPLETE:
             self.read_results()
+            if self.atoms is not None:
+                self._store_atoms_state(self.atoms)
         elif result.state == JobState.FAILED:
             raise VaspNotConverged(result.message or "Calculation failed")
 
