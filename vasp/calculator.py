@@ -622,6 +622,12 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
                 stress_gpa = np.array(stress) * 160.21766208
                 pressure = -stress_gpa[:3].mean()
                 lines.append(f"Pressure: {pressure:.3f} GPa")
+                lines.append(
+                    f"Stress (GPa): xx={stress_gpa[0]:.3f} yy={stress_gpa[1]:.3f} zz={stress_gpa[2]:.3f}"
+                )
+                lines.append(
+                    f"              yz={stress_gpa[3]:.3f} xz={stress_gpa[4]:.3f} xy={stress_gpa[5]:.3f}"
+                )
         else:
             lines.append("\nNo structure found")
 
