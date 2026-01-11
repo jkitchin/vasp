@@ -1,0 +1,79 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "KPOINTS",
+  "scopeName": "source.kpoints",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#title-line" },
+    { "include": "#generation-mode" },
+    { "include": "#mesh-type" },
+    { "include": "#special-points" },
+    { "include": "#numbers" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.kpoints",
+          "match": "^\\s*[#!].*$"
+        }
+      ]
+    },
+    "title-line": {
+      "patterns": [
+        {
+          "name": "string.unquoted.title.kpoints",
+          "match": "^[A-Za-z].*$"
+        }
+      ]
+    },
+    "generation-mode": {
+      "patterns": [
+        {
+          "name": "keyword.control.automatic.kpoints",
+          "match": "(?i)^\\s*(Automatic|Auto|A)\\s*$"
+        },
+        {
+          "name": "keyword.control.explicit.kpoints",
+          "match": "(?i)^\\s*(Explicit|E|Reciprocal|R)\\s*$"
+        },
+        {
+          "name": "keyword.control.linemode.kpoints",
+          "match": "(?i)^\\s*(Line-mode|Line|L)\\s*$"
+        }
+      ]
+    },
+    "mesh-type": {
+      "patterns": [
+        {
+          "name": "keyword.control.gamma.kpoints",
+          "match": "(?i)^\\s*(Gamma|G)\\s*$"
+        },
+        {
+          "name": "keyword.control.monkhorst.kpoints",
+          "match": "(?i)^\\s*(Monkhorst-Pack|Monkhorst|M|MP)\\s*$"
+        }
+      ]
+    },
+    "special-points": {
+      "patterns": [
+        {
+          "name": "entity.name.type.highsymmetry.kpoints",
+          "match": "(?i)\\b(GAMMA|G|X|M|K|L|W|U|R|A|H|N|P|S|T|Y|Z)\\b"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.float.kpoints",
+          "match": "[-+]?\\d*\\.\\d+([eEdD][-+]?\\d+)?"
+        },
+        {
+          "name": "constant.numeric.integer.kpoints",
+          "match": "\\b\\d+\\b"
+        }
+      ]
+    }
+  }
+}

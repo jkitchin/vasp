@@ -1,0 +1,91 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "POSCAR",
+  "scopeName": "source.poscar",
+  "patterns": [
+    { "include": "#comment-line" },
+    { "include": "#title-line" },
+    { "include": "#scale-factor" },
+    { "include": "#lattice-vectors" },
+    { "include": "#element-symbols" },
+    { "include": "#atom-counts" },
+    { "include": "#coordinate-type" },
+    { "include": "#selective-dynamics" },
+    { "include": "#coordinates" }
+  ],
+  "repository": {
+    "comment-line": {
+      "patterns": [
+        {
+          "name": "comment.line.poscar",
+          "match": "^\\s*[#!].*$"
+        }
+      ]
+    },
+    "title-line": {
+      "patterns": [
+        {
+          "name": "string.unquoted.title.poscar",
+          "match": "^.*$",
+          "comment": "First line is always the system name/title"
+        }
+      ]
+    },
+    "scale-factor": {
+      "patterns": [
+        {
+          "name": "constant.numeric.scale.poscar",
+          "match": "^\\s*[-+]?\\d*\\.?\\d+([eEdD][-+]?\\d+)?\\s*$"
+        }
+      ]
+    },
+    "lattice-vectors": {
+      "patterns": [
+        {
+          "name": "constant.numeric.vector.poscar",
+          "match": "^\\s*([-+]?\\d*\\.?\\d+([eEdD][-+]?\\d+)?\\s+){2}[-+]?\\d*\\.?\\d+([eEdD][-+]?\\d+)?\\s*$"
+        }
+      ]
+    },
+    "element-symbols": {
+      "patterns": [
+        {
+          "name": "entity.name.type.element.poscar",
+          "match": "\\b(H|He|Li|Be|B|C|N|O|F|Ne|Na|Mg|Al|Si|P|S|Cl|Ar|K|Ca|Sc|Ti|V|Cr|Mn|Fe|Co|Ni|Cu|Zn|Ga|Ge|As|Se|Br|Kr|Rb|Sr|Y|Zr|Nb|Mo|Tc|Ru|Rh|Pd|Ag|Cd|In|Sn|Sb|Te|I|Xe|Cs|Ba|La|Ce|Pr|Nd|Pm|Sm|Eu|Gd|Tb|Dy|Ho|Er|Tm|Yb|Lu|Hf|Ta|W|Re|Os|Ir|Pt|Au|Hg|Tl|Pb|Bi|Po|At|Rn|Fr|Ra|Ac|Th|Pa|U|Np|Pu|Am|Cm|Bk|Cf|Es|Fm|Md|No|Lr|Rf|Db|Sg|Bh|Hs|Mt|Ds|Rg|Cn|Nh|Fl|Mc|Lv|Ts|Og)\\b"
+        }
+      ]
+    },
+    "atom-counts": {
+      "patterns": [
+        {
+          "name": "constant.numeric.count.poscar",
+          "match": "\\b\\d+\\b"
+        }
+      ]
+    },
+    "coordinate-type": {
+      "patterns": [
+        {
+          "name": "keyword.control.coordinate.poscar",
+          "match": "(?i)^\\s*(Direct|Cartesian|D|C|Selective\\s+dynamics?)\\s*$"
+        }
+      ]
+    },
+    "selective-dynamics": {
+      "patterns": [
+        {
+          "name": "keyword.control.selective.poscar",
+          "match": "(?i)\\b(T|F)\\b"
+        }
+      ]
+    },
+    "coordinates": {
+      "patterns": [
+        {
+          "name": "constant.numeric.coordinate.poscar",
+          "match": "[-+]?\\d*\\.?\\d+([eEdD][-+]?\\d+)?"
+        }
+      ]
+    }
+  }
+}

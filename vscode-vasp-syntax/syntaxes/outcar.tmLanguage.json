@@ -1,0 +1,93 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "OUTCAR",
+  "scopeName": "source.outcar",
+  "patterns": [
+    { "include": "#section-headers" },
+    { "include": "#key-values" },
+    { "include": "#warnings" },
+    { "include": "#errors" },
+    { "include": "#convergence" },
+    { "include": "#energies" },
+    { "include": "#forces" },
+    { "include": "#numbers" }
+  ],
+  "repository": {
+    "section-headers": {
+      "patterns": [
+        {
+          "name": "markup.heading.section.outcar",
+          "match": "^\\s*-{3,}.*-{3,}\\s*$"
+        },
+        {
+          "name": "markup.heading.title.outcar",
+          "match": "^\\s*\\*{3,}.*\\*{3,}\\s*$"
+        },
+        {
+          "name": "markup.heading.subsection.outcar",
+          "match": "(?i)^\\s*(POTCAR|POSCAR|INCAR|KPOINTS|Iteration|LOOP|FREE ENERGIE|FORCE|STRESS|EIGENVALUE|IBZKPT|E-fermi).*$"
+        }
+      ]
+    },
+    "key-values": {
+      "patterns": [
+        {
+          "name": "variable.parameter.outcar",
+          "match": "(?i)\\b(ENCUT|ENAUG|EDIFF|PREC|IBRION|ISIF|NSW|ISMEAR|SIGMA|ISPIN|LORBIT|ALGO|NBANDS|NELECT|NKPTS|NIONS|NPLWV)\\s*="
+        }
+      ]
+    },
+    "warnings": {
+      "patterns": [
+        {
+          "name": "markup.bold.warning.outcar",
+          "match": "(?i)^.*WARNING.*$"
+        }
+      ]
+    },
+    "errors": {
+      "patterns": [
+        {
+          "name": "invalid.illegal.error.outcar",
+          "match": "(?i)^.*(ERROR|STOPPED|FATAL|ZBRENT).*$"
+        }
+      ]
+    },
+    "convergence": {
+      "patterns": [
+        {
+          "name": "keyword.control.convergence.outcar",
+          "match": "(?i)\\b(reached required accuracy|converged|unconverged)\\b"
+        }
+      ]
+    },
+    "energies": {
+      "patterns": [
+        {
+          "name": "constant.language.energy.outcar",
+          "match": "(?i)(free\\s+energy|TOTEN|E0|energy\\(sigma->0\\)|entropy|EBANDS|EATOM)\\s*[=:]"
+        }
+      ]
+    },
+    "forces": {
+      "patterns": [
+        {
+          "name": "constant.language.forces.outcar",
+          "match": "(?i)(TOTAL-FORCE|total drift|maximum force).*"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.float.outcar",
+          "match": "[-+]?\\d*\\.\\d+([eEdD][-+]?\\d+)?"
+        },
+        {
+          "name": "constant.numeric.integer.outcar",
+          "match": "\\b\\d+\\b"
+        }
+      ]
+    }
+  }
+}
