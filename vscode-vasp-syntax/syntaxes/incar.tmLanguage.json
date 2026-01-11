@@ -1,0 +1,228 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "INCAR",
+  "scopeName": "source.incar",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#parameters" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.number-sign.incar",
+          "match": "#.*$"
+        },
+        {
+          "name": "comment.line.exclamation.incar",
+          "match": "!.*$"
+        }
+      ]
+    },
+    "parameters": {
+      "patterns": [
+        { "include": "#basic-parameters" },
+        { "include": "#electronic-parameters" },
+        { "include": "#ionic-parameters" },
+        { "include": "#smearing-parameters" },
+        { "include": "#spin-parameters" },
+        { "include": "#dftu-parameters" },
+        { "include": "#hybrid-parameters" },
+        { "include": "#vdw-parameters" },
+        { "include": "#soc-parameters" },
+        { "include": "#gw-bse-parameters" },
+        { "include": "#md-parameters" },
+        { "include": "#output-parameters" },
+        { "include": "#symmetry-parameters" },
+        { "include": "#parallel-parameters" },
+        { "include": "#dipole-parameters" },
+        { "include": "#mlff-parameters" },
+        { "include": "#neb-parameters" },
+        { "include": "#phonon-parameters" },
+        { "include": "#optical-parameters" },
+        { "include": "#misc-parameters" },
+        { "include": "#values" }
+      ]
+    },
+    "basic-parameters": {
+      "patterns": [
+        {
+          "name": "keyword.control.basic.incar",
+          "match": "(?i)\\b(SYSTEM|ENCUT|ENAUG|PREC|ALGO|NELM|NELMIN|NELMDL|EDIFF|LREAL|ADDGRID|LASPH|GGA|METAGGA|LBEEFENS|ISTART|ICHARG|INIWAV|IWAVPR)\\b"
+        }
+      ]
+    },
+    "electronic-parameters": {
+      "patterns": [
+        {
+          "name": "keyword.control.electronic.incar",
+          "match": "(?i)\\b(NBANDS|NELECT|NUPDOWN|LSORBIT|LNONCOLLINEAR|SAXIS|LORBMOM|LMAXMIX|AMIX|BMIX|AMIX_MAG|BMIX_MAG|AMIN|IMIX|MAXMIX|MIXPRE|WC|INIMIX|LDIAG|WEIMIN|EBREAK|DEPER)\\b"
+        }
+      ]
+    },
+    "ionic-parameters": {
+      "patterns": [
+        {
+          "name": "keyword.control.ionic.incar",
+          "match": "(?i)\\b(NSW|IBRION|ISIF|EDIFFG|POTIM|NFREE|PSTRESS|ISYM|SYMPREC|NBLOCK|KBLOCK|ICHAIN|SPRING|IMAGES|LCLIMB|LTANGENTOLD|LNEBCELL)\\b"
+        }
+      ]
+    },
+    "smearing-parameters": {
+      "patterns": [
+        {
+          "name": "keyword.control.smearing.incar",
+          "match": "(?i)\\b(ISMEAR|SIGMA|KSPACING|KGAMMA|LORBIT)\\b"
+        }
+      ]
+    },
+    "spin-parameters": {
+      "patterns": [
+        {
+          "name": "keyword.control.spin.incar",
+          "match": "(?i)\\b(ISPIN|MAGMOM|NUPDOWN|LSORBIT|LNONCOLLINEAR|SAXIS|LORBMOM|GGA_COMPAT|VOSKOWN|LASPH)\\b"
+        }
+      ]
+    },
+    "dftu-parameters": {
+      "patterns": [
+        {
+          "name": "keyword.control.dftu.incar",
+          "match": "(?i)\\b(LDAU|LDAUTYPE|LDAUL|LDAUU|LDAUJ|LDAUPRINT|LMAXMIX)\\b"
+        }
+      ]
+    },
+    "hybrid-parameters": {
+      "patterns": [
+        {
+          "name": "keyword.control.hybrid.incar",
+          "match": "(?i)\\b(LHFCALC|HFSCREEN|AEXX|AGGAX|AGGAC|ALDAC|NKRED|NKREDX|NKREDY|NKREDZ|TIME|PRECFOCK|LMAXFOCK|HFLMAX|LMAXFOCKAE|ENCUTFOCK|ODDONLY|EVENONLY|LSYMGRAD)\\b"
+        }
+      ]
+    },
+    "vdw-parameters": {
+      "patterns": [
+        {
+          "name": "keyword.control.vdw.incar",
+          "match": "(?i)\\b(IVDW|LUSE_VDW|AGGAC|PARAM1|PARAM2|ZAB_VDW|BPARAM|VDW_RADIUS|VDW_S6|VDW_S8|VDW_A1|VDW_A2|VDW_SR|VDW_D|VDW_C6|LVDW_EWALD)\\b"
+        }
+      ]
+    },
+    "soc-parameters": {
+      "patterns": [
+        {
+          "name": "keyword.control.soc.incar",
+          "match": "(?i)\\b(LSORBIT|LNONCOLLINEAR|SAXIS|LORBMOM|GGA_COMPAT|LSPIRAL|QSPIRAL|LZEROZ)\\b"
+        }
+      ]
+    },
+    "gw-bse-parameters": {
+      "patterns": [
+        {
+          "name": "keyword.control.gw.incar",
+          "match": "(?i)\\b(ALGO|NOMEGA|NBANDS|ENCUTGW|ENCUTGWSOFT|NBANDSO|NBANDSV|ANTIRES|OMEGAMAX|CSHIFT|NBANDSGW|NBANDSGWLOW|NOMEGAGW|LWSELF|LSPECTRAL|ODDONLYGW|EVENONLYGW|TELESCOPE|MAXMEM|NMAXFOCKAE|SELFENERGY)\\b"
+        }
+      ]
+    },
+    "md-parameters": {
+      "patterns": [
+        {
+          "name": "keyword.control.md.incar",
+          "match": "(?i)\\b(MDALGO|SMASS|TEBEG|TEEND|ANDERSEN_PROB|LANGEVIN_GAMMA|LANGEVIN_GAMMA_L|PMASS|PSTRESS|NBLOCK|KBLOCK|NPACO|APACO)\\b"
+        }
+      ]
+    },
+    "output-parameters": {
+      "patterns": [
+        {
+          "name": "keyword.control.output.incar",
+          "match": "(?i)\\b(LWAVE|LCHARG|LVTOT|LVHAR|LELF|LAECHG|LPARD|LSEPB|LSEPK|NBMOD|EINT|IBAND|KPUSE|LORBIT|NEDOS|EMIN|EMAX|NWRITE|LPEAD|LGPEAD|LRHOB)\\b"
+        }
+      ]
+    },
+    "symmetry-parameters": {
+      "patterns": [
+        {
+          "name": "keyword.control.symmetry.incar",
+          "match": "(?i)\\b(ISYM|SYMPREC|MAGDIPOLOUT|LSORBIT)\\b"
+        }
+      ]
+    },
+    "parallel-parameters": {
+      "patterns": [
+        {
+          "name": "keyword.control.parallel.incar",
+          "match": "(?i)\\b(NCORE|NPAR|KPAR|LPLANE|LSCALU|NSIM|NBLK|LSCALAPACK|LORBITALREAL)\\b"
+        }
+      ]
+    },
+    "dipole-parameters": {
+      "patterns": [
+        {
+          "name": "keyword.control.dipole.incar",
+          "match": "(?i)\\b(LDIPOL|IDIPOL|DIPOL|EPSILON|EFIELD|LCALCPOL|LCALCEPS|EFIELD_PEAD|IPEAD|LPEAD|LRPA|SKIP_EDOTP|LBONE|LVCADER)\\b"
+        }
+      ]
+    },
+    "mlff-parameters": {
+      "patterns": [
+        {
+          "name": "keyword.control.mlff.incar",
+          "match": "(?i)\\b(ML_LMLFF|ML_MODE|ML_ISTART|ML_MB|ML_MCONF|ML_RCUT1|ML_RCUT2|ML_SION1|ML_SION2|ML_W1|ML_W2|ML_WTIFOR|ML_WTOTEN|ML_WTSIF|ML_LBASIS_DISCARD|ML_EATOM|ML_MB3|ML_LAFILT2|ML_RDES1|ML_RDES2|ML_MML)\\b"
+        }
+      ]
+    },
+    "neb-parameters": {
+      "patterns": [
+        {
+          "name": "keyword.control.neb.incar",
+          "match": "(?i)\\b(IMAGES|SPRING|LCLIMB|LTANGENTOLD|LNEBCELL|ICHAIN|IOPT|MAXMOVE|TIMESTEP)\\b"
+        }
+      ]
+    },
+    "phonon-parameters": {
+      "patterns": [
+        {
+          "name": "keyword.control.phonon.incar",
+          "match": "(?i)\\b(LEPSILON|LRPA|LCALCEPS|EFIELD_PEAD|IPEAD|LPEAD|DQ)\\b"
+        }
+      ]
+    },
+    "optical-parameters": {
+      "patterns": [
+        {
+          "name": "keyword.control.optical.incar",
+          "match": "(?i)\\b(LOPTICS|CSHIFT|OMEGAMAX|OMEGAMIN|NEDOS|LNABLA|LVEL)\\b"
+        }
+      ]
+    },
+    "misc-parameters": {
+      "patterns": [
+        {
+          "name": "keyword.control.misc.incar",
+          "match": "(?i)\\b(ROPT|NGX|NGY|NGZ|NGXF|NGYF|NGZF|LCOMPAT|LDOWNSAMPLE|LMONO|LCORR|IDIOT|LMUSIC|POMASS|ZVAL|RWIGS|LORBIT|EINT|NBMOD|LPARD|LSEPB|LSEPK|IBAND|KPUSE|LELF|LSOL|EB_K|TAU|LAMBDA|LRHOB|LVCADER|LVHAR|LVTOT|LSCSGRAD|LSELFENERGY)\\b"
+        }
+      ]
+    },
+    "values": {
+      "patterns": [
+        {
+          "name": "constant.numeric.float.incar",
+          "match": "[-+]?\\d*\\.\\d+([eEdD][-+]?\\d+)?"
+        },
+        {
+          "name": "constant.numeric.integer.incar",
+          "match": "[-+]?\\d+"
+        },
+        {
+          "name": "constant.language.boolean.incar",
+          "match": "(?i)\\.(TRUE|FALSE|T|F)\\."
+        },
+        {
+          "name": "string.unquoted.incar",
+          "match": "(?i)\\b(Low|Medium|High|Normal|Accurate|Single|Fast|VeryFast|Damped|Conjugate|All|None|Auto|On|Off|PE|RP|RE|PS|AM|MK|BO|OR|ML|B3|BF|SCAN|TPSS|M06L|revTPSS|GW0?|scGW0?|EVGW0?|BSE)\\b"
+        }
+      ]
+    }
+  }
+}
