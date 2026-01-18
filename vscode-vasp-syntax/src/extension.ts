@@ -103,6 +103,81 @@ const VASP_PARAMETERS: Record<string, VaspParameter> = {
         category: 'Basic',
         wikiPage: 'LASPH'
     },
+    'LPAW': {
+        description: 'Use PAW (Projector Augmented Wave) method. Always .TRUE. for PAW potentials.',
+        type: 'boolean',
+        default: '.TRUE. (for PAW POTCAR)',
+        category: 'Basic',
+        wikiPage: 'LPAW'
+    },
+    'EAUG': {
+        description: 'Augmentation charge cutoff from POTCAR (eV).',
+        type: 'float',
+        category: 'POTCAR',
+        wikiPage: 'EAUG'
+    },
+    'TITEL': {
+        description: 'Title/name of the pseudopotential from POTCAR.',
+        type: 'string',
+        category: 'POTCAR',
+        wikiPage: 'POTCAR'
+    },
+    'LULTRA': {
+        description: 'Use ultrasoft pseudopotential.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'POTCAR',
+        wikiPage: 'POTCAR'
+    },
+    'IUNSCR': {
+        description: 'Unscreening type: 0=linear, 1=nonlinear, 2=none.',
+        type: 'integer',
+        values: ['0', '1', '2'],
+        category: 'POTCAR',
+        wikiPage: 'POTCAR'
+    },
+    'RPACOR': {
+        description: 'Partial core radius from POTCAR (a.u.).',
+        type: 'float',
+        category: 'POTCAR',
+        wikiPage: 'POTCAR'
+    },
+    'RCORE': {
+        description: 'Outmost cutoff radius from POTCAR (a.u.).',
+        type: 'float',
+        category: 'POTCAR',
+        wikiPage: 'POTCAR'
+    },
+    'ENMAX': {
+        description: 'Maximum recommended energy cutoff from POTCAR (eV).',
+        type: 'float',
+        category: 'POTCAR',
+        wikiPage: 'POTCAR'
+    },
+    'ENMIN': {
+        description: 'Minimum recommended energy cutoff from POTCAR (eV).',
+        type: 'float',
+        category: 'POTCAR',
+        wikiPage: 'POTCAR'
+    },
+    'ICORE': {
+        description: 'Core electron treatment from POTCAR.',
+        type: 'integer',
+        category: 'POTCAR',
+        wikiPage: 'POTCAR'
+    },
+    'LCOR': {
+        description: 'Correct augmentation charges.',
+        type: 'boolean',
+        category: 'POTCAR',
+        wikiPage: 'POTCAR'
+    },
+    'VRHFIN': {
+        description: 'Valence electron configuration from POTCAR.',
+        type: 'string',
+        category: 'POTCAR',
+        wikiPage: 'POTCAR'
+    },
     'GGA': {
         description: 'Type of GGA functional.',
         type: 'string',
@@ -125,6 +200,14 @@ const VASP_PARAMETERS: Record<string, VaspParameter> = {
         values: ['0', '1', '2'],
         category: 'Basic',
         wikiPage: 'ISTART'
+    },
+    'INIWAV': {
+        description: 'Initial electronic wavefunction: 0=lowest eigenvalue of H, 1=random.',
+        type: 'integer',
+        default: '1',
+        values: ['0', '1'],
+        category: 'Basic',
+        wikiPage: 'INIWAV'
     },
     'ICHARG': {
         description: 'Determines how the initial charge density is constructed.',
@@ -937,7 +1020,1279 @@ const VASP_PARAMETERS: Record<string, VaspParameter> = {
         category: 'Phonons',
         wikiPage: 'IBRION'
     },
+
+    // ============================================================
+    // Mixing Parameters
+    // ============================================================
+    'AMIX': {
+        description: 'Linear mixing parameter for charge density.',
+        type: 'float',
+        default: '0.4',
+        category: 'Mixing',
+        wikiPage: 'AMIX'
+    },
+    'BMIX': {
+        description: 'Cutoff wave vector for Kerker mixing scheme.',
+        type: 'float',
+        default: '1.0',
+        category: 'Mixing',
+        wikiPage: 'BMIX'
+    },
+    'AMIX_MAG': {
+        description: 'Linear mixing parameter for magnetization density.',
+        type: 'float',
+        default: '1.6',
+        category: 'Mixing',
+        wikiPage: 'AMIX_MAG'
+    },
+    'AMIN': {
+        description: 'Minimal mixing parameter.',
+        type: 'float',
+        default: '0.1',
+        category: 'Mixing',
+        wikiPage: 'AMIN'
+    },
+    'IMIX': {
+        description: 'Mixing type: 0=no, 1=Kerker, 2=Tchebychev, 4=Broyden.',
+        type: 'integer',
+        default: '4',
+        values: ['0', '1', '2', '4'],
+        category: 'Mixing',
+        wikiPage: 'IMIX'
+    },
+    'INIMIX': {
+        description: 'Initial mixing type.',
+        type: 'integer',
+        default: '1',
+        category: 'Mixing',
+        wikiPage: 'INIMIX'
+    },
+    'MIXPRE': {
+        description: 'Preconditioning for Broyden mixer.',
+        type: 'integer',
+        default: '1',
+        category: 'Mixing',
+        wikiPage: 'MIXPRE'
+    },
+    'MAXMIX': {
+        description: 'Maximum number of steps stored in Broyden mixer.',
+        type: 'integer',
+        default: '-45',
+        category: 'Mixing',
+        wikiPage: 'MAXMIX'
+    },
+    'WC': {
+        description: 'Weight factor for each step in Broyden mixing.',
+        type: 'float',
+        default: '1000',
+        category: 'Mixing',
+        wikiPage: 'WC'
+    },
+
+    // ============================================================
+    // Algorithm Parameters
+    // ============================================================
+    'IALGO': {
+        description: 'Algorithm for electronic minimization (deprecated, use ALGO).',
+        type: 'integer',
+        default: '38',
+        category: 'Algorithm',
+        wikiPage: 'IALGO'
+    },
+    'LDIAG': {
+        description: 'Sub-space diagonalization in eigenvalue solver.',
+        type: 'boolean',
+        default: '.TRUE.',
+        category: 'Algorithm',
+        wikiPage: 'LDIAG'
+    },
+    'LSUBROT': {
+        description: 'Optimize orbitals by subspace rotation.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'Algorithm',
+        wikiPage: 'LSUBROT'
+    },
+    'WEIMIN': {
+        description: 'Maximum weight for eigenvalue minimization.',
+        type: 'float',
+        default: '0.001',
+        category: 'Algorithm',
+        wikiPage: 'WEIMIN'
+    },
+    'EBREAK': {
+        description: 'Break condition for eigenvalue optimization.',
+        type: 'float',
+        category: 'Algorithm',
+        wikiPage: 'EBREAK'
+    },
+    'DEPER': {
+        description: 'Relative energy change for break condition.',
+        type: 'float',
+        default: '0.3',
+        category: 'Algorithm',
+        wikiPage: 'DEPER'
+    },
+    'ENINI': {
+        description: 'Initial cutoff energy for wavefunctions.',
+        type: 'float',
+        category: 'Algorithm',
+        wikiPage: 'ENINI'
+    },
+
+    // ============================================================
+    // Grid Parameters
+    // ============================================================
+    'NGXF': {
+        description: 'FFT grid points in x for augmentation charges.',
+        type: 'integer',
+        category: 'Grid',
+        wikiPage: 'NGXF'
+    },
+    'NGYF': {
+        description: 'FFT grid points in y for augmentation charges.',
+        type: 'integer',
+        category: 'Grid',
+        wikiPage: 'NGYF'
+    },
+    'NGZF': {
+        description: 'FFT grid points in z for augmentation charges.',
+        type: 'integer',
+        category: 'Grid',
+        wikiPage: 'NGZF'
+    },
+    'NGX': {
+        description: 'FFT grid points in x direction.',
+        type: 'integer',
+        category: 'Grid',
+        wikiPage: 'NGX'
+    },
+    'NGY': {
+        description: 'FFT grid points in y direction.',
+        type: 'integer',
+        category: 'Grid',
+        wikiPage: 'NGY'
+    },
+    'NGZ': {
+        description: 'FFT grid points in z direction.',
+        type: 'integer',
+        category: 'Grid',
+        wikiPage: 'NGZ'
+    },
+
+    // ============================================================
+    // Additional Common Parameters
+    // ============================================================
+    'APACO': {
+        description: 'Distance for pair correlation function (Å).',
+        type: 'float',
+        default: '16.0',
+        category: 'MD',
+        wikiPage: 'APACO'
+    },
+    'NPACO': {
+        description: 'Number of slots for pair correlation function.',
+        type: 'integer',
+        default: '256',
+        category: 'MD',
+        wikiPage: 'NPACO'
+    },
+    'NLSPLINE': {
+        description: 'Spline interpolation for projectors.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'Basic',
+        wikiPage: 'NLSPLINE'
+    },
+    'LCOMPAT': {
+        description: 'Compatibility mode with VASP 4.4.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'Basic',
+        wikiPage: 'LCOMPAT'
+    },
+    'GGA_COMPAT': {
+        description: 'GGA compatibility with VASP 4.4-4.6.',
+        type: 'boolean',
+        default: '.TRUE.',
+        category: 'Basic',
+        wikiPage: 'GGA_COMPAT'
+    },
+    'LMAXPAW': {
+        description: 'Maximum l for on-site density.',
+        type: 'integer',
+        default: '-100 (auto)',
+        category: 'PAW',
+        wikiPage: 'LMAXPAW'
+    },
+    'ROPT': {
+        description: 'Real-space optimization parameters per species.',
+        type: 'float array',
+        category: 'Basic',
+        wikiPage: 'ROPT'
+    },
+    'VOSKOWN': {
+        description: 'Vosko-Wilk-Nusair interpolation: 0=Perdew, 1=VWN.',
+        type: 'integer',
+        default: '0',
+        values: ['0', '1'],
+        category: 'XC',
+        wikiPage: 'VOSKOWN'
+    },
+
+    // ============================================================
+    // POTCAR / Pseudopotential Parameters
+    // ============================================================
+    'POMASS': {
+        description: 'Ionic mass for each species from POTCAR (in atomic mass units).',
+        type: 'float array',
+        category: 'POTCAR',
+        wikiPage: 'POMASS'
+    },
+    'ZVAL': {
+        description: 'Number of valence electrons for each species from POTCAR.',
+        type: 'float array',
+        category: 'POTCAR',
+        wikiPage: 'ZVAL'
+    },
+    'RWIGS': {
+        description: 'Wigner-Seitz radius for each species (Å). Used for LORBIT projected DOS.',
+        type: 'float array',
+        category: 'POTCAR',
+        wikiPage: 'RWIGS'
+    },
+    'EATOM': {
+        description: 'Atomic reference energy from POTCAR (eV).',
+        type: 'float',
+        category: 'POTCAR',
+        wikiPage: 'POTCAR'
+    },
+    'RMAX': {
+        description: 'Maximum radius for radial grids in POTCAR (a.u.).',
+        type: 'float',
+        category: 'POTCAR',
+        wikiPage: 'POTCAR'
+    },
+    'RAUG': {
+        description: 'Augmentation sphere radius from POTCAR (a.u.).',
+        type: 'float',
+        category: 'POTCAR',
+        wikiPage: 'POTCAR'
+    },
+    'RDEP': {
+        description: 'Core radius for depletion charge from POTCAR (a.u.).',
+        type: 'float',
+        category: 'POTCAR',
+        wikiPage: 'POTCAR'
+    },
+    'RDEPT': {
+        description: 'Core radius for depletion charge kinetic energy (a.u.).',
+        type: 'float',
+        category: 'POTCAR',
+        wikiPage: 'POTCAR'
+    },
+    'QCUT': {
+        description: 'Plane wave cutoff for POTCAR projectors.',
+        type: 'float',
+        category: 'POTCAR',
+        wikiPage: 'POTCAR'
+    },
+    'QGAM': {
+        description: 'Gamma for POTCAR optimization.',
+        type: 'float',
+        category: 'POTCAR',
+        wikiPage: 'POTCAR'
+    },
+    'DEXC': {
+        description: 'Exchange-correlation energy difference from POTCAR.',
+        type: 'float',
+        category: 'POTCAR',
+        wikiPage: 'POTCAR'
+    },
+    'EREF': {
+        description: 'Reference energy from POTCAR.',
+        type: 'float',
+        category: 'POTCAR',
+        wikiPage: 'POTCAR'
+    },
+    'LEXCH': {
+        description: 'Exchange-correlation type in POTCAR (e.g., PE=PBE, CA=LDA).',
+        type: 'string',
+        category: 'POTCAR',
+        wikiPage: 'POTCAR'
+    },
+
+    // ============================================================
+    // Hybrid Functional Additional Parameters
+    // ============================================================
+    'HFSCREENC': {
+        description: 'Screening for correlation in hybrid functionals.',
+        type: 'float',
+        default: '0',
+        category: 'Hybrid',
+        wikiPage: 'HFSCREEN'
+    },
+    'HFRCUT': {
+        description: 'Real-space cutoff for HF exchange (Å).',
+        type: 'float',
+        default: '0',
+        category: 'Hybrid',
+        wikiPage: 'HFRCUT'
+    },
+    'HFALPHA': {
+        description: 'Yukawa potential screening for exchange.',
+        type: 'float',
+        default: '0',
+        category: 'Hybrid',
+        wikiPage: 'HFALPHA'
+    },
+    'HFKIDENT': {
+        description: 'Use k-point identity for HF.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'Hybrid',
+        wikiPage: 'HFKIDENT'
+    },
+    'LRHFCALC': {
+        description: 'Long-range Hartree-Fock calculation.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'Hybrid',
+        wikiPage: 'LRHFCALC'
+    },
+    'LHARTREE': {
+        description: 'Include Hartree energy in HF.',
+        type: 'boolean',
+        default: '.TRUE.',
+        category: 'Hybrid',
+        wikiPage: 'LHFCALC'
+    },
+    'ENCUTFOCK': {
+        description: 'FFT grid cutoff for exact exchange (eV).',
+        type: 'float',
+        category: 'Hybrid',
+        wikiPage: 'ENCUTFOCK'
+    },
+    'LMAXFOCK': {
+        description: 'Maximum L for charge augmentation in HF.',
+        type: 'integer',
+        category: 'Hybrid',
+        wikiPage: 'LMAXFOCK'
+    },
+    'LMAXFOCKAE': {
+        description: 'Maximum L for AE charge augmentation in HF.',
+        type: 'integer',
+        category: 'Hybrid',
+        wikiPage: 'LMAXFOCKAE'
+    },
+    'NMAXFOCKAE': {
+        description: 'Maximum number of AE augmentation channels.',
+        type: 'integer',
+        category: 'Hybrid',
+        wikiPage: 'NMAXFOCKAE'
+    },
+    'ALDAX': {
+        description: 'Fraction of LDA exchange (usually 0 for hybrids).',
+        type: 'float',
+        default: '0',
+        category: 'Hybrid',
+        wikiPage: 'ALDAX'
+    },
+    'EXXOEP': {
+        description: 'Exact exchange OEP method: 0=standard, 1=local, 2=mixed.',
+        type: 'integer',
+        default: '0',
+        values: ['0', '1', '2'],
+        category: 'Hybrid',
+        wikiPage: 'EXXOEP'
+    },
+    'LMODELHF': {
+        description: 'Use model HF (Thomas-Fermi screening).',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'Hybrid',
+        wikiPage: 'LMODELHF'
+    },
+
+    // ============================================================
+    // GW and BSE Additional Parameters
+    // ============================================================
+    'NBANDSGW': {
+        description: 'Number of bands for GW calculation.',
+        type: 'integer',
+        category: 'GW/BSE',
+        wikiPage: 'NBANDSGW'
+    },
+    'NBANDSGWLOW': {
+        description: 'Lowest band for GW calculation.',
+        type: 'integer',
+        category: 'GW/BSE',
+        wikiPage: 'NBANDSGWLOW'
+    },
+    'ENCUTGWSOFT': {
+        description: 'Soft cutoff for response function (eV).',
+        type: 'float',
+        category: 'GW/BSE',
+        wikiPage: 'ENCUTGWSOFT'
+    },
+    'ENCUTLF': {
+        description: 'Energy cutoff for local field effects (eV).',
+        type: 'float',
+        category: 'GW/BSE',
+        wikiPage: 'ENCUTLF'
+    },
+    'ENCUT4O': {
+        description: 'Cutoff for 4-orbital integrals (eV).',
+        type: 'float',
+        category: 'GW/BSE',
+        wikiPage: 'ENCUT4O'
+    },
+    'NOMEGAR': {
+        description: 'Number of frequency points for real-axis.',
+        type: 'integer',
+        category: 'GW/BSE',
+        wikiPage: 'NOMEGAR'
+    },
+    'OMEGAMIN': {
+        description: 'Minimum frequency for dielectric function (eV).',
+        type: 'float',
+        category: 'GW/BSE',
+        wikiPage: 'OMEGAMIN'
+    },
+    'OMEGAGRID': {
+        description: 'Type of frequency grid for GW.',
+        type: 'integer',
+        category: 'GW/BSE',
+        wikiPage: 'OMEGAGRID'
+    },
+    'OMEGATL': {
+        description: 'Maximum frequency for time-dependent calculations (eV).',
+        type: 'float',
+        category: 'GW/BSE',
+        wikiPage: 'OMEGATL'
+    },
+    'OMEGAPAR': {
+        description: 'Parallelization over frequency points.',
+        type: 'integer',
+        category: 'GW/BSE',
+        wikiPage: 'OMEGAPAR'
+    },
+    'LFERMIGW': {
+        description: 'Update Fermi energy in GW.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'GW/BSE',
+        wikiPage: 'LFERMIGW'
+    },
+    'LSPECTRAL': {
+        description: 'Use spectral method for dielectric function.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'GW/BSE',
+        wikiPage: 'LSPECTRAL'
+    },
+    'LSPECTRALGW': {
+        description: 'Calculate spectral function in GW.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'GW/BSE',
+        wikiPage: 'LSPECTRALGW'
+    },
+    'SELFENERGY': {
+        description: 'Self-energy evaluation method.',
+        type: 'integer',
+        category: 'GW/BSE',
+        wikiPage: 'SELFENERGY'
+    },
+    'NATURALO': {
+        description: 'Natural orbital occupations.',
+        type: 'integer',
+        category: 'GW/BSE',
+        wikiPage: 'NATURALO'
+    },
+    'LSINGLES': {
+        description: 'Include single excitations.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'GW/BSE',
+        wikiPage: 'LSINGLES'
+    },
+    'LTRIPLET': {
+        description: 'Calculate triplet excitations in BSE.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'GW/BSE',
+        wikiPage: 'LTRIPLET'
+    },
+    'LADDER': {
+        description: 'Include ladder diagrams.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'GW/BSE',
+        wikiPage: 'LADDER'
+    },
+    'LFXC': {
+        description: 'Include exchange-correlation kernel.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'GW/BSE',
+        wikiPage: 'LFXC'
+    },
+    'LFXCEPS': {
+        description: 'Include fxc in dielectric function.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'GW/BSE',
+        wikiPage: 'LFXCEPS'
+    },
+    'LFXHEG': {
+        description: 'Use homogeneous electron gas fxc.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'GW/BSE',
+        wikiPage: 'LFXHEG'
+    },
+    'IBSE': {
+        description: 'BSE type: 0=direct, 1=iterative, 2=Haydock.',
+        type: 'integer',
+        default: '0',
+        values: ['0', '1', '2'],
+        category: 'GW/BSE',
+        wikiPage: 'IBSE'
+    },
+    'LRSRPA': {
+        description: 'Long-range RPA correlation.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'GW/BSE',
+        wikiPage: 'LRSRPA'
+    },
+    'LRSCOR': {
+        description: 'Long-range correlation.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'GW/BSE',
+        wikiPage: 'LRSCOR'
+    },
+    'NELMHF': {
+        description: 'Number of electronic steps for HF.',
+        type: 'integer',
+        default: '1',
+        category: 'GW/BSE',
+        wikiPage: 'NELMHF'
+    },
+    'SCISSOR': {
+        description: 'Scissors operator shift (eV).',
+        type: 'float',
+        default: '0',
+        category: 'GW/BSE',
+        wikiPage: 'SCISSOR'
+    },
+    'L2ORDER': {
+        description: 'Second order contribution in RPA.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'GW/BSE',
+        wikiPage: 'L2ORDER'
+    },
+
+    // ============================================================
+    // Van der Waals Additional Parameters
+    // ============================================================
+    'BPARAM': {
+        description: 'B parameter for DFT-D corrections.',
+        type: 'float',
+        category: 'Van der Waals',
+        wikiPage: 'DFT-D2'
+    },
+    'CPARAM': {
+        description: 'C parameter for DFT-D corrections.',
+        type: 'float',
+        category: 'Van der Waals',
+        wikiPage: 'DFT-D2'
+    },
+    'LVDWSCS': {
+        description: 'Self-consistent screening for vdW.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'Van der Waals',
+        wikiPage: 'LVDWSCS'
+    },
+
+    // ============================================================
+    // Berry Phase and Electric Field
+    // ============================================================
+    'LBERRY': {
+        description: 'Calculate Berry phase for polarization.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'Berry Phase',
+        wikiPage: 'LBERRY'
+    },
+    'IGPAR': {
+        description: 'Direction for Berry phase: 1=a, 2=b, 3=c.',
+        type: 'integer',
+        values: ['1', '2', '3'],
+        category: 'Berry Phase',
+        wikiPage: 'IGPAR'
+    },
+    'NPPSTR': {
+        description: 'Number of k-points along Berry phase direction.',
+        type: 'integer',
+        category: 'Berry Phase',
+        wikiPage: 'NPPSTR'
+    },
+    'LCALCEPS': {
+        description: 'Calculate dielectric tensor.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'Berry Phase',
+        wikiPage: 'LCALCEPS'
+    },
+    'LCALCPOL': {
+        description: 'Calculate polarization.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'Berry Phase',
+        wikiPage: 'LCALCPOL'
+    },
+    'LPEAD': {
+        description: 'Derivative of orbitals w.r.t. k for optical properties.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'Berry Phase',
+        wikiPage: 'LPEAD'
+    },
+
+    // ============================================================
+    // Solvation and Implicit Solvent
+    // ============================================================
+    'LSOL': {
+        description: 'Enable implicit solvation model (VASPsol).',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'Solvation',
+        wikiPage: 'LSOL'
+    },
+    'EB_K': {
+        description: 'Bulk dielectric constant of solvent.',
+        type: 'float',
+        default: '78.4',
+        category: 'Solvation',
+        wikiPage: 'EB_K'
+    },
+    'TAU': {
+        description: 'Surface tension parameter for solvation (eV/Å²).',
+        type: 'float',
+        category: 'Solvation',
+        wikiPage: 'TAU'
+    },
+    'LAMBDA': {
+        description: 'Debye screening length for solvation.',
+        type: 'float',
+        category: 'Solvation',
+        wikiPage: 'LAMBDA'
+    },
+
+    // ============================================================
+    // Core Level and Spectroscopy
+    // ============================================================
+    'ICORELEVEL': {
+        description: 'Core level shift calculation: 0=none, 1=initial, 2=final.',
+        type: 'integer',
+        default: '0',
+        values: ['0', '1', '2'],
+        category: 'Core Level',
+        wikiPage: 'ICORELEVEL'
+    },
+    'CLNT': {
+        description: 'Principal quantum number for core level.',
+        type: 'integer',
+        category: 'Core Level',
+        wikiPage: 'CLNT'
+    },
+    'CLN': {
+        description: 'Principal quantum number n for core hole.',
+        type: 'integer',
+        category: 'Core Level',
+        wikiPage: 'CLN'
+    },
+    'CLL': {
+        description: 'Angular momentum l for core hole.',
+        type: 'integer',
+        category: 'Core Level',
+        wikiPage: 'CLL'
+    },
+    'CLZ': {
+        description: 'Effective nuclear charge for core level.',
+        type: 'float',
+        category: 'Core Level',
+        wikiPage: 'CLZ'
+    },
+
+    // ============================================================
+    // NMR and Magnetic Response
+    // ============================================================
+    'LCHIMAG': {
+        description: 'Calculate magnetic susceptibility.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'NMR',
+        wikiPage: 'LCHIMAG'
+    },
+    'LNMR_SYM_RED': {
+        description: 'Reduce symmetry for NMR calculations.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'NMR',
+        wikiPage: 'LNMR_SYM_RED'
+    },
+    'ORBITALMAG': {
+        description: 'Calculate orbital magnetization.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'NMR',
+        wikiPage: 'ORBITALMAG'
+    },
+    'LNABLA': {
+        description: 'Use nabla operator for momentum matrix.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'NMR',
+        wikiPage: 'LNABLA'
+    },
+    'LEFG': {
+        description: 'Calculate electric field gradient.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'NMR',
+        wikiPage: 'LEFG'
+    },
+    'LLRAUG': {
+        description: 'Include augmentation for linear response.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'NMR',
+        wikiPage: 'LLRAUG'
+    },
+    'LRHOB': {
+        description: 'Include B-field in density.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'NMR',
+        wikiPage: 'LRHOB'
+    },
+
+    // ============================================================
+    // Spiral and Non-Collinear Magnetism
+    // ============================================================
+    'LSPIRAL': {
+        description: 'Generalized Bloch spin spiral calculation.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'Spin Spiral',
+        wikiPage: 'LSPIRAL'
+    },
+    'QSPIRAL': {
+        description: 'Spin spiral propagation vector.',
+        type: 'float array',
+        category: 'Spin Spiral',
+        wikiPage: 'QSPIRAL'
+    },
+    'LZEROZ': {
+        description: 'Force zero z-component of magnetization.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'Spin Spiral',
+        wikiPage: 'LZEROZ'
+    },
+    'LMAGBLOCH': {
+        description: 'Calculate Bloch representation of magnetization.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'Spin Spiral',
+        wikiPage: 'LMAGBLOCH'
+    },
+
+    // ============================================================
+    // Parallelization Additional Parameters
+    // ============================================================
+    'NKREDX': {
+        description: 'Reduce k-points for HF in x direction.',
+        type: 'integer',
+        default: '1',
+        category: 'Parallel',
+        wikiPage: 'NKREDX'
+    },
+    'NKREDY': {
+        description: 'Reduce k-points for HF in y direction.',
+        type: 'integer',
+        default: '1',
+        category: 'Parallel',
+        wikiPage: 'NKREDY'
+    },
+    'NKREDZ': {
+        description: 'Reduce k-points for HF in z direction.',
+        type: 'integer',
+        default: '1',
+        category: 'Parallel',
+        wikiPage: 'NKREDZ'
+    },
+    'NKREDLFX': {
+        description: 'Reduce k-points for local field effects.',
+        type: 'integer',
+        default: '1',
+        category: 'Parallel',
+        wikiPage: 'NKREDLFX'
+    },
+
+    // ============================================================
+    // Advanced Algorithm Parameters
+    // ============================================================
+    'LBFGS': {
+        description: 'Use L-BFGS optimizer (requires IBRION=3).',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'Algorithm',
+        wikiPage: 'IBRION'
+    },
+    'LHF': {
+        description: 'Enable Hartree-Fock (same as LHFCALC).',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'Hybrid',
+        wikiPage: 'LHFCALC'
+    },
+    'LIBXC': {
+        description: 'Use LibXC library for XC functionals.',
+        type: 'integer',
+        category: 'XC',
+        wikiPage: 'LIBXC'
+    },
+    'ICHIBARE': {
+        description: 'Bare susceptibility calculation type.',
+        type: 'integer',
+        category: 'Response',
+        wikiPage: 'ICHIBARE'
+    },
+    'SMIX': {
+        description: 'Mixing parameter for Kerker scheme.',
+        type: 'float',
+        default: '0.4',
+        category: 'Mixing',
+        wikiPage: 'SMIX'
+    },
+    'IWAVPR': {
+        description: 'Wavefunction prediction: 0=none, 1=charge, 2=wave, 3=both.',
+        type: 'integer',
+        default: '2',
+        values: ['0', '1', '2', '3'],
+        category: 'Algorithm',
+        wikiPage: 'IWAVPR'
+    },
+    'IRESTART': {
+        description: 'Restart mode for MD.',
+        type: 'integer',
+        default: '0',
+        category: 'MD',
+        wikiPage: 'IRESTART'
+    },
+    'NREBOOT': {
+        description: 'Number of reboots for MD.',
+        type: 'integer',
+        default: '0',
+        category: 'MD',
+        wikiPage: 'NREBOOT'
+    },
+    'SCALEE': {
+        description: 'Scaling for kinetic energy in MD.',
+        type: 'float',
+        default: '1.0',
+        category: 'MD',
+        wikiPage: 'SCALEE'
+    },
+    'LMONO': {
+        description: 'Monopole corrections.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'Dipole',
+        wikiPage: 'LMONO'
+    },
+    'LASYNC': {
+        description: 'Asynchronous communication.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'Parallel',
+        wikiPage: 'LASYNC'
+    },
+    'LINTERFAST': {
+        description: 'Fast interpolation.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'Algorithm',
+        wikiPage: 'LINTERFAST'
+    },
+
+    // ============================================================
+    // DFPT and Linear Response Additional
+    // ============================================================
+    'LTCTE': {
+        description: 'Thermal conductivity (electron).',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'Transport',
+        wikiPage: 'LTCTE'
+    },
+    'LTETE': {
+        description: 'Thermal transport (electron-electron).',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'Transport',
+        wikiPage: 'LTETE'
+    },
+    'LTHOMAS': {
+        description: 'Thomas-Fermi screening.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'Screening',
+        wikiPage: 'LTHOMAS'
+    },
+    'LTDEP': {
+        description: 'Temperature-dependent effective potential.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'Phonons',
+        wikiPage: 'LTDEP'
+    },
+    'LSYMGRAD': {
+        description: 'Symmetrize gradient.',
+        type: 'boolean',
+        default: '.TRUE.',
+        category: 'Symmetry',
+        wikiPage: 'LSYMGRAD'
+    },
+    'LFOCKAEDFT': {
+        description: 'Include Fock term in AE DFT.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'Hybrid',
+        wikiPage: 'LFOCKAEDFT'
+    },
+    'LVEL': {
+        description: 'Velocity operator for optical properties.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'Optics',
+        wikiPage: 'LVEL'
+    },
+    'LDNEB': {
+        description: 'Dynamical NEB.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'NEB',
+        wikiPage: 'LDNEB'
+    },
+    'LUSEW': {
+        description: 'Use wavefunctions for transition state.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'NEB',
+        wikiPage: 'LUSEW'
+    },
+    'LUSEVDW': {
+        description: 'Use vdW-corrected energies.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'Van der Waals',
+        wikiPage: 'LUSEVDW'
+    },
+    'LCORR': {
+        description: 'Harris-Foulkes correction to forces.',
+        type: 'boolean',
+        default: '.TRUE.',
+        category: 'Basic',
+        wikiPage: 'LCORR'
+    },
+
+    // ============================================================
+    // Output Energy Terms
+    // ============================================================
+    'TOTEN': {
+        description: 'Total free energy including entropy term (eV).',
+        type: 'float',
+        category: 'Output',
+        wikiPage: 'TOTEN'
+    },
+    'E0': {
+        description: 'Energy sigma->0 extrapolated (eV).',
+        type: 'float',
+        category: 'Output',
+        wikiPage: 'TOTEN'
+    },
+    'EBANDS': {
+        description: 'Band structure energy (eV).',
+        type: 'float',
+        category: 'Output',
+        wikiPage: 'OUTCAR'
+    },
+    'EFERMI': {
+        description: 'Fermi energy (eV).',
+        type: 'float',
+        category: 'Output',
+        wikiPage: 'EFERMI'
+    },
+
+    // ============================================================
+    // System Information
+    // ============================================================
+    'NKPTS': {
+        description: 'Total number of k-points.',
+        type: 'integer',
+        category: 'K-points',
+        wikiPage: 'KPOINTS'
+    },
+    'NIONS': {
+        description: 'Total number of ions (atoms).',
+        type: 'integer',
+        category: 'System',
+        wikiPage: 'POSCAR'
+    },
+    'NPLWV': {
+        description: 'Total number of plane waves.',
+        type: 'integer',
+        category: 'System',
+        wikiPage: 'OUTCAR'
+    },
+    'ALAT': {
+        description: 'Lattice constant (Å).',
+        type: 'float',
+        category: 'System',
+        wikiPage: 'POSCAR'
+    },
+    'A1': {
+        description: 'First lattice vector.',
+        type: 'float array',
+        category: 'System',
+        wikiPage: 'POSCAR'
+    },
+    'A2': {
+        description: 'Second lattice vector.',
+        type: 'float array',
+        category: 'System',
+        wikiPage: 'POSCAR'
+    },
+    'A3': {
+        description: 'Third lattice vector.',
+        type: 'float array',
+        category: 'System',
+        wikiPage: 'POSCAR'
+    },
+    'DIM': {
+        description: 'Dimensionality of the system.',
+        type: 'integer',
+        category: 'System',
+        wikiPage: 'OUTCAR'
+    },
+    'KPOINT': {
+        description: 'Current k-point index.',
+        type: 'integer',
+        category: 'K-points',
+        wikiPage: 'KPOINTS'
+    },
+    'KINTER': {
+        description: 'K-point interpolation scheme.',
+        type: 'integer',
+        category: 'K-points',
+        wikiPage: 'KINTER'
+    },
+    'NQ': {
+        description: 'Number of q-points for response.',
+        type: 'integer',
+        category: 'Response',
+        wikiPage: 'OUTCAR'
+    },
+    'QGRID': {
+        description: 'Q-point grid specification.',
+        type: 'integer array',
+        category: 'Response',
+        wikiPage: 'QGRID'
+    },
+    'IXMIN': {
+        description: 'Minimum FFT index in x.',
+        type: 'integer',
+        category: 'Grid',
+        wikiPage: 'OUTCAR'
+    },
+    'IXMAX': {
+        description: 'Maximum FFT index in x.',
+        type: 'integer',
+        category: 'Grid',
+        wikiPage: 'OUTCAR'
+    },
+    'SHIFTRED': {
+        description: 'Shift reduction for band structures.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'K-points',
+        wikiPage: 'SHIFTRED'
+    },
+    'EVENONLY': {
+        description: 'Use only even k-points.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'K-points',
+        wikiPage: 'EVENONLY'
+    },
+    'ODDONLY': {
+        description: 'Use only odd k-points.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'K-points',
+        wikiPage: 'ODDONLY'
+    },
+    'EVENONLYGW': {
+        description: 'Use only even k-points for GW.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'GW/BSE',
+        wikiPage: 'EVENONLYGW'
+    },
+    'ODDONLYGW': {
+        description: 'Use only odd k-points for GW.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'GW/BSE',
+        wikiPage: 'ODDONLYGW'
+    },
+    'LMAXMP2': {
+        description: 'Maximum L for MP2 calculations.',
+        type: 'integer',
+        category: 'GW/BSE',
+        wikiPage: 'LMAXMP2'
+    },
+
+    // ============================================================
+    // MD Additional Parameters
+    // ============================================================
+    'TAUPAR': {
+        description: 'Parrinello-Rahman barostat time constant.',
+        type: 'float',
+        category: 'MD',
+        wikiPage: 'TAUPAR'
+    },
+    'TEIN': {
+        description: 'Initial kinetic energy for MD.',
+        type: 'float',
+        category: 'MD',
+        wikiPage: 'TEIN'
+    },
+    'TELESCOPE': {
+        description: 'Telescope sampling for response.',
+        type: 'integer',
+        category: 'Response',
+        wikiPage: 'TELESCOPE'
+    },
+    'TURBO': {
+        description: 'Turbo mode for faster calculations.',
+        type: 'boolean',
+        default: '.FALSE.',
+        category: 'Algorithm',
+        wikiPage: 'TURBO'
+    },
+    'VCA': {
+        description: 'Virtual crystal approximation weights.',
+        type: 'float array',
+        category: 'VCA',
+        wikiPage: 'VCA'
+    },
+    'RTIME': {
+        description: 'Real-time TDDFT time step.',
+        type: 'float',
+        category: 'TDDFT',
+        wikiPage: 'RTIME'
+    },
+    'MAXITERFT': {
+        description: 'Maximum iterations for response function.',
+        type: 'integer',
+        category: 'Response',
+        wikiPage: 'MAXITERFT'
+    },
+    'MCALPHA': {
+        description: 'Alpha parameter for meta-GGA.',
+        type: 'float',
+        category: 'XC',
+        wikiPage: 'MCALPHA'
+    },
+    'DEG_THRESHOLD': {
+        description: 'Threshold for degeneracy detection.',
+        type: 'float',
+        category: 'Algorithm',
+        wikiPage: 'DEG_THRESHOLD'
+    },
 };
+
+// OUTCAR section patterns for navigation
+const OUTCAR_SECTIONS = [
+    { pattern: /^\s*Startparameter for this run/i, name: 'Startparameters' },
+    { pattern: /^\s*Dimension of arrays/i, name: 'Dimension of arrays' },
+    { pattern: /^\s*POSCAR:/i, name: 'POSCAR' },
+    { pattern: /^\s*k-points\s+in\s+BZ/i, name: 'K-points' },
+    { pattern: /^\s*Electronic Relaxation/i, name: 'Electronic Relaxation' },
+    { pattern: /^\s*Ionic Relaxation/i, name: 'Ionic Relaxation' },
+    { pattern: /^\s*DOS related values/i, name: 'DOS Parameters' },
+    { pattern: /^\s*Iteration\s+(\d+)\s*\(/i, name: 'Iteration $1' },
+    { pattern: /^\s*aborting loop/i, name: 'Loop Aborted' },
+    { pattern: /^\s*FREE ENERGIE OF THE ION-ELECTRON SYSTEM/i, name: 'Free Energy' },
+    { pattern: /^\s*VOLUME and BASIS/i, name: 'Volume and Basis' },
+    { pattern: /^\s*TOTAL-FORCE/i, name: 'Total Force' },
+    { pattern: /^\s*STRESS TENSOR/i, name: 'Stress Tensor' },
+    { pattern: /^\s*EIGENVALUE/i, name: 'Eigenvalues' },
+    { pattern: /^\s*E-fermi\s*:/i, name: 'Fermi Energy' },
+    { pattern: /^\s*BRION:\s*g\(F\)/i, name: 'Ionic Convergence' },
+    { pattern: /^\s*reached required accuracy/i, name: 'Converged!' },
+    { pattern: /^\s*General timing and accounting/i, name: 'Timing Summary' },
+    { pattern: /^\s*writing wavefunctions/i, name: 'Writing Wavefunctions' },
+];
+
+// Document symbol provider for OUTCAR navigation
+class OutcarSymbolProvider implements vscode.DocumentSymbolProvider {
+    public provideDocumentSymbols(
+        document: vscode.TextDocument,
+        _token: vscode.CancellationToken
+    ): vscode.ProviderResult<vscode.DocumentSymbol[]> {
+        const symbols: vscode.DocumentSymbol[] = [];
+        const text = document.getText();
+        const lines = text.split('\n');
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+
+            for (const section of OUTCAR_SECTIONS) {
+                const match = line.match(section.pattern);
+                if (match) {
+                    let name = section.name;
+                    // Replace $1, $2, etc. with captured groups
+                    if (match[1]) {
+                        name = name.replace('$1', match[1]);
+                    }
+
+                    const range = new vscode.Range(i, 0, i, line.length);
+                    const symbol = new vscode.DocumentSymbol(
+                        name,
+                        '',
+                        vscode.SymbolKind.Function,
+                        range,
+                        range
+                    );
+                    symbols.push(symbol);
+                    break; // Only match one pattern per line
+                }
+            }
+        }
+
+        return symbols;
+    }
+}
 
 // Create hover provider for INCAR files
 class VaspHoverProvider implements vscode.HoverProvider {
@@ -1037,10 +2392,17 @@ class VaspCompletionProvider implements vscode.CompletionItemProvider {
 export function activate(context: vscode.ExtensionContext) {
     console.log('VASP Syntax extension is now active');
 
-    // Register hover provider for INCAR files
+    // Register hover provider for INCAR and OUTCAR files
     const hoverProvider = new VaspHoverProvider();
     context.subscriptions.push(
-        vscode.languages.registerHoverProvider('incar', hoverProvider)
+        vscode.languages.registerHoverProvider('incar', hoverProvider),
+        vscode.languages.registerHoverProvider('outcar', hoverProvider)
+    );
+
+    // Register document symbol provider for OUTCAR navigation
+    const outcarSymbolProvider = new OutcarSymbolProvider();
+    context.subscriptions.push(
+        vscode.languages.registerDocumentSymbolProvider('outcar', outcarSymbolProvider)
     );
 
     // Register completion provider for INCAR files

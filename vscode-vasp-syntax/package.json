@@ -3,6 +3,7 @@
   "displayName": "VASP Syntax Highlighting",
   "description": "Syntax highlighting and tooltips for VASP input/output files (INCAR, POSCAR, CONTCAR, KPOINTS, OUTCAR)",
   "version": "1.0.0",
+  "license": "MIT",
   "publisher": "vasp-ase",
   "repository": {
     "type": "git",
@@ -36,30 +37,68 @@
     "languages": [
       {
         "id": "incar",
-        "aliases": ["INCAR", "incar"],
-        "filenames": ["INCAR", "INCAR.orig", "INCAR.bak"],
-        "extensions": [".incar"],
+        "aliases": [
+          "INCAR",
+          "incar"
+        ],
+        "filenames": [
+          "INCAR",
+          "INCAR.orig",
+          "INCAR.bak"
+        ],
+        "extensions": [
+          ".incar"
+        ],
         "configuration": "./language-configuration.json"
       },
       {
         "id": "poscar",
-        "aliases": ["POSCAR", "poscar", "CONTCAR", "contcar"],
-        "filenames": ["POSCAR", "CONTCAR", "POSCAR.orig", "CONTCAR.orig"],
-        "extensions": [".poscar", ".vasp"],
+        "aliases": [
+          "POSCAR",
+          "poscar",
+          "CONTCAR",
+          "contcar"
+        ],
+        "filenames": [
+          "POSCAR",
+          "CONTCAR",
+          "POSCAR.orig",
+          "CONTCAR.orig"
+        ],
+        "extensions": [
+          ".poscar",
+          ".vasp"
+        ],
         "configuration": "./poscar-language-configuration.json"
       },
       {
         "id": "kpoints",
-        "aliases": ["KPOINTS", "kpoints"],
-        "filenames": ["KPOINTS", "KPOINTS.orig"],
-        "extensions": [".kpoints"],
+        "aliases": [
+          "KPOINTS",
+          "kpoints"
+        ],
+        "filenames": [
+          "KPOINTS",
+          "KPOINTS.orig"
+        ],
+        "extensions": [
+          ".kpoints"
+        ],
         "configuration": "./language-configuration.json"
       },
       {
         "id": "outcar",
-        "aliases": ["OUTCAR", "outcar"],
-        "filenames": ["OUTCAR", "OUTCAR.gz"],
-        "extensions": [".outcar"],
+        "aliases": [
+          "OUTCAR",
+          "outcar"
+        ],
+        "filenames": [
+          "OUTCAR",
+          "OUTCAR.gz"
+        ],
+        "extensions": [
+          ".outcar"
+        ],
         "configuration": "./language-configuration.json"
       }
     ],
@@ -84,7 +123,27 @@
         "scopeName": "source.outcar",
         "path": "./syntaxes/outcar.tmLanguage.json"
       }
-    ]
+    ],
+    "configurationDefaults": {
+      "editor.tokenColorCustomizations": {
+        "textMateRules": [
+          {
+            "scope": "invalid.deprecated.warning.block.outcar",
+            "settings": {
+              "foreground": "#FF0000",
+              "fontStyle": "bold"
+            }
+          },
+          {
+            "scope": "markup.bold.warning.outcar",
+            "settings": {
+              "foreground": "#FF0000",
+              "fontStyle": "bold"
+            }
+          }
+        ]
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
@@ -93,11 +152,12 @@
     "lint": "eslint src --ext ts"
   },
   "devDependencies": {
-    "@types/vscode": "^1.74.0",
     "@types/node": "^18.0.0",
-    "typescript": "^5.0.0",
+    "@types/vscode": "^1.74.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
-    "eslint": "^8.0.0"
+    "@vscode/vsce": "^3.7.1",
+    "eslint": "^8.0.0",
+    "typescript": "^5.0.0"
   }
 }

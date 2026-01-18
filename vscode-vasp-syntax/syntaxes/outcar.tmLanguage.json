@@ -3,10 +3,11 @@
   "name": "OUTCAR",
   "scopeName": "source.outcar",
   "patterns": [
+    { "include": "#warning-block" },
+    { "include": "#errors" },
+    { "include": "#warnings" },
     { "include": "#section-headers" },
     { "include": "#key-values" },
-    { "include": "#warnings" },
-    { "include": "#errors" },
     { "include": "#convergence" },
     { "include": "#energies" },
     { "include": "#forces" },
@@ -16,8 +17,9 @@
     "section-headers": {
       "patterns": [
         {
+          "comment": "Section dividers with text (not pure dash lines)",
           "name": "markup.heading.section.outcar",
-          "match": "^\\s*-{3,}.*-{3,}\\s*$"
+          "match": "^\\s*-{3,}[^-]+-{3,}\\s*$"
         },
         {
           "name": "markup.heading.title.outcar",
@@ -32,8 +34,9 @@
     "key-values": {
       "patterns": [
         {
+          "comment": "VASP parameters in OUTCAR output sections",
           "name": "variable.parameter.outcar",
-          "match": "(?i)\\b(ENCUT|ENAUG|EDIFF|PREC|IBRION|ISIF|NSW|ISMEAR|SIGMA|ISPIN|LORBIT|ALGO|NBANDS|NELECT|NKPTS|NIONS|NPLWV)\\s*="
+          "match": "(?i)\\b(ENCUT|ENAUG|EDIFF|EDIFFG|PREC|IBRION|ISIF|NSW|ISMEAR|SIGMA|ISPIN|LORBIT|ALGO|NBANDS|NELECT|NKPTS|NIONS|NPLWV|NWRITE|ISTART|ICHARG|LNONCOLLINEAR|LSORBIT|INIWAV|LASPH|METAGGA|LREAL|LWAVE|LCHARG|LVTOT|LVHAR|LELF|LAECHG|LDIPOL|IDIPOL|EPSILON|GGA|VOSKOWN|DIPOL|AMIX|BMIX|AMIN|SMIX|WC|INIMIX|MIXPRE|MAXMIX|NELM|NELMIN|NELMDL|NEDOS|EMIN|EMAX|NCORE|NPAR|KPAR|LPLANE|LSCALU|NSIM|LDAU|LDAUTYPE|LDAUL|LDAUU|LDAUJ|LDAUPRINT|LMAXMIX|LHFCALC|HFSCREEN|AEXX|AGGAX|AGGAC|ALDAC|IVDW|VDW_RADIUS|VDW_S6|VDW_S8|VDW_A1|VDW_A2|LVDWSCS|LUSE_VDW|BPARAM|CPARAM|LEPSILON|LPEAD|LCALCEPS|LCALCPOL|ICORELEVEL|CLNT|CLN|CLL|CLZ|LBERRY|IGPAR|NPPSTR|LSOL|EB_K|TAU|LAMBDA|POTIM|TEBEG|TEEND|SMASS|NBLOCK|KBLOCK|NPACO|APACO|POMASS|ZVAL|RWIGS|NUPDOWN|SAXIS|NBANDSV|ENCUTGW|NOMEGA|ANTIRES|LSPECTRAL|LRPA|OMEGATL|OMEGAMAX|CSHIFT|LMAGBLOCH|LMAXMP2|LUSEW|LUSEVDW|ORBITALMAG|LNMR_SYM_RED|LCHIMAG|DQ|LLRAUG|LRHOB|LEFG|LTDEP|LSPIRAL|LZEROZ|QSPIRAL|QGRID|LASYNC|ADDGRID|SYMPREC|NGX|NGY|NGZ|NGXF|NGYF|NGZF|LBFGS|LHF|LIBXC|ICHIBARE|ENINI|NLSPLINE|LCOMPAT|GGA_COMPAT|LMAXPAW|ROPT|ISYM|LDIAG|LSUBROT|WEIMIN|EBREAK|DEPER|TIME|LMONO|LDNEB|SPRING|IMAGES|ICHAIN|LCLIMB|LTANGENTOLD|LNEBCELL|NFREE|SYSTEM|MDALGO|LANGEVIN_GAMMA|PMASS|LOPTICS|KSPACING|KGAMMA|PSTRESS|MAGMOM|ML_LMLFF|ML_MODE|ML_ISTART|ML_RCUT1|ML_RCUT2|ML_MB|ML_MB3|ML_WTIFOR|ML_WTOTEN|ML_WTSIF|PRECFOCK|NKRED|PARAM1|PARAM2|ZAB_VDW|NBANDSO|EFIELD|LORBMOM|TITEL|LULTRA|IUNSCR|RPACOR|RCORE|ENMAX|ENMIN|ICORE|LCOR|LEXCH|VRHFIN|EATOM|RMAX|RAUG|RDEP|RDEPT|QCUT|QGAM|DEXC|EREF|LPAW|EAUG|IALGO|IMIX|AMIX_MAG|ALDAX|ENCUT4O|ENCUTFOCK|ENCUTGWSOFT|ENCUTLF|EFERMI|EVENONLY|EVENONLYGW|EXXOEP|HFALPHA|HFKIDENT|HFRCUT|HFSCREENC|IBSE|IRESTART|IWAVPR|KINTER|KPOINT|L2ORDER|LADDER|LCORR|LFERMIGW|LFOCKAEDFT|LFXC|LFXCEPS|LFXHEG|LHARTREE|LINTERFAST|LMAXFOCK|LMAXFOCKAE|LMODELHF|LNABLA|LRHFCALC|LRSCOR|LRSRPA|LSINGLES|LSPECTRALGW|LSYMGRAD|LTCTE|LTETE|LTHOMAS|LTRIPLET|LVEL|MAXITERFT|MCALPHA|NATURALO|NBANDSGW|NBANDSGWLOW|NELMHF|NKREDLFX|NKREDX|NKREDY|NKREDZ|NMAXFOCKAE|NOMEGAR|NREBOOT|ODDONLY|ODDONLYGW|OMEGAGRID|OMEGAMIN|OMEGAPAR|SCALEE|SCISSOR|SELFENERGY|SHIFTRED|TAUPAR|TEIN|TELESCOPE|TURBO|VCA|RTIME|DEG_THRESHOLD|DIM|IXMAX|IXMIN|ALAT|POSCAR|A1|A2|A3|NQ)\\s*="
         }
       ]
     },
@@ -45,11 +48,27 @@
         }
       ]
     },
+    "warning-block": {
+      "comment": "ASCII art WARNING block - lines with pipe borders",
+      "patterns": [
+        {
+          "comment": "Warning block border line (dashes)",
+          "name": "invalid.deprecated.warning.block.outcar",
+          "match": "^\\s*-{70,}\\s*$"
+        },
+        {
+          "comment": "Warning block content line (pipe borders)",
+          "name": "invalid.deprecated.warning.block.outcar",
+          "match": "^\\|.*\\|\\s*$"
+        }
+      ]
+    },
     "errors": {
       "patterns": [
         {
+          "comment": "Actual VASP errors - ERROR: at start of line, STOPPED, FATAL, ZBRENT bracketing errors",
           "name": "invalid.illegal.error.outcar",
-          "match": "(?i)^.*(ERROR|STOPPED|FATAL|ZBRENT).*$"
+          "match": "(?i)^\\s*(ERROR:|STOPPED|FATAL|ZBRENT:\\s*roots not bracketed).*$"
         }
       ]
     },
