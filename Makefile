@@ -76,22 +76,19 @@ clean-all: clean
 
 # Build targets
 build: clean
-	python -m build
+	uv build
 
 # Publishing targets
 publish-test: build
 	@echo "Publishing to TestPyPI..."
-	@echo "You will need TestPyPI credentials."
-	python -m twine upload --repository testpypi dist/*
+	uv publish --publish-url https://test.pypi.org/legacy/
 	@echo ""
 	@echo "Test installation with:"
 	@echo "  pip install --index-url https://test.pypi.org/simple/ vasp-ase"
 
 publish: build
-	@echo "WARNING: This will publish to PyPI!"
-	@echo "Press Ctrl+C to cancel, Enter to continue..."
-	@read dummy
-	python -m twine upload dist/*
+	@echo "Publishing to PyPI..."
+	uv publish
 	@echo ""
 	@echo "Published to PyPI!"
 	@echo "Install with: pip install vasp-ase"

@@ -1,5 +1,6 @@
 # VASP-ASE Interface
 
+[![PyPI version](https://badge.fury.io/py/vasp-ase.svg)](https://pypi.org/project/vasp-ase/)
 [![Tests](https://github.com/jkitchin/vasp/actions/workflows/tests.yml/badge.svg)](https://github.com/jkitchin/vasp/actions/workflows/tests.yml)
 [![codecov](https://codecov.io/gh/jkitchin/vasp/branch/master/graph/badge.svg)](https://codecov.io/gh/jkitchin/vasp)
 [![Documentation](https://img.shields.io/badge/docs-online-blue)](https://kitchingroup.cheme.cmu.edu/vasp/)
