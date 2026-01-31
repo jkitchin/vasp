@@ -385,6 +385,10 @@ class Vasp(Calculator, IOMixin, ElectronicMixin, AnalysisMixin, DynamicsMixin):
         # Write input files
         self.write_input(atoms, properties, system_changes)
 
+        # Store atoms state before running (for async workflows where run() raises)
+        if self.atoms is not None:
+            self._store_atoms_state(self.atoms)
+
         # Run calculation
         result = self.runner.run(self.directory)
 
