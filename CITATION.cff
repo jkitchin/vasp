@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata below."
+title: "vasp: an ASE-compliant Python interface to VASP"
+type: software
+authors:
+  - family-names: Kitchin
+    given-names: John R.
+    orcid: "https://orcid.org/0000-0003-2625-9232"
+    affiliation: Carnegie Mellon University
+repository-code: "https://github.com/jkitchin/vasp"
+version: "2.0.0"
+date-released: "2026-10-20"
+license: MIT
+abstract: "An Atomic Simulation Environment (ASE) compliant Python interface to the Vienna Ab initio Simulation Package (VASP)."
+keywords: [DFT, VASP, ASE, materials modeling]
